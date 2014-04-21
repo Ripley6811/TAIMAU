@@ -43,7 +43,7 @@ def get_company_editor(frame,dm):
                 return int(float(number))
             return number
         alist = [u"{1} {0}{2}{0}  ({3})".format(u'\u26D4' if c.discontinued else u'',
-                    u'$' if '-' in c.MPN else u'\u2697',
+                    u'$' if not c.incoming else u'\u2697',
                     c.product_label if c.product_label else c.inventory_name,
                     c.inventory_name) for c in queryresult]
         clist = [u"{0}{1} {2} per {3} ({4}){0}".format(u'\u26D4' if c.discontinued else u'',
@@ -69,8 +69,9 @@ def get_company_editor(frame,dm):
         info.listbox.products.activate(activeP_ID)
             
             
-    def showrecord():
-        id = info.activeID = info.listbox.IDs[info.listbox.companies.index(Tk.ACTIVE)]
+    def showrecord(id = None):
+        if not id:
+            id = info.activeID = info.listbox.IDs[info.listbox.companies.index(Tk.ACTIVE)]
         info.co_query = dm.session.query(dm.tables.Company).filter(dm.tables.Company.id==id).one()
         queryresult = info.co_query.__dict__
         for key in info.companySVar:
@@ -122,6 +123,7 @@ def get_company_editor(frame,dm):
                 dm.session.add(new_co)
                 dm.session.commit()
                 refresh_companies_list()
+                showrecord(ID)
             else:
                 info.tempWindow.focus_set()
                 
@@ -182,7 +184,7 @@ def get_company_editor(frame,dm):
     frameSubRB = ttk.Frame(frameRBottom)
     ttk.Label(frameSubRB, text=u"\u2697=買的材料  $=賣的產品  \u26D4=停用").pack(side=Tk.BOTTOM)
     Tk.Button(frameSubRB, text="New Product", command=lambda:addProductWindow(info, dm, refresh_products_list)).pack(side=Tk.LEFT)
-    Tk.Button(frameSubRB, text="Edit Product", command=None).pack(side=Tk.LEFT)
+    Tk.Button(frameSubRB, text="Edit Product", command=lambda:editProductWindow(info, dm, refresh_products_list)).pack(side=Tk.LEFT)
     Tk.Button(frameSubRB, text="Discontinue", command=discontinueSelection).pack(side=Tk.LEFT)
     frameSubRB.pack(side=Tk.BOTTOM)
     scrollbar = Tk.Scrollbar(frameRBottom, orient=Tk.VERTICAL)
@@ -203,8 +205,7 @@ def get_company_editor(frame,dm):
             
     refresh_companies_list()
     showrecord()
-    
-    
+        
 def addProductWindow(info, dm, refresh_products_list=None, group_id=None):
     try:
         if info.prodWin.state() == 'normal':
@@ -297,3 +298,86 @@ def addProductWindow(info, dm, refresh_products_list=None, group_id=None):
         if field[1].startswith("BOOL"):
             productSVar[field[0]].set(False)
     
+    
+def editProductWindow(info, dm, refresh_products_list=None, group_id=None):
+    try:
+        if info.prodWin.state() == 'normal':
+            info.prodWin.focus_set()
+        return
+    except:
+        pass
+        
+    try:
+        group_id = info.co_query.group_id
+    except:
+        raise Warning, "Group id not found!"
+        return
+        
+    i = info.listbox.products.index(Tk.ACTIVE)
+    pID = info.listbox.pIDs[i]
+    prodvars = dm.get_product_data(pID).__dict__
+            
+    info.prodWin = Tk.Toplevel(width=500)
+    info.prodWin.title(group_id + u" : 增加產品")
+    
+    productSVar = dict()
+    
+    used_ids = [p[0] for p in dm.session.query(dm.tables.Product.MPN).all()]
+    print used_ids
+    fields = dm.metadata.tables['product'].c.keys()
+    fields = [(key, repr(dm.metadata.tables['product'].c[key].type)) for key in fields]
+
+    def submit_new_product(dm,productSVar,refresh_products_list):
+        #Check field entries
+        new_prod = dict([(key,productSVar[key].get()) for key in productSVar])
+        
+        if not new_prod['inventory_name'] or not new_prod['UM'] or not new_prod['SKU']:
+            return
+            
+        try:
+            float(new_prod['units'])
+        except:
+            return
+            
+        
+        is_confirmed = tkMessageBox.askokcancel('Confirm Data', 
+            u'Update {} as a {}?'.format(new_prod['inventory_name'],
+                        u'purchase item' if new_prod['incoming'] else u'sale item'))
+        if is_confirmed: 
+            info.prodWin.destroy()
+            try:
+                del productSVar['MPN']
+            except:
+                pass
+            dm.session.query(dm.tables.Product).filter(dm.tables.Product.MPN==pID).update(new_prod)
+            dm.session.commit()
+            if refresh_products_list:
+                refresh_products_list()
+        else:
+            info.prodWin.focus_set()
+    
+    
+    for i, field in enumerate(fields):
+        if field[0] in [u'MPN',u'company']:
+            continue
+        ttk.Label(info.prodWin, text=field[0]).grid(row=i,column=0)
+        if field[1].startswith("BOOL"):
+            productSVar[field[0]] = Tk.BooleanVar()
+            Tk.Radiobutton(info.prodWin, text="True", variable=productSVar[field[0]], value=True)\
+                    .grid(row=i,column=1)
+            Tk.Radiobutton(info.prodWin, text="False", variable=productSVar[field[0]], value=False)\
+                    .grid(row=i,column=2)
+        else:
+            productSVar[field[0]] = Tk.StringVar()
+            ttk.Entry(info.prodWin, textvariable=productSVar[field[0]], width=20).grid(row=i,column=1,columnspan=2)
+    Tk.Button(info.prodWin, text="Submit Product", command=lambda:submit_new_product(dm,productSVar,refresh_products_list)).grid(row=99,column=0,columnspan=3)
+    
+    productSVar['MPN'] = Tk.StringVar()
+    productSVar['company'] = Tk.StringVar()
+    productSVar['company'].set(group_id)
+#    if productSVar['discontinued'].get() not in [True,False]:
+#        productSVar['discontinued'].set(False)
+    print prodvars
+    for field in fields:
+        print field[0]
+        productSVar[field[0]].set(prodvars[field[0]])
