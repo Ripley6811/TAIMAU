@@ -167,11 +167,24 @@ def company_list():
 
 
 def company_list_from_sales():
-    return list(set([name.parentcompany for name in session.query(tables.sales)]))
+    '''Orders the list from companies with most recent entries to older entries.
+    '''
+    rawlist = list([name.parentcompany for name in session.query(tables.sales).order_by(tables.sales.c.orderdate)])
+    outlist = []
+    for each in rawlist[::-1]:
+        if each not in outlist:
+            outlist.append(each)
+    return outlist
 
 def company_list_from_purchases():
-    return list(set([name.parentcompany for name in session.query(tables.purchases)]))
-
+    '''Orders the list from companies with most recent entries to older entries.
+    '''
+    rawlist = list([name.parentcompany for name in session.query(tables.purchases).order_by(tables.purchases.c.orderdate)])
+    outlist = []
+    for each in rawlist[::-1]:
+        if each not in outlist:
+            outlist.append(each)
+    return outlist
 
 #def insert_warehouse(ins_dict):
 #    global conn
