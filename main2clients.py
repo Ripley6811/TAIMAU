@@ -268,6 +268,15 @@ def get_purchases_frame(frame):
     info.listbox.rec_orders.pack(side=Tk.TOP, fill=Tk.BOTH)
     # Add right-click popup menu
     orderPopMenu = Tk.Menu(frame, tearoff=0)
+    def refresh_listbox_item(id, index):
+        recvals = dm.get_record(id, True)
+        info.listbox.rec_orders.delete(index)
+        info.listbox.rec_manifest.delete(index)
+        info.listbox.rec_orders.insert(index, format_order_summary(recvals))
+        info.listbox.rec_manifest.insert(index, format_order_summary(recvals))
+        info.listbox.rec_orders.select_set(index)
+        info.listbox.rec_orders.activate(index)
+
     def toggle_delivered(info):
         active_index = info.listbox.rec_orders.index(Tk.ACTIVE)
         rec_id = info.orderIDs[active_index]
@@ -276,10 +285,7 @@ def get_purchases_frame(frame):
         if u'.0' in rec['deliveryID']:
             updates['deliveryID'] = '{:0>7}'.format(int(float(rec['deliveryID'])))
         dm.update_purchase(rec_id, updates)
-        loadcompany(info)
-        info.listbox.rec_orders.select_clear(info.listbox.rec_orders.index(Tk.ACTIVE))
-        info.listbox.rec_orders.select_set(active_index)
-        info.listbox.rec_orders.activate(active_index)
+        refresh_listbox_item(rec_id, active_index)
 
 
     def toggle_paid(info):
@@ -288,10 +294,7 @@ def get_purchases_frame(frame):
         rec = dm.get_record(rec_id, incoming=True)
         updates = dict(paid=False if rec['paid'] else True)
         dm.update_purchase(rec_id, updates)
-        loadcompany(info)
-        info.listbox.rec_orders.select_clear(info.listbox.rec_orders.index(Tk.ACTIVE))
-        info.listbox.rec_orders.select_set(active_index)
-        info.listbox.rec_orders.activate(active_index)
+        refresh_listbox_item(rec_id, active_index)
 
     def delete_order(info):
         dm.delete_purchase(info.orderIDs[info.listbox.rec_orders.index(Tk.ACTIVE)])
@@ -543,7 +546,10 @@ def get_purchases_frame(frame):
                     newentry[key] = strvar.get()
                 except:
                     print key
-                    newentry[key] = False if strvar.get() == "None" else True
+                    try:
+                        newentry[key] = False if strvar.get() == "None" else True
+                    except:
+                        newentry[key] = False
         newentry['recorddate'] = datetime.datetime.now()
         newentry['ordernote'] = info.orderNote.get(1.0, Tk.END).strip()
         newentry['deliverynote'] = info.deliveryNote.get(1.0, Tk.END).strip()
@@ -557,15 +563,17 @@ def get_purchases_frame(frame):
         if newentry.get('price') and newentry.get('orderdate') and newentry.get('mpn'):
             if info.edit_ID:
                 dm.update_purchase(info.edit_ID, newentry)
-                info.button.submit.config(state = Tk.NORMAL)
+#                info.button.submit.config(state = Tk.NORMAL)
 #                but_clear.config(state = Tk.NORMAL)
-                info.button.update.config(state = Tk.DISABLED)
+#                info.button.update.config(state = Tk.DISABLED)
 #                but_cancel.config(state = Tk.DISABLED)
-                info.edit_ID = None
+                active_index = info.listbox.rec_orders.index(Tk.ACTIVE)
+                refresh_listbox_item(info.edit_ID, active_index)
+#                info.edit_ID = None
             else:
                 dm.insert_purchase(newentry)
 
-            loadcompany(info)
+                loadcompany(info)
         else:
             tkMessageBox.showinfo('還沒填好', '檢查:\n品名\n單價\n交貨日期')
 
@@ -789,7 +797,52 @@ def get_purchases_frame(frame):
     nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
 
 
-
+def format_order_summary(val):
+    prodtmp = dm.get_product(val['mpn'])
+    if prodtmp[0] and prodtmp[0] != prodtmp[1]:
+        prodtmp = u'{} (台茂:{})'.format(*prodtmp)
+    else:
+        prodtmp = prodtmp[1]
+    tmp = u''
+#            tmp += u'\u25C6' if val['delivered'] else u'\u25C7'
+    tmp += u'\u26DF' if val['delivered'] else u'\u25C7'
+    tmp += u'\u265B' if val['paid'] else u'\u25C7'
+    if val['delivered']:
+        if val['deliverydate']:
+            tmp += (u"到期:{:>2}月{:>2}日{}年 \u273F ".format(
+                val['deliverydate'].month,
+                val['deliverydate'].day,
+                val['deliverydate'].year).replace(' ','  ')
+            )
+        else:
+            tmp += u"到期:  月  日   年 \u273F ".replace(' ','  ')
+    else:
+        try:
+            tmp += (u"預期:{:>2}月{:>2}日{}年 \u273F ".format(
+                val['orderdate'].month,
+                val['orderdate'].day,
+                val['orderdate'].year).replace(' ','  ')
+            )
+        except:
+            tmp += u'  None Entered  \u273F '
+    try:
+        tmp += u"{0}\u2794{1} \u273F   {2}  \u223C {3}*{4}{5}={6} \u25CA ${7}".format(
+            val['sellercompany'],#.split()[0],
+            val['buyingcompany'],#.split()[0],
+            prodtmp,
+            val['totalskus'],
+            int(int(val['totalunits'])/int(val['totalskus'])),
+            u'u',
+            int(val['totalunits']),
+            int(val['price']) if float(val['price']).is_integer() else val['price'],
+            val['mpn'])
+    except:
+        pass
+    if val['deliveryID']:
+        tmp += u"  貨單編號:{0}".format(
+            val['deliveryID']
+        )
+    return tmp
 
 
 
@@ -835,50 +888,51 @@ def loadcompany(info, grab_index=False):
 #            orderListIDs.append( val['id'] )
         info.orderIDs.append( val['id'] )
 #            print info.orderIDs
-        prodtmp = dm.get_product(val['mpn'])
-        if prodtmp[0] and prodtmp[0] != prodtmp[1]:
-            prodtmp = u'{} (台茂:{})'.format(*prodtmp)
-        else:
-            prodtmp = prodtmp[1]
-        tmp = u''
-#            tmp += u'\u25C6' if val['delivered'] else u'\u25C7'
-        tmp += u'\u26DF' if val['delivered'] else u'\u25C7'
-        tmp += u'\u265B' if val['paid'] else u'\u25C7'
-        if val['delivered']:
-            if val['deliverydate']:
-                tmp += (u"到期:{:>2}月{:>2}日{}年 \u273F ".format(
-                    val['deliverydate'].month,
-                    val['deliverydate'].day,
-                    val['deliverydate'].year).replace(' ','  ')
-                )
-            else:
-                tmp += u"到期:  月  日   年 \u273F ".replace(' ','  ')
-        else:
-            try:
-                tmp += (u"預期:{:>2}月{:>2}日{}年 \u273F ".format(
-                    val['orderdate'].month,
-                    val['orderdate'].day,
-                    val['orderdate'].year).replace(' ','  ')
-                )
-            except:
-                tmp += u'  None Entered  \u273F '
-        try:
-            tmp += u"{0}\u2794{1} \u273F   {2}  \u223C {3}*{4}{5}={6} \u25CA ${7}".format(
-                val['sellercompany'],#.split()[0],
-                val['buyingcompany'],#.split()[0],
-                prodtmp,
-                val['totalskus'],
-                int(int(val['totalunits'])/int(val['totalskus'])),
-                u'u',
-                int(val['totalunits']),
-                int(val['price']) if float(val['price']).is_integer() else val['price'],
-                val['mpn'])
-        except:
-            pass
-        if val['deliveryID']:
-            tmp += u"  貨單編號:{0}".format(
-                val['deliveryID']
-            )
+#        prodtmp = dm.get_product(val['mpn'])
+#        if prodtmp[0] and prodtmp[0] != prodtmp[1]:
+#            prodtmp = u'{} (台茂:{})'.format(*prodtmp)
+#        else:
+#            prodtmp = prodtmp[1]
+#        tmp = u''
+##            tmp += u'\u25C6' if val['delivered'] else u'\u25C7'
+#        tmp += u'\u26DF' if val['delivered'] else u'\u25C7'
+#        tmp += u'\u265B' if val['paid'] else u'\u25C7'
+#        if val['delivered']:
+#            if val['deliverydate']:
+#                tmp += (u"到期:{:>2}月{:>2}日{}年 \u273F ".format(
+#                    val['deliverydate'].month,
+#                    val['deliverydate'].day,
+#                    val['deliverydate'].year).replace(' ','  ')
+#                )
+#            else:
+#                tmp += u"到期:  月  日   年 \u273F ".replace(' ','  ')
+#        else:
+#            try:
+#                tmp += (u"預期:{:>2}月{:>2}日{}年 \u273F ".format(
+#                    val['orderdate'].month,
+#                    val['orderdate'].day,
+#                    val['orderdate'].year).replace(' ','  ')
+#                )
+#            except:
+#                tmp += u'  None Entered  \u273F '
+#        try:
+#            tmp += u"{0}\u2794{1} \u273F   {2}  \u223C {3}*{4}{5}={6} \u25CA ${7}".format(
+#                val['sellercompany'],#.split()[0],
+#                val['buyingcompany'],#.split()[0],
+#                prodtmp,
+#                val['totalskus'],
+#                int(int(val['totalunits'])/int(val['totalskus'])),
+#                u'u',
+#                int(val['totalunits']),
+#                int(val['price']) if float(val['price']).is_integer() else val['price'],
+#                val['mpn'])
+#        except:
+#            pass
+#        if val['deliveryID']:
+#            tmp += u"  貨單編號:{0}".format(
+#                val['deliveryID']
+#            )
+        tmp = format_order_summary(val)
 
         info.listbox.rec_orders.insert(i,tmp)
         info.listbox.rec_manifest.insert(i,tmp)
@@ -1084,6 +1138,15 @@ def get_sales_frame(frame):
     info.listbox.rec_orders.pack(side=Tk.TOP, fill=Tk.X)
     # Add right-click popup menu
     orderPopMenu = Tk.Menu(frame, tearoff=0)
+    def refresh_listbox_item(id, index):
+        recvals = dm.get_record(id, False)
+        info.listbox.rec_orders.delete(index)
+        info.listbox.rec_manifest.delete(index)
+        info.listbox.rec_orders.insert(index, format_order_summary(recvals))
+        info.listbox.rec_manifest.insert(index, format_order_summary(recvals))
+        info.listbox.rec_orders.select_set(index)
+        info.listbox.rec_orders.activate(index)
+
     def toggle_delivered(info):
         active_index = info.listbox.rec_orders.index(Tk.ACTIVE)
         rec_id = info.orderIDs[active_index]
@@ -1092,10 +1155,11 @@ def get_sales_frame(frame):
         if u'.0' in rec['deliveryID']:
             updates['deliveryID'] = '{:0>7}'.format(int(float(rec['deliveryID'])))
         dm.update_sale(rec_id, updates)
-        loadcompany(info)
-        info.listbox.rec_orders.select_clear(info.listbox.rec_orders.index(Tk.ACTIVE))
-        info.listbox.rec_orders.select_set(active_index)
-        info.listbox.rec_orders.activate(active_index)
+        refresh_listbox_item(rec_id, active_index)
+#        loadcompany(info)
+#        info.listbox.rec_orders.select_clear(info.listbox.rec_orders.index(Tk.ACTIVE))
+#        info.listbox.rec_orders.select_set(active_index)
+#        info.listbox.rec_orders.activate(active_index)
 
 
     def toggle_paid(info):
@@ -1104,10 +1168,11 @@ def get_sales_frame(frame):
         rec = dm.get_record(rec_id)
         updates = dict(paid=False if rec['paid'] else True)
         dm.update_sale(rec_id, updates)
-        loadcompany(info)
-        info.listbox.rec_orders.select_clear(info.listbox.rec_orders.index(Tk.ACTIVE))
-        info.listbox.rec_orders.select_set(active_index)
-        info.listbox.rec_orders.activate(active_index)
+        refresh_listbox_item(rec_id, active_index)
+#        loadcompany(info)
+#        info.listbox.rec_orders.select_clear(info.listbox.rec_orders.index(Tk.ACTIVE))
+#        info.listbox.rec_orders.select_set(active_index)
+#        info.listbox.rec_orders.activate(active_index)
 
     def delete_order(info):
         dm.delete_sale(info.orderIDs[info.listbox.rec_orders.index(Tk.ACTIVE)])
@@ -1361,7 +1426,11 @@ def get_sales_frame(frame):
                     newentry[key] = strvar.get()
                 except:
                     print key
-                    newentry[key] = False if strvar.get() == "None" else True
+                    try:
+                        newentry[key] = False if strvar.get() == "None" else True
+                    except:
+                        newentry[key] = False
+
         newentry['recorddate'] = datetime.datetime.now()
         newentry['ordernote'] = info.orderNote.get(1.0, Tk.END).strip()
         newentry['deliverynote'] = info.deliveryNote.get(1.0, Tk.END).strip()
@@ -1375,15 +1444,12 @@ def get_sales_frame(frame):
         if newentry.get('price') and newentry.get('orderdate') and newentry.get('mpn'):
             if info.edit_ID:
                 dm.update_sale(info.edit_ID, newentry)
-                info.button.submit.config(state = Tk.NORMAL)
-#                but_clear.config(state = Tk.NORMAL)
-                info.button.update.config(state = Tk.DISABLED)
-#                but_cancel.config(state = Tk.DISABLED)
-                info.edit_ID = None
+                active_index = info.listbox.rec_orders.index(Tk.ACTIVE)
+                refresh_listbox_item(info.edit_ID, active_index)
             else:
                 dm.insert_sale(newentry)
 
-            loadcompany(info)
+                loadcompany(info)
 
         else:
             tkMessageBox.showinfo('還沒填好', '檢查:\n品名\n單價\n交貨日期')
