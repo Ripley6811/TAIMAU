@@ -250,8 +250,8 @@ def get_purchases_frame(frame):
 
 
     frameIn = ttk.Frame(frame)
-    b = Tk.Button(frameIn, text="作為模板 (Copy to new entry)",
-            command=lambda:copyrecord(info,False))
+    b = Tk.Button(frameIn, text=u"編輯紀錄",
+            command=lambda:copyrecord(info,True))
     b.pack(side=Tk.BOTTOM, fill=Tk.X)
 #    b = Tk.Button(frameIn, text=u"編輯 (下劃線的記錄)",
 #            command=lambda:copyrecord(info,True))
@@ -261,7 +261,7 @@ def get_purchases_frame(frame):
                          yscrollcommand=scrollbar2.set,
                          font=("Verdana", "12"), height=100, exportselection=0)
 
-    info.listbox.rec_orders.bind("<ButtonRelease-1>", lambda _:copyrecord(info,True))
+    info.listbox.rec_orders.bind("<ButtonRelease-1>", lambda _:copyrecord(info,False))
 #    info.listbox.rec_orders.bind("<Double-Button-1>", lambda _:copyrecord(info,True))
     scrollbar2.config(command=info.listbox.rec_orders.yview)
     scrollbar2.pack(side=Tk.RIGHT, fill=Tk.Y)
@@ -563,13 +563,13 @@ def get_purchases_frame(frame):
         if newentry.get('price') and newentry.get('orderdate') and newentry.get('mpn'):
             if info.edit_ID:
                 dm.update_purchase(info.edit_ID, newentry)
-#                info.button.submit.config(state = Tk.NORMAL)
+                info.button.submit.config(state = Tk.NORMAL)
 #                but_clear.config(state = Tk.NORMAL)
-#                info.button.update.config(state = Tk.DISABLED)
+                info.button.update.config(state = Tk.DISABLED)
 #                but_cancel.config(state = Tk.DISABLED)
                 active_index = info.listbox.rec_orders.index(Tk.ACTIVE)
                 refresh_listbox_item(info.edit_ID, active_index)
-#                info.edit_ID = None
+                info.edit_ID = None
             else:
                 dm.insert_purchase(newentry)
 
@@ -979,7 +979,7 @@ def loadcompany(info, grab_index=False):
     info.record['deliverydate'].set('')
 
     if info.listbox.rec_orders.size():
-        copyrecord(info,True)
+        copyrecord(info,False)
 
 
 def copyrecord(info, editmode = False):
@@ -1120,8 +1120,8 @@ def get_sales_frame(frame):
 
 
     frameIn = ttk.Frame(frame)
-    b = Tk.Button(frameIn, text="作為模板 (Copy to new entry)",
-            command=lambda:copyrecord(info,False))
+    b = Tk.Button(frameIn, text=u"編輯紀錄",
+            command=lambda:copyrecord(info,True))
     b.pack(side=Tk.BOTTOM, fill=Tk.X)
 #    b = Tk.Button(frameIn, text=u"編輯 (下劃線的記錄)",
 #            command=lambda:copyrecord(info,True))
@@ -1131,7 +1131,7 @@ def get_sales_frame(frame):
                          yscrollcommand=scrollbar2.set,
                          font=("Verdana", "12"), height=100, exportselection=0)
 
-    info.listbox.rec_orders.bind("<ButtonRelease-1>", lambda _:copyrecord(info,True))
+    info.listbox.rec_orders.bind("<ButtonRelease-1>", lambda _:copyrecord(info,False))
 #    info.listbox.rec_orders.bind("<Double-Button-1>", lambda _:copyrecord(info,True))
     scrollbar2.config(command=info.listbox.rec_orders.yview)
     scrollbar2.pack(side=Tk.RIGHT, fill=Tk.Y)
