@@ -55,7 +55,7 @@ __version__ = '0.2'
 # IMPORT STATEMENTS
 #===============================================================================
 import os  # os.walk(basedir) FOR GETTING DIR STRUCTURE
-from tkFileDialog import askopenfilename, askopenfile
+#from tkFileDialog import askopenfilename, askopenfile
 #from collections import namedtuple
 import datetime
 #import tables_company_data as tables
@@ -66,10 +66,16 @@ import tkFont
 #import google_spreadsheet as gs
 import database_management as dm
 import frame_company_editor
+import frame_payment
 
 #===============================================================================
 # METHODS
 #===============================================================================
+
+# Container for passing state parameters
+# Separate into current record, product
+class Info(object): pass
+
 
 class Taimau_app(Tk.Tk):
     run_location = os.getcwd()
@@ -212,6 +218,7 @@ def get_purchases_frame(frame):
     info.listbox = Info()
     info.button = Info()
     info.method = Info()
+    info.dm = dm
 
 
     #-------
@@ -785,14 +792,11 @@ def get_purchases_frame(frame):
     #---------------------------------------------------------------
     frame = ttk.Frame(nb)
 
-    txt2 = Tk.Text(frame, wrap=Tk.WORD, width=40, height=10)
-    vscroll = ttk.Scrollbar(frame, orient=Tk.VERTICAL, command=txt2.yview)
-    txt2['yscroll'] = vscroll.set
-    vscroll.pack(side=Tk.RIGHT, fill=Tk.Y)
-    txt2.pack(fill=Tk.BOTH, expand=Tk.Y)
 
     # add to notebook (underline = index for short-cut character)
-    nb.add(frame, text=u'發票', padding=2, state=Tk.DISABLED)
+    nb.add(frame, text=u'發票', padding=2)
+
+    frame_payment.set_payment_frame(frame, info)
 
     nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
 
@@ -885,53 +889,9 @@ def loadcompany(info, grab_index=False):
 
     for i,val in enumerate(reclist):
         print 'val.id =', type(val.id), val.id
-#            orderListIDs.append( val['id'] )
+
         info.orderIDs.append( val['id'] )
-#            print info.orderIDs
-#        prodtmp = dm.get_product(val['mpn'])
-#        if prodtmp[0] and prodtmp[0] != prodtmp[1]:
-#            prodtmp = u'{} (台茂:{})'.format(*prodtmp)
-#        else:
-#            prodtmp = prodtmp[1]
-#        tmp = u''
-##            tmp += u'\u25C6' if val['delivered'] else u'\u25C7'
-#        tmp += u'\u26DF' if val['delivered'] else u'\u25C7'
-#        tmp += u'\u265B' if val['paid'] else u'\u25C7'
-#        if val['delivered']:
-#            if val['deliverydate']:
-#                tmp += (u"到期:{:>2}月{:>2}日{}年 \u273F ".format(
-#                    val['deliverydate'].month,
-#                    val['deliverydate'].day,
-#                    val['deliverydate'].year).replace(' ','  ')
-#                )
-#            else:
-#                tmp += u"到期:  月  日   年 \u273F ".replace(' ','  ')
-#        else:
-#            try:
-#                tmp += (u"預期:{:>2}月{:>2}日{}年 \u273F ".format(
-#                    val['orderdate'].month,
-#                    val['orderdate'].day,
-#                    val['orderdate'].year).replace(' ','  ')
-#                )
-#            except:
-#                tmp += u'  None Entered  \u273F '
-#        try:
-#            tmp += u"{0}\u2794{1} \u273F   {2}  \u223C {3}*{4}{5}={6} \u25CA ${7}".format(
-#                val['sellercompany'],#.split()[0],
-#                val['buyingcompany'],#.split()[0],
-#                prodtmp,
-#                val['totalskus'],
-#                int(int(val['totalunits'])/int(val['totalskus'])),
-#                u'u',
-#                int(val['totalunits']),
-#                int(val['price']) if float(val['price']).is_integer() else val['price'],
-#                val['mpn'])
-#        except:
-#            pass
-#        if val['deliveryID']:
-#            tmp += u"  貨單編號:{0}".format(
-#                val['deliveryID']
-#            )
+
         tmp = format_order_summary(val)
 
         info.listbox.rec_orders.insert(i,tmp)
@@ -980,6 +940,8 @@ def loadcompany(info, grab_index=False):
 
     if info.listbox.rec_orders.size():
         copyrecord(info,False)
+
+    info.method.refresh_pay_frame(info)
 
 
 def copyrecord(info, editmode = False):
@@ -1044,10 +1006,6 @@ def copyrecord(info, editmode = False):
     info.deliveryNote.delete(1.0, Tk.END)
     info.deliveryNote.insert(Tk.END, copydata['deliverynote'])
 
-class Info(object):
-    # Container for passing state parameters
-    # Separate into current record, product
-    pass
 
 def get_sales_frame(frame):
     info = Info()
@@ -1057,6 +1015,7 @@ def get_sales_frame(frame):
     info.listbox = Info()
     info.button = Info()
     info.method = Info()
+    info.dm = dm
 
 
     #-------
@@ -1663,14 +1622,9 @@ def get_sales_frame(frame):
     #---------------------------------------------------------------
     frame = ttk.Frame(nb)
 
-    txt2 = Tk.Text(frame, wrap=Tk.WORD, width=40, height=10)
-    vscroll = ttk.Scrollbar(frame, orient=Tk.VERTICAL, command=txt2.yview)
-    txt2['yscroll'] = vscroll.set
-    vscroll.pack(side=Tk.RIGHT, fill=Tk.Y)
-    txt2.pack(fill=Tk.BOTH, expand=Tk.Y)
+    nb.add(frame, text=u'發票', padding=2)
 
-    # add to notebook (underline = index for short-cut character)
-    nb.add(frame, text=u'發票', padding=2, state=Tk.DISABLED)
+    frame_payment.set_payment_frame(frame, info)
 
     nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
 
