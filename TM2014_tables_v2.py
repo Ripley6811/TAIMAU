@@ -27,25 +27,35 @@ Base = declarative_base()
 def today():
     return datetime.datetime.now()
 
+def updatetotal(context):
+    subtotal = context.current_parameters['subtotal']
+    taxed = context.current_parameters['applytax']
+    if taxed:
+        return int(round(subtotal * 1.05))
+    else:
+        return int(round(subtotal))
+
+
 class Order(Base):
     __tablename__ = 'order'
     id = Col(Int, primary_key=True)
     group = Col(Utf, ForeignKey('cogroup.name'), nullable=False) # Of second party main company
     seller = Col(Utf, ForeignKey('branch.name'), nullable=False) # For billing/receipts
     buyer = Col(Utf, ForeignKey('branch.name'), nullable=False) # For billing/receipts
+    parent = rel('CoGroup')
 
     recorddate = Col(DateTime, nullable=False, default=today) # Date of entering a record
 
     # Keep all product information in the outgoing product list
     MPN = Col(Utf, ForeignKey('product.MPN'), nullable=False) # Product code
 
-    price = Col(Float) # Price for one SKU or unit
-    discount = Col(Int) # Discount percentage as integer
+    price = Col(Float) # Price for one SKU or unit on this order
+    discount = Col(Int) # Discount percentage as integer (0-100)
     totalskus = Col(Int)
     totalunits = Col(Float) # AUTO: unitssku * totalskus
     subtotal = Col(Float)
     applytax = Col(Bool) # True = 5%, False = 0%
-    totalcharge = Col(Int) # AUTO: pricing * (totalskus or totalunits)
+    totalcharge = Col(Int, default=updatetotal, onupdate=updatetotal) # AUTO
 
     orderdate = Col(Date)  # Use as "expected" delivery date. (Originally was order placement date)
     duedate = Col(Date, nullable=False)  # Expected delivery date
@@ -67,27 +77,31 @@ class Order(Base):
     #paid = Col(Bool, nullable=False, default=False) # True = paid, False = not paid yet
 
     shipments = rel('Shipment')
-    invoices = rel('Invoice')
+    invoices = rel('InvoiceItem')
     product = rel('Product')#, backref=backref('order', lazy='dynamic')) #TODO: backref not working
 
     def qty_shipped(self):
+        '''By number of SKUs'''
         return sum([srec.sku_qty if isinstance(srec.sku_qty,int) else 0 for srec in self.shipments])
 
     def all_shipped(self):
+        '''By number of SKUs'''
         return self.totalskus == self.qty_shipped()
 
-    def total_invoiced(self):
-        return sum([prec.amount if isinstance(prec.amount,int) else 0 for prec in self.invoices])
+    def qty_invoiced(self):
+        '''By number of SKUs'''
+        return sum([prec.sku_qty if isinstance(prec.sku_qty,int) else 0 for prec in self.invoices])
 
     def all_invoiced(self):
-        return self.totalcharge == self.total_invoiced()
+        '''By number of SKUs'''
+        return self.totalskus == self.qty_invoiced()
 
     def total_paid(self):
-        return sum([prec.amount if prec.paid else 0 for prec in self.invoices])
+        return sum([prec.sku_qty if prec.paid else 0 for prec in self.invoices])
 
     def all_paid(self):
         if len(self.invoices) > 0:
-            return not (False in [prec.paid for prec in self.invoices])
+            return not (False in [prec.invoice.paid for prec in self.invoices])
         return False
 
 
@@ -101,6 +115,7 @@ class Shipment(Base): # Keep track of shipments/SKUs for one order
     __tablename__ = 'shipment'
     id = Col(Int, primary_key=True)
     order_id = Col(Int, ForeignKey('order.id'), nullable=False)
+    order = rel('Order')
 
     sku_qty = Col(Int, nullable=False) # Deduct from total SKUs due
 
@@ -121,29 +136,59 @@ class Shipment(Base): # Keep track of shipments/SKUs for one order
 
 class Invoice(Base): # Keep track of invoices/payments for one order
     __tablename__ = 'invoice'
-    id = Col(Int, primary_key=True)
-    order_id = Col(Int, ForeignKey('order.id'), nullable=False)
+    invoice_no = Col(Utf, primary_key=True) # i.e., Invoice number
+    #id = Col(Int, primary_key=True)
 
     seller = Col(Utf, ForeignKey('branch.name'), nullable=False) # For billing/receipts
     buyer = Col(Utf, ForeignKey('branch.name'), nullable=False) # For billing/receipts
 
-    amount = Col(Int, nullable=False)
-
     invoicedate = Col(Date, nullable=False)
-    invoiceID = Col(Utf) # i.e., Invoice number
     invoicenote = Col(Utf) # Information concerning the invoice
 
     check_no = Col(Utf)
     paid = Col(Bool, nullable=False, default=False)
+    paydate = Col(Date)
 
     note = Col(Utf) # Extra note field if needed
     checked = Col(Bool, nullable=False, default=False) # Extra boolean for matching/verifying
 
+    items = rel('InvoiceItem')
+
+    def subtotal(self):
+        return sum([item.subtotal() for item in self.items])
+
+    def tax(self):
+        '''Tax is rounded to nearest integer before returning value.'''
+        return int(round(self.subtotal() * 0.05))
+
+    def taxtotal(self):
+        total = self.subtotal() + (self.tax() if self.order.applytax else 0)
+        return int(round(total))
+
     def __repr__(self):
         retval = self.__dict__
-#        if retval.get('_sa_instance_state') != None:
-#            del retval['_sa_instance_state']
         return repr(retval)
+
+
+class InvoiceItem(Base): # Keep track of invoices/payments for one order
+    __tablename__ = 'invoiceitem'
+    id = Col(Int, primary_key=True)
+
+    invoice_no = Col(Utf, ForeignKey('invoice.invoice_no'), nullable=False)
+    invoice = rel('Invoice')
+
+    order_id = Col(Int, ForeignKey('order.id'), nullable=False)
+    order = rel('Order') #Get product information through related order
+
+    sku_qty = Col(Int, nullable=False)
+
+
+    def subtotal(self):
+        subtotal = self.order.price * self.sku_qty
+        if self.order.product.unitpriced:
+            subtotal *= self.order.product.units
+        return int(round(subtotal))
+
 
 
 class CoGroup(Base):
@@ -185,6 +230,7 @@ class Branch(Base):
     address = Col(Utf, default=u'') # Extra address space if needed
     is_active = Col(Bool, nullable=False, default=True) # Boolean for listing the company. Continuing business.
 
+    parent = rel('CoGroup')
     contacts = rel('Contact')
 
     purchases = rel('Order', primaryjoin="and_(Branch.name==Order.seller, Order.is_sale==False)") #Purchases FROM this company

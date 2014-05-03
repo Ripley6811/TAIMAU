@@ -28,7 +28,7 @@ __version__ = '0.1'
 #===============================================================================
 # IMPORT STATEMENTS
 #===============================================================================
-from TM2014_tables_v2 import get_database, CoGroup, Branch, Product, Contact, Stock, Order, Shipment, Invoice
+from TM2014_tables_v2 import get_database, CoGroup, Branch, Product, Contact, Stock, Order, Shipment, Invoice, InvoiceItem
 import os  # os.walk(basedir) FOR GETTING DIR STRUCTURE
 #import dict_from_excel as excel
 import datetime
@@ -92,19 +92,29 @@ def append_shipment(order_id, ins_dict):
     session.add(Shipment(**ins_dict))
     session.commit()
 
-def append_invoice(order_id, ins_dict):
-    ins_dict['order_id'] = order_id
-    session.add(Invoice(**ins_dict))
+def append_invoice(inv_dict):
+    session.add(Invoice(**inv_dict))
+    session.commit()
+
+def append_invoice_item(inv_dict, item):
+    record = session.query(Invoice).get(inv_dict['invoice_no'])
+    print 'get', repr(record)
+    if not record:
+        append_invoice(inv_dict)
+    session.add(InvoiceItem(**item))
     session.commit()
 
 
-def get_entire_invoice(invoiceID):
+def get_entire_invoice(rec):
     '''Actually retrieves all partial invoices that make up one invoice.'''
-    return session.query(Invoice).filter_by(invoiceID=invoiceID).all()
+    return session.query(Invoice).filter_by(invoiceID = rec.invoice_no,
+                                            invoicedate = rec.invoicedate).all()
 
-def get_entire_shipment(shipmentID):
+def get_entire_shipment(rec):
     '''Actually retrieves all partial shipments that make up one shipment.'''
-    return session.query(Shipment).filter_by(shipmentID=shipmentID).all()
+
+    return session.query(Shipment).filter_by(shipmentID = rec.shipmentID,
+                                             shipmentdate = rec.shipmentdate).all()
 
 #def formatrec(rec):
 #    outname = rec.product_label
