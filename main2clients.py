@@ -399,10 +399,12 @@ def refresh_listboxes(info):
         ins_colors = shipped_color if info.order_records[i].all_shipped() else no_ship_color
         info.listbox.rec_manifest.itemconfig(i, ins_colors)
 
-        invoiced_color = dict(bg=u'SlateGray4', fg=u'gray79', selectbackground=u'tomato', selectforeground=u'black')
+        invoiced_color = dict(bg=u'CadetBlue1', selectbackground=u'blue2')
         no_ship_color = dict(bg=u'pale green', selectbackground=u'yellow', selectforeground=u'black')
         info.listbox.rec_invoices.insert(i,each)
         ins_colors = invoiced_color if info.order_records[i].all_invoiced() else no_ship_color
+        if info.order_records[i].all_paid():
+            ins_colors = dict(bg=u'SlateGray4', fg=u'gray79', selectbackground=u'tomato', selectforeground=u'black')
         info.listbox.rec_invoices.itemconfig(i, ins_colors)
 #    info.listbox.rec_orders.selection_set(Tk.END)
 #    info.listbox.rec_orders.see(Tk.END)

@@ -120,8 +120,8 @@ def create_manifest_frame(frame, info):
 
         def show_shipment(i, j):
             print 'show', (i,j)
-            mani_id = info.manifest.order_recs[i].shipments[j].shipmentID
-            display_manifest_for_edit(info, mani_id)
+            query_shipment = info.manifest.order_recs[i].shipments[j]
+            display_manifest_for_edit(info, query_shipment)
         def del_shipment(i, j, b0, b1):
             print 'delete', (i,j)
             r = info.manifest.order_recs[i]
@@ -257,6 +257,7 @@ def create_manifest_frame(frame, info):
 
 
     def submit_order():
+        #TODO: Check if manifest number already used and confirm to attach to previous
         for i, (include, rec) in enumerate(zip(info.manifest.activated,info.manifest.order_recs)):
             if include:
                 # SET delivery date.
@@ -360,20 +361,28 @@ def create_manifest_frame(frame, info):
 
 
 
-def display_manifest_for_edit(info, ship_id):
+def display_manifest_for_edit(info, shipment):
+    #XXX: There's a chance that the ship_id might repeat, so check matching date as well.
+    ship_id = shipment.shipmentID
+    ship_date = shipment.shipmentdate
+    query_id = shipment.id
     if ship_id in [None,u'None',u'']:
-        tkMessageBox.showerror(u'Bad shipment number',u'Please edit the shipment number and try again.')
-        return
-    shipmentset = info.dmv2.get_entire_shipment(ship_id)
+        tkMessageBox.showerror(u'Bad shipment number',u'Manifest number not found.\nShowing sample manifest for one product.')
+#        return
+        ship_id = u'NONE ENTERED'
+        shipmentset = [shipment]
+    else:
+        shipmentset = info.dmv2.get_entire_shipment(shipment)
     print ship_id, repr(shipmentset)
     orderset = [info.dmv2.get_order(shi.order_id) for shi in shipmentset]
 
-    try:
-        if info.shipmentWin.state() == 'normal':
-            info.shipmentWin.focus_set()
-        return
-    except:
-        pass
+    #TIP: Uncomment below to restrict the popup window to one
+#    try:
+#        if info.shipmentWin.state() == 'normal':
+#            info.shipmentWin.focus_set()
+#        return
+#    except:
+#        pass
 
 
 
@@ -473,19 +482,25 @@ def display_manifest_for_edit(info, ship_id):
         font= mani_font+(u'bold',),
         bg= u'wheat'
     )
+    query_config = dict(
+        relief= Tk.SUNKEN,
+        font= mani_font+(u'bold',),
+        bg= u'yellow'
+    )
     for row, (shipment, order) in enumerate(zip(shipmentset, orderset)):
+        config = query_config if shipment.id == query_id else cell_config
 #        print shipment
 #        print '  ', order
         pinming = u' {} '.format(order.product.product_label if order.product.product_label else order.product.inventory_name)
         guige = u'  {} {} / {}  '.format(order.product.units, order.product.UM, order.product.SKU)
         jianshu = u'  {} {}  '.format(shipment.sku_qty, order.product.UM if order.product.SKU == u'槽車' else order.product.SKU)
         this_units = u'  {} {}  '.format(order.product.units * shipment.sku_qty, order.product.UM)
-        Tk.Label(info.shipmentWin, text=pinming, **cell_config).grid(row=10+row,column=0, sticky=Tk.W+Tk.E)
-        Tk.Label(info.shipmentWin, text=guige, **cell_config).grid(row=10+row,column=1, sticky=Tk.W+Tk.E)
-        Tk.Label(info.shipmentWin, text=jianshu, **cell_config).grid(row=10+row,column=2, sticky=Tk.W+Tk.E)
-        Tk.Label(info.shipmentWin, text=this_units, **cell_config).grid(row=10+row,column=3, sticky=Tk.W+Tk.E)
+        Tk.Label(info.shipmentWin, text=pinming, **config).grid(row=10+row,column=0, sticky=Tk.W+Tk.E)
+        Tk.Label(info.shipmentWin, text=guige, **config).grid(row=10+row,column=1, sticky=Tk.W+Tk.E)
+        Tk.Label(info.shipmentWin, text=jianshu, **config).grid(row=10+row,column=2, sticky=Tk.W+Tk.E)
+        Tk.Label(info.shipmentWin, text=this_units, **config).grid(row=10+row,column=3, sticky=Tk.W+Tk.E)
         Tk.Label(info.shipmentWin, bg=u'gray30', fg=u'gray70', text=u'  {}  '.format(order.product.SKUlong)).grid(row=10+row,column=4, sticky=Tk.W+Tk.E)
-        Tk.Label(info.shipmentWin, text=u'  {}  '.format(order.ordernote), **cell_config).grid(row=10+row,column=5, sticky=Tk.W+Tk.E)
+        Tk.Label(info.shipmentWin, text=u'  {}  '.format(order.ordernote), **config).grid(row=10+row,column=5, sticky=Tk.W+Tk.E)
 
 
 #    check_no = Tk.StringVar()

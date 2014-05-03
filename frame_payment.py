@@ -25,7 +25,7 @@ def format_pay_info(record):
     txt += u'  {}'.format(record.product.inventory_name)
     txt += u'  ${}'.format(record.totalcharge)
     if len(record.invoices) > 0:
-        txt += u'  \u2116 {}'.format(record.invoices[0].invoiceID)
+        txt += u'  \u2116 {}'.format(record.invoices[0].invoice_no)
     if pdate:
         txt += u'  \u2696{}/{}/{}'.format(pdate.year,pdate.month,pdate.day)
     return txt
@@ -61,6 +61,7 @@ def convert_date(adate):
 
 def set_invoice_frame(frame, info):
     info.invoices = info.__class__()
+    info.invoices.codes = dict()
     incoming = info.incoming = False if info.src == 'Sales' else True
 
     frameIn = ttk.Frame(frame)
@@ -127,8 +128,8 @@ def set_invoice_frame(frame, info):
         list_indices = map(int, info.listbox.rec_invoices.curselection())
         info.invoices.order_IDs = [info.order_rec_IDs[i] for i in list_indices]
         info.invoices.order_recs = [info.order_records[i] for i in list_indices]
-        info.invoices.totalcharge = [rec.totalcharge for rec in info.invoices.order_recs]
-        info.invoices.total_invoiced = [rec.total_invoiced() for rec in info.invoices.order_recs]
+        info.invoices.totalskus = [rec.totalskus for rec in info.invoices.order_recs]
+        info.invoices.qty_invoiced = [rec.qty_invoiced() for rec in info.invoices.order_recs]
 
         plength = len(list_indices)
         info.invoices.activated = [False] * plength
@@ -136,23 +137,26 @@ def set_invoice_frame(frame, info):
         info.invoices.allpaid = [Tk.BooleanVar() for i in range(plength)]
 
 #        for i in range(plength):
-#            if info.invoices.totalcharge[i] == info.invoices.total_invoiced[i]:
+#            if info.invoices.totalcharge[i] == info.invoices.qty_invoiced[i]:
 #                info.invoices.allpaid[i].set(True)
 
         def show_invoice(i, j):
             print 'show', (i,j)
-            inv_id = info.invoices.order_recs[i].invoices[j].invoiceID
-            display_invoice_for_edit(info, inv_id)
+            invoice_rec = info.invoices.order_recs[i].invoices[j]
+            info.invoices.redo_indices = list(list_indices)
+            display_invoice_for_edit(info, invoice_rec)
+
 
         def del_invoice(i, j, b0, b1):
             print 'delete', (i,j)
             r = info.invoices.order_recs[i]
             p = r.invoices[j]
             delete = tkMessageBox.askokcancel(u'Delete invoice?',
-                                     u'Confirm to delete invoice of:\n${} on {}'
-                                     .format(p.amount,p.invoicedate))
+                                     u'Confirm to delete invoice and all items?:\n{} on {}'
+                                     .format(p.invoice.invoice_no,p.invoice.invoicedate))
             if delete:
-                info.dmv2.session.query(info.dmv2.Invoice).filter_by(id=p.id).delete()
+                info.dmv2.session.query(info.dmv2.InvoiceItem).filter_by(invoice_no=p.invoice_no).delete()
+                info.dmv2.session.query(info.dmv2.Invoice).filter_by(invoice_no=p.invoice_no).delete()
                 info.dmv2.session.commit()
 #                info.dmv2.update_order(r.id, dict(delivered=False))
                 b0.config(bg=u'red', state=Tk.DISABLED)
@@ -166,13 +170,13 @@ def set_invoice_frame(frame, info):
 #                reload_invoice_frame()
                 for index in redo_indices:
                     info.listbox.rec_invoices.selection_set(index)
-                info.invoices.total_invoiced = [rec.total_invoiced() for rec in info.invoices.order_recs]
+                info.invoices.qty_invoiced = [rec.qty_invoiced() for rec in info.invoices.order_recs]
 
 
         # Fill-in or clear out the desired quantity for a product.
         def match_value(row):
-            tmp = info.invoices.totalcharge[row]
-            dif = tmp - info.invoices.total_invoiced[row]
+            tmp = info.invoices.totalskus[row]
+            dif = tmp - info.invoices.order_recs[row].qty_invoiced()
             if str(dif) != info.invoices.entry_amt[row].get() and dif != 0:
                 info.invoices.entry_amt[row].set(dif)
             else:
@@ -201,7 +205,7 @@ def set_invoice_frame(frame, info):
                     info.invoices.activated[row] = activated
                     info.invoices.buttons[row].config(bg='cyan' if activated else 'slate gray',
                                                     fg='black' if activated else 'snow')
-#                    if entry_amt + info.invoices.total_invoiced[row] >= info.invoices.totalcharge[row]:
+#                    if entry_amt + info.invoices.qty_invoiced[row] >= info.invoices.totalcharge[row]:
 #                        info.invoices.allpaid[row].set(True)
 #                    else:
 #                        info.invoices.allpaid[row].set(False)
@@ -216,6 +220,9 @@ def set_invoice_frame(frame, info):
                 seller_str.set(list(sellers)[0])
             else:
                 seller_str.set(u'[{}]'.format(u','.join(sellers)))
+
+            #Attempt to guess the first two letters of invoice from previous invoices.
+
 
         # Delete previous widgets if they exist.
         try:
@@ -235,25 +242,28 @@ def set_invoice_frame(frame, info):
         info.invoices.widgets = [] # Holder for all other elements to delete on refresh.
 
         rowsize = "12"
-        for i, each in enumerate([u'品名',u'這次付款',u'(剩下/總額)',u'付款歷史']):#,u'全交了?'
+        for i, each in enumerate([u'品名',u'這次SKUs',u'剩下/总量(總額)',u'发票歷史']):#,u'全交了?'
             Tk.Label(fs, text=each, font=(info.settings.font, rowsize)).grid(row=0,column=i)
 
         # Add new product rows
+        font = (info.settings.font, rowsize)
         for row, rec in enumerate(info.invoices.order_recs):
             #TODO: Have button fill in data from last order, i.e. quantity, taxed.
             bw = Tk.Button(fs, text=rec.product.summary, bg=u'slate gray',
-                          font=(info.settings.font, rowsize),
-                          command=lambda i=row:match_value(i))
+                          font=font, command=lambda i=row:match_value(i))
             bw.grid(row=row+10, column=0, sticky=Tk.W+Tk.E)
             info.invoices.buttons.append(bw)
 
-            ew = Tk.Entry(fs, textvariable=info.invoices.entry_amt[row], font=(info.settings.font, rowsize), width=8, justify=Tk.CENTER)
+            ew = Tk.Entry(fs, textvariable=info.invoices.entry_amt[row], font=font, width=8, justify=Tk.CENTER)
             ew.grid(row=row+10,column=1)
             ew.config(selectbackground=u'LightSkyBlue1', selectforeground=u'black')
             info.invoices.entryWs.append(ew)
             info.invoices.entry_amt[row].trace("w", lambda *args:activate())
 
-            lw = Tk.Label(fs, font=(info.settings.font, rowsize), text=u'( ${} / ${} )'.format(rec.totalcharge-info.invoices.total_invoiced[row],rec.totalcharge), justify=Tk.CENTER)
+            text=u'{} / {} (${})'.format(rec.qty_shipped()-rec.qty_invoiced(),
+                                         rec.totalskus,
+                                         rec.totalcharge)
+            lw = Tk.Label(fs, font=font, text=text, justify=Tk.CENTER)
             lw.grid(row=row+10,column=2)#, sticky=Tk.W)
             info.invoices.totalSKUsLabel.append(lw)
 
@@ -266,24 +276,46 @@ def set_invoice_frame(frame, info):
 
             """#TODO: Show buttons for previous invoices."""
 
-            for col, pay_rec in enumerate(rec.invoices):
+            for col, inv_item in enumerate(rec.invoices):
                 bw = Tk.Button(fs, text=u'{} ${} ({}/{})'.format(
-                                    pay_rec.seller if info.incoming else pay_rec.buyer,
-                                    pay_rec.amount,
-                                    pay_rec.invoicedate.month,
-                                    pay_rec.invoicedate.day
+                                    inv_item.invoice.seller if info.incoming else inv_item.invoice.buyer,
+                                    inv_item.subtotal(),
+                                    inv_item.invoice.invoicedate.month,
+                                    inv_item.invoice.invoicedate.day
                                     ),
-                               bg=u'khaki2',font=(info.settings.font, rowsize),
+                               bg=u'khaki2',font=font,
                                command=lambda i=row, j=col:show_invoice(i,j))
                 bw.grid(row=row+10, column=3+col*2, sticky=Tk.W+Tk.E)
                 info.invoices.widgets.append(bw)
-                bx = Tk.Button(fs, text=u'X', bg=u'red', font=(info.settings.font, rowsize))
+                bx = Tk.Button(fs, text=u'X', bg=u'red', font=font)
                 bx.config(command=lambda i=row, j=col, b0=bw, b1=bx:del_invoice(i,j,b0,b1))
                 bx.grid(row=row+10, column=4+col*2, sticky=Tk.W)
                 info.invoices.widgets.append(bx)
 
         activate()
     #END: reload_invoice_frame()
+
+    def set_inv_number():
+        try:
+            if len(invoice_number_str.get()) <= 2 and u'[' not in seller_str.get():
+                code = info.invoices.codes.get(seller_str.get(), None)
+                if code != None:
+                    invoice_number_str.set(code)
+                else:
+                    query = info.dmv2.session.query(info.dmv2.Invoice) \
+                                        .filter_by(seller=seller_str.get()) \
+                                        .order_by('invoicedate')
+                    invoiceset = query.all()[::-1]
+
+                    for inv in invoiceset:
+                        if inv.invoice_no[:2].isalpha():
+                            invoice_number_str.set(inv.invoice_no[:2])
+                            key = seller_str.get()
+                            info.invoices.codes[key] = inv.invoice_no[:2]
+                            break
+        except:
+            pass
+
 
     info.listbox.rec_invoices.bind("<ButtonRelease-1>", lambda _:reload_invoice_frame())
 
@@ -294,10 +326,12 @@ def set_invoice_frame(frame, info):
     invoice_check_str = Tk.StringVar()
     invoice_truck_str = Tk.StringVar()
     seller_str = Tk.StringVar()
+    seller_str.trace('w', lambda *args:set_inv_number())
     buyer_str = Tk.StringVar()
 
 
     def submit_order():
+        #TODO: Check if invoice number already used and confirm to attach to previous
         if u'[' in seller_str.get():
             tkMessageBox.showerror(u'Multiple sellers selected.', u'Please select one supplier for this invoice.')
             return
@@ -311,34 +345,40 @@ def set_invoice_frame(frame, info):
 
                 # Create dictionary for database insert.
                 inv_dict = dict(
-                    order_id= rec.id,
+                    invoice_no= invoice_number_str.get(), #Same for all
                     seller= seller_str.get(),
                     buyer= buyer_str.get(),
 
-                    amount= int(info.invoices.entry_amt[i].get()),
 
                     invoicedate= idate, #Same for all
 
-                    invoiceID= invoice_number_str.get(), #Same for all
                     invoicenote= invoice_note_str.get(), #Same for all
 #                    truck= invoice_truck_str.get(),
                 )
+                item_dict = dict(
+                    invoice_no= invoice_number_str.get(), #Same for all
+
+                    order_id= rec.id,
+
+                    sku_qty= int(info.invoices.entry_amt[i].get()),
+                )
+
+                if len(invoice_number_str.get()) > 2:
+                    key = seller_str.get()
+                    info.invoices.codes[key]=invoice_number_str.get()[:2]
 
                 # If check number is entered then update payment fields.
                 if invoice_check_str.get():
                     inv_dict['check_no'] = invoice_check_str.get()
                     inv_dict['paid'] = True
+                    #TODO: Allow user entry of date
+                    inv_dict['paydate'] = datetime.date.today()
 
-                print inv_dict
-                info.dmv2.append_invoice(rec.id, inv_dict)
 
-                # Update delivered flag in order if necessary
-#                print info.invoices.allpaid[i].get(),
-#                delivered = info.invoices.allpaid[i].get()
-#                print delivered
-#                if delivered:
-#                    info.dmv2.update_order(rec.id, dict(delivered=True))
-#                    print 'updated'
+#                print inv_dict
+                info.dmv2.append_invoice_item(inv_dict, item_dict)
+
+
 
         if not incoming:
             show_form()
@@ -406,7 +446,7 @@ def set_invoice_frame(frame, info):
     # Refresh is called from the load company method
     #TODO: Refresh after adding a product
     info.method.reload_invoice_frame = reload_invoice_frame
-
+#    reset_order_fields()
 
 
 
@@ -417,13 +457,19 @@ def set_invoice_frame(frame, info):
 #    frameIn2.pack(side=Tk.TOP, fill=Tk.BOTH)
     frameIn.pack(fill=Tk.BOTH)
 
-def display_invoice_for_edit(info, inv_id):
-    if inv_id in [None,u'None',u'']:
-        tkMessageBox.showerror(u'Bad invoice number',u'Please edit the invoice number and try again.')
-        return
-    invoiceset = info.dmv2.get_entire_invoice(inv_id)
-    print inv_id, repr(invoiceset)
-    orderset = [info.dmv2.get_order(inv.order_id) for inv in invoiceset]
+
+def display_invoice_for_edit(info, inv_item):
+    invoice = inv_item.invoice
+    inv_no = inv_item.invoice_no
+    query_id = inv_item.id
+    if inv_no in [None,u'None',u'']:
+        tkMessageBox.showerror(u'Bad invoice number',u'Invoice number not entered.\nShowing single record invoice...')
+        inv_no = u'NOT ENTERED'
+        invoiceset = [inv_item]
+    else:
+        invoiceset = invoice.items
+#    print repr(inv_no), repr(invoiceset)
+    orderset = [inv.order for inv in invoiceset]
 
     try:
         if info.invoiceWin.state() == 'normal':
@@ -435,7 +481,7 @@ def display_invoice_for_edit(info, inv_id):
 
 
     info.invoiceWin = Tk.Toplevel(width=700)
-    info.invoiceWin.title(u"Invoice: {}".format(inv_id))
+    info.invoiceWin.title(u"Invoice: {}".format(inv_no))
 
 
 
@@ -443,26 +489,30 @@ def display_invoice_for_edit(info, inv_id):
 
     def submit_changes(info):
         #Check field entries
-        new_prod = dict()
+        updates = dict(
+            paid= allpaid.get(),
+        )
+        if allpaid.get() and not isinstance(invoice.paydate,datetime.date):
+            updates.update(paydate= datetime.date.today())
+        if check_no.get():
+            updates.update(check_no= check_no.get())
+            if not allpaid.get():
+                confirmed = tkMessageBox.askyesno(u'Mismatch error',u'You checked "not paid" but entered a check number...\nContinue with submission?')
+                if not confirmed:
+                    info.invoiceWin.focus_set()
+                    return False
 
-#        if not new_prod['inventory_name'] or not new_prod['UM'] or not new_prod['SKU']:
-#            return
-#
-#        try:
-#            float(new_prod['units'])
-#        except:
-#            return
-#
-#
-#        info.invoiceWin.destroy()
-#        try:
-#            del productSVar['MPN']
-#        except:
-#            pass
-#        info.dmv2.session.query(info.dmv2.Product).filter(info.dmv2.Product.MPN==pID).update(new_prod)
-#        info.dmv2.session.commit()
-#        if refresh_products_list:
-#            refresh_products_list()
+        info.invoiceWin.destroy()
+
+        info.dmv2.session.query(info.dmv2.Invoice).filter_by(invoice_no=inv_no).update(updates)
+        info.dmv2.session.commit()
+
+        info.method.reload_orders(info)
+        info.method.refresh_listboxes(info)
+        for index in info.invoices.redo_indices:
+            info.listbox.rec_invoices.selection_set(index)
+        info.invoices.qty_invoiced = [rec.qty_invoiced() for rec in info.invoices.order_recs]
+
 
 
 
@@ -473,13 +523,13 @@ def display_invoice_for_edit(info, inv_id):
     )
 
 
-    branch = info.dmv2.get_branch(orderset[0].buyer)
+    branch = info.dmv2.get_branch(invoice.buyer)
 
 
     #TODO: Auto-fill the first two letters from previous invoice
 #    fapiao = u'發票號碼'.format(u'')
 #    invoiceID_str = Tk.StringVar()
-    Tk.Label(info.invoiceWin, text=u'發票號碼: {}'.format(u' '.join(inv_id)), **cell_config).grid(row=0,column=0, columnspan=2, sticky=Tk.W+Tk.E)
+    Tk.Label(info.invoiceWin, text=u'發票號碼: {}'.format(u' '.join(inv_no)), **cell_config).grid(row=0,column=0, columnspan=2, sticky=Tk.W+Tk.E)
 #    Tk.Label(info.invoiceWin, text=).grid(row=1,column=0, columnspan=2, sticky=Tk.W+Tk.E)
 
     cell_config.update(anchor=Tk.W)
@@ -490,7 +540,7 @@ def display_invoice_for_edit(info, inv_id):
     tongyi = u'統一編號: {}'.format(u' '.join(branch.tax_id))
     Tk.Label(info.invoiceWin, text=tongyi, **cell_config).grid(row=3,column=0, columnspan=2, sticky=Tk.W+Tk.E)
 
-    riqi = u'中 華 民 國 103年 {0.month}月 {0.day}日'.format(invoiceset[0].invoicedate)
+    riqi = u'中 華 民 國 103年 {0.month}月 {0.day}日'.format(invoice.invoicedate)
     Tk.Label(info.invoiceWin, text=riqi, **cell_config).grid(row=3,column=2, columnspan=2, sticky=Tk.W+Tk.E)
 
 #    huodan = u'貨單編號: {}'.format(ship_id)
@@ -506,58 +556,73 @@ def display_invoice_for_edit(info, inv_id):
         Tk.Label(info.invoiceWin, text=each, **cell_config).grid(row=9,column=i, sticky=Tk.W+Tk.E)
 
     Tk.Label(info.invoiceWin, text=u'銷售額合計', **cell_config).grid(row=50,column=1, columnspan=2, sticky=Tk.W+Tk.E)
+    Tk.Label(info.invoiceWin, text=u'統一發票專用章', **cell_config).grid(row=50,column=4, columnspan=2, sticky=Tk.W+Tk.E)
     Tk.Label(info.invoiceWin, text=u'營  業  稅', **cell_config).grid(row=51,column=1, columnspan=2, sticky=Tk.W+Tk.E)
     Tk.Label(info.invoiceWin, text=u'總      計', **cell_config).grid(row=52,column=1, columnspan=2, sticky=Tk.W+Tk.E)
 
 
+    mani_font = (info.settings.font, "15")
     cell_config = dict(
         relief= Tk.SUNKEN,
-        font= (info.settings.font, "15", u'bold'),
+        font= mani_font+(u'bold',),
         bg= u'wheat'
     )
+    query_config = dict(
+        relief= Tk.SUNKEN,
+        font= mani_font+(u'bold',),
+        bg= u'yellow'
+    )
     for row, (inv, order) in enumerate(zip(invoiceset, orderset)):
+        config = query_config if inv.id == query_id else cell_config
 #        print shipment
 #        print '  ', order
-        pinming = u' {} '.format(order.product.product_label if order.product.product_label else order.product.inventory_name)
-        guige = u' ({} {} / {}) '.format(order.product.units, order.product.UM, order.product.SKU)
+        pinming = u' {} '.format(inv.order.product.product_label if inv.order.product.product_label else order.product.inventory_name)
+        guige = u' ({} {} / {}) '.format(inv.order.product.units, inv.order.product.UM, inv.order.product.SKU)
 #        jianshu = u'  {} {}  '.format(inv.sku_qty, order.product.UM if order.product.SKU == u'槽車' else order.product.SKU)
-        by_unit = order.product.unitpriced
-        qty = 0
-        try:
-            qty = int(order.totalskus * (inv.amount / order.totalcharge))
-        except:
-            print order.totalskus , '* (', inv.amount, '/', order.totalcharge
-        if by_unit:
-            qty *= order.product.units
-        meas = order.product.UM if by_unit else order.product.SKU
+        by_unit = inv.order.product.unitpriced
+#        qty = inv.sku_qty
+#        try:
+#            qty = int(order.totalskus * (inv.amount() / order.totalcharge))
+#        except:
+#            print order.totalskus , '* (', inv.amount(), '/', order.totalcharge
+#        if by_unit:
+#            qty *= order.product.units
+        priced_qty = (inv.sku_qty * inv.order.product.units) if by_unit else inv.sku_qty
+        meas = inv.order.product.UM if by_unit else inv.order.product.SKU
         if meas == u'槽車':
-            meas = order.product.UM
-        if int(order.price * qty) != int(inv.amount * 100.0/105.0):
-            tkMessageBox.showwarning(u'Calculation mismatch error',u'{} != {} ({})\nPlease verify totals by hand!'.format(int(order.price * qty), int(inv.amount * 100.0/105.0), inv.amount * 100.0/105.0))
+            meas = inv.order.product.UM
+#        if int(order.price * qty) != int(inv.amount() * 100.0/105.0):
+#            tkMessageBox.showwarning(u'Calculation mismatch error',u'{} != {} ({})\nPlease verify totals by hand!'.format(int(order.price * qty), int(inv.amount * 100.0/105.0), inv.amount * 100.0/105.0))
 #        print int(order.price * qty), '==?', int(inv.amount * 100.0/105.0), '(', inv.amount * 100.0/105.0, ')'
-        shuliang = u'  {} {}  '.format(qty, meas)
-        danjia = u'  $ {}  '.format(order.price)
-        jin_e = u'  $ {}  '.format(int(order.price * qty))
+        shuliang = u'  {} {}  '.format(priced_qty, meas)
+        danjia = u'  $ {}  '.format(inv.order.price)
+        jin_e = u'  $ {}  '.format(inv.subtotal())
 #        this_units = u'  {} {}  '.format(order.product.units * inv.sku_qty, order.product.UM)
-        Tk.Label(info.invoiceWin, text=pinming + guige, **cell_config).grid(row=10+row,column=0, sticky=Tk.W+Tk.E)
-#        Tk.Label(info.invoiceWin, text=guige, **cell_config).grid(row=10+row,column=1, sticky=Tk.W+Tk.E)
-        Tk.Label(info.invoiceWin, text=shuliang, **cell_config).grid(row=10+row,column=1, sticky=Tk.W+Tk.E)
-        Tk.Label(info.invoiceWin, text=danjia, **cell_config).grid(row=10+row,column=2, sticky=Tk.W+Tk.E)
+        Tk.Label(info.invoiceWin, text=pinming + guige, **config).grid(row=10+row,column=0, sticky=Tk.W+Tk.E)
+#        Tk.Label(info.invoiceWin, text=guige, **config).grid(row=10+row,column=1, sticky=Tk.W+Tk.E)
+        Tk.Label(info.invoiceWin, text=shuliang, **config).grid(row=10+row,column=1, sticky=Tk.W+Tk.E)
+        Tk.Label(info.invoiceWin, text=danjia, **config).grid(row=10+row,column=2, sticky=Tk.W+Tk.E)
 #        Tk.Label(info.invoiceWin, bg=u'gray30', fg=u'gray70', text=u'  {}  '.format(order.product.SKUlong)).grid(row=10+row,column=4, sticky=Tk.W+Tk.E)
-        Tk.Label(info.invoiceWin, text=jin_e, **cell_config).grid(row=10+row,column=3, sticky=Tk.W+Tk.E)
+        Tk.Label(info.invoiceWin, text=jin_e, **config).grid(row=10+row,column=3, sticky=Tk.W+Tk.E)
 
     heji = Tk.StringVar()
     Tk.Label(info.invoiceWin, textvariable=heji, **cell_config).grid(row=50,column=3, sticky=Tk.W+Tk.E)
-    heji.set(u'  $ {}  '.format(sum([int(inv.amount*100/105.0) for inv in invoiceset])))
+    heji.set(u'  $ {}  '.format(sum([inv.subtotal() for inv in invoiceset])))
 
+    bigtext_config = dict(cell_config)
+    bigtext_config.update(font=(info.settings.font, "30"))
+    sellertxt = Tk.StringVar()
+    Tk.Label(info.invoiceWin, textvariable=sellertxt, **bigtext_config).grid(row=51,column=4, rowspan=2, sticky=Tk.W+Tk.E+Tk.N+Tk.S)
+    sellertxt.set(u'  {{ {} }}  '.format(orderset[0].seller))
+
+    #Tax and Total after tax based on subtotal of all products. NOT taxed individually, which may give a different total.
     yingshui = Tk.StringVar()
     Tk.Label(info.invoiceWin, textvariable=yingshui, **cell_config).grid(row=51,column=3, sticky=Tk.W+Tk.E)
-    tax_amt = int(sum([int(inv.amount*100/105.0) for inv in invoiceset]) * (0.05 if orderset[0].applytax else 0.0))
-    yingshui.set(u'  $ {}  '.format(tax_amt))
+    yingshui.set(u'  $ {}  '.format(int(round(sum([inv.subtotal() for inv in invoiceset]) * (0.05 if inv_item.order.applytax else 0.0)))))
 
     zongji = Tk.StringVar()
     Tk.Label(info.invoiceWin, textvariable=zongji, **cell_config).grid(row=52,column=3, sticky=Tk.W+Tk.E)
-    zongji.set(u'  $ {}  '.format(sum([int(inv.amount) for inv in invoiceset])))
+    zongji.set(u'  $ {}  '.format(int(round(sum([inv.subtotal() for inv in invoiceset]) * (1.05 if inv_item.order.applytax else 1.0)))))
 
 
 
@@ -567,12 +632,13 @@ def display_invoice_for_edit(info, inv_id):
             .grid(row=100,column=1)
     Tk.Radiobutton(info.invoiceWin, text="No", variable=allpaid, value=False)\
             .grid(row=100,column=2)
-    allpaid.set(False)
+    allpaid.set(invoice.paid)
 
     check_no = Tk.StringVar()
     ttk.Label(info.invoiceWin, text=u'Check number').grid(row=101,column=0)
     ttk.Entry(info.invoiceWin, textvariable=check_no, width=20).grid(row=101,column=1,columnspan=2)
+    if invoice.check_no not in [None, u'None']:
+        check_no.set(invoice.check_no)
 
-
-    Tk.Button(info.invoiceWin, text="Submit Update", command=lambda:submit_changes(info)).grid(row=103,column=0,columnspan=3)
+    Tk.Button(info.invoiceWin, text="Update & Close Window", command=lambda:submit_changes(info)).grid(row=103,column=0,columnspan=3)
 

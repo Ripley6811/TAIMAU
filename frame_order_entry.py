@@ -34,6 +34,7 @@ def make_order_entry_frame(frame, info):
     # Add right-click popup menu
     orderPopMenu = Tk.Menu(frameIn, tearoff=0)
     def refresh_listbox_item(id, index):
+        #TODO: Refactor this and the list refresh in main to be consistent.
         recvals = info.dmv2.get_order(id)
         info.listbox.rec_orders.delete(index)
         info.listbox.rec_manifest.delete(index)
@@ -47,7 +48,7 @@ def make_order_entry_frame(frame, info):
 
         no_ship_color = dict(bg=u'lavender', selectbackground=u'dark orchid')
         shipped_color = dict(bg=u'DarkOliveGreen1', selectbackground=u'firebrick1')
-        insert_colors =  shipped_color if info.order_records[index].delivered else no_ship_color
+        insert_colors =  shipped_color if info.order_records[index].all_shipped() else no_ship_color
         info.listbox.rec_manifest.itemconfig(index, insert_colors)
         info.listbox.rec_orders.itemconfig(index, insert_colors)
 
@@ -291,7 +292,7 @@ def make_order_entry_frame(frame, info):
                     totalunits= float(float(info.order.qty[i].get())*info.order.products[i].units),
                     subtotal= float(info.order.subtotal[i].get().strip('$').replace(',','')),
                     applytax= bool(info.order.applytax.get()), #Same for all
-                    totalcharge= int(float(info.order.total[i].get().strip('$').replace(',',''))),
+#                    totalcharge= int(float(info.order.total[i].get().strip('$').replace(',',''))),
 
                     orderdate= odate, #Same for all
                     duedate= ddate, #Same for all
@@ -299,7 +300,7 @@ def make_order_entry_frame(frame, info):
                     orderID= order_number_str.get(), #Same for all
                     ordernote= order_note_str.get(), #Same for all
 
-                    delivered= order_delivered_bool.get(),  #Same for all
+#                    delivered= order_delivered_bool.get(),  #Same for all
                     is_sale= not incoming, #Same for all
                 )
                 print rec_dict
