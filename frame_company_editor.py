@@ -27,13 +27,27 @@ def get_company_editor(frame,dm):
 
 
     def refresh_companies_list():
-        info.listbox.IDs = []
-        queryresult = info.dmv2.session.query(info.dmv2.Branch).order_by(info.dmv2.Branch.group).all()
-        clist = [u"{}: {} - {}".format(c.group,c.name,c.fullname) for c in queryresult]
-        info.listbox.IDs = [c.name for c in queryresult]
+        bgcolors = ['cyan','#9CF','#FCA','#AFC','#CCF']
+        idColors = dict()
 
-        info.listbox.companies.delete(0,Tk.END)
-        info.listbox.companies.insert(0,*clist)
+        info.listbox.IDs = list()
+
+        queryresult = info.dmv2.session.query(info.dmv2.Branch).order_by(info.dmv2.Branch.group).all()
+#        clist = [u"{}: {} - {}".format(c.group,c.name,c.fullname) for c in queryresult]
+
+        for i, co in enumerate(queryresult):
+            liststr = u"{}  ({})  {}".format(co.name,co.group,co.fullname)
+            info.listbox.IDs.append(co.name)
+            info.listbox.companies.delete(i,Tk.END)
+            info.listbox.companies.insert(i,liststr)
+
+            if co.group not in idColors:
+                #Assign a background color
+                idColors[co.group] = bgcolors[0]
+                #Rotate color list
+                bgcolors = bgcolors[1:] + bgcolors[:1]
+
+            info.listbox.companies.itemconfig(i, bg=idColors[co.group], selectbackground=idColors[co.group])
 
 
     def refresh_products_list():
@@ -57,12 +71,13 @@ def get_company_editor(frame,dm):
         info.listbox.products2.insert(0,*clist)
 
 
-    def discontinueSelection():
+    def toggle_discontinued():
         activeP_ID = info.listbox.products.index(Tk.ACTIVE)
         id = info.listbox.pIDs[activeP_ID]
-        query = info.dmv2.session.query(info.dmv2.Product).filter(info.dmv2.Product.MPN==id)
-        q_ret = query.one()
-        query.update({'discontinued': False if q_ret.discontinued else True})
+        print 'id', repr(id)
+        thisprod = info.dmv2.session.query(info.dmv2.Product).get(id)
+        updates = {'discontinued': False if thisprod.discontinued else True, 'summary':thisprod.summary}
+        info.dmv2.session.query(info.dmv2.Product).filter_by(MPN=id).update(updates)
         info.dmv2.session.commit()
 
         refresh_products_list()
@@ -161,7 +176,7 @@ def get_company_editor(frame,dm):
     scrollbar = Tk.Scrollbar(frameLeft, orient=Tk.VERTICAL)
     info.listbox.companies = Tk.Listbox(frameLeft, selectmode=Tk.BROWSE,
                          yscrollcommand=scrollbar.set,
-                         font=("PMingLiU", "14"), width=30, exportselection=0)
+                         font=("PMingLiU", "14"), width=40, exportselection=0)
 
     info.listbox.companies.bind("<Double-Button-1>", lambda _:showrecord())
     scrollbar.config(command=info.listbox.companies.yview)
@@ -186,7 +201,7 @@ def get_company_editor(frame,dm):
     ttk.Label(frameSubRB, text=u"\u2697=買的材料  $=賣的產品  \u26D4=停用").pack(side=Tk.BOTTOM)
     Tk.Button(frameSubRB, text="New Product", command=lambda:addProductWindow(info, refresh_products_list)).pack(side=Tk.LEFT)
     Tk.Button(frameSubRB, text="Edit Product", command=lambda:editProductWindow(info, refresh_products_list)).pack(side=Tk.LEFT)
-    Tk.Button(frameSubRB, text="Discontinue", command=discontinueSelection).pack(side=Tk.LEFT)
+    Tk.Button(frameSubRB, text="Discontinue", command=toggle_discontinued).pack(side=Tk.LEFT)
     frameSubRB.pack(side=Tk.BOTTOM)
     scrollbar = Tk.Scrollbar(frameRBottom, orient=Tk.VERTICAL)
     scrollbar.pack(side=Tk.RIGHT, fill=Tk.Y)
@@ -257,7 +272,9 @@ def addProductWindow(info, refresh_products_list=None, group=None):
             while(newMPN in used_ids):
                 newMPN = u'{}-{}'.format(new_prod['group'],randint(100,999))
             new_prod['MPN'] = newMPN
-        print repr(new_prod['MPN'])
+#        print repr(new_prod['MPN'])
+        if not new_prod['curr_price']:
+            del new_prod['curr_price']
 
         is_confirmed = tkMessageBox.askokcancel('Confirm Data',
             u'Add {} to items {}.'.format(new_prod['inventory_name'],

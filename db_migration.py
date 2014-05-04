@@ -72,7 +72,7 @@ for rec in DM.session.query(DM.tables.Product):
 
     del rec['_sa_instance_state']
     newsession.add(Product(**rec))
-#newsession.commit()
+newsession.commit()
 
 #for each in newsession.query(Product).all():
 #    print each
@@ -153,7 +153,7 @@ def enter_record(rec):
         #Create a random and unique invoice number if none exists.
         tmp_inv_no = str(random.randint(10000,99999)) + u'random' + str(random.randint(10000,99999))
     tmp_inv_no = tmp_inv_no.strip()
-    print repr(tmp_inv_no)
+#    print repr(tmp_inv_no)
 
     invoice_rec = dict(
         invoice_no= tmp_inv_no,
@@ -185,6 +185,8 @@ def enter_record(rec):
             if isinstance(rec[key], unicode):
                 del rec[key]
 
+
+
     if not isinstance(shiprec['shipmentdate'], datetime.date):
         rec['orderdate'] = rec['duedate']
     newsession.add(Order(**rec))
@@ -204,11 +206,33 @@ def enter_record(rec):
 for rec in DM.session.query(DM.tables.Purchases):
     rec = dict(rec.__dict__)
     rec['is_sale'] = False
+
+    #Add new CoGroup if not found
+    grouprec = newsession.query(CoGroup).get(rec['parentcompany'])
+    if not grouprec:
+        print '  NOT FOUND!', repr(rec['parentcompany']), repr(rec['sellercompany'])
+        print newsession.query(Branch).get(rec['sellercompany'])
+        newsession.add(CoGroup(name=rec['parentcompany']))
+        newsession.add(Branch(group=rec['parentcompany'], name=rec['sellercompany']))
+
     enter_record(rec)
 
 for rec in DM.session.query(DM.tables.Sales):
     rec = dict(rec.__dict__)
     rec['is_sale'] = True
+
+    #Add new CoGroup if not found
+    grouprec = newsession.query(CoGroup).get(rec['parentcompany'])
+    if not grouprec:
+        print '  NOT FOUND!', repr(rec['parentcompany']), repr(rec['buyingcompany'])
+        found = newsession.query(Branch).get(rec['buyingcompany'])
+        if found:
+            print 'found branch', repr(found.group), repr(found.name)
+            rec['parentcompany'] = found.group
+        else:
+            newsession.add(CoGroup(name=rec['parentcompany']))
+            newsession.add(Branch(group=rec['parentcompany'], name=rec['buyingcompany']))
+
     enter_record(rec)
 
 newsession.commit()

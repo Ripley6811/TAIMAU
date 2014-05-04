@@ -82,27 +82,37 @@ class Order(Base):
 
     def qty_shipped(self):
         '''By number of SKUs'''
+        if len(self.shipments) == 0:
+            return 0
         return sum([srec.sku_qty if isinstance(srec.sku_qty,int) else 0 for srec in self.shipments])
 
     def all_shipped(self):
         '''By number of SKUs'''
+        if len(self.shipments) == 0:
+            return False
         return self.totalskus == self.qty_shipped()
 
     def qty_invoiced(self):
         '''By number of SKUs'''
+        if len(self.invoices) == 0:
+            return 0
         return sum([prec.sku_qty if isinstance(prec.sku_qty,int) else 0 for prec in self.invoices])
 
     def all_invoiced(self):
         '''By number of SKUs'''
+        if len(self.invoices) == 0:
+            return False
         return self.totalskus == self.qty_invoiced()
 
     def total_paid(self):
+        if len(self.invoices) == 0:
+            return 0
         return sum([prec.sku_qty if prec.paid else 0 for prec in self.invoices])
 
     def all_paid(self):
-        if len(self.invoices) > 0:
-            return not (False in [prec.invoice.paid for prec in self.invoices])
-        return False
+        if len(self.invoices) == 0:
+            return False
+        return not (False in [prec.invoice.paid for prec in self.invoices])
 
 
     def __repr__(self):
@@ -162,7 +172,7 @@ class Invoice(Base): # Keep track of invoices/payments for one order
         return int(round(self.subtotal() * 0.05))
 
     def taxtotal(self):
-        total = self.subtotal() + (self.tax() if self.order.applytax else 0)
+        total = self.subtotal() + (self.tax() if self.items[0].order.applytax else 0)
         return int(round(total))
 
     def __repr__(self):
@@ -267,6 +277,7 @@ def summarize(context):
     '''
     outname = context.current_parameters['product_label']
     units = context.current_parameters['units']
+    units = int(units) if int(units)==units else units #Truncate if mantissa is zero
     UM = context.current_parameters['UM']
     SKU = context.current_parameters['SKU']
     if not outname:
@@ -274,7 +285,7 @@ def summarize(context):
     if SKU == u'槽車':
         return u"{0} (槽車)".format(outname)
     else:
-        units = int(units) if units.is_integer() else units
+        units = int(units) if int(units)==units else units
         uf = u"{0} ({1} {2} {3})"
         return uf.format(outname,units,UM,SKU)
 

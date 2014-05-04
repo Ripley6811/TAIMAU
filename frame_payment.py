@@ -338,6 +338,11 @@ def set_invoice_frame(frame, info):
         if u'[' in buyer_str.get():
             tkMessageBox.showerror(u'Multiple buyers selected.', u'Please select one client for this invoice.')
             return
+
+        if len(invoice_number_str.get()) <=2:
+            okay = tkMessageBox.askokcancel(u'Invoice number warning', u'You did not enter an invoice number (發票號碼).\Submit anyway?')
+            if not okay:
+                return
         for i, (include, rec) in enumerate(zip(info.invoices.activated,info.invoices.order_recs)):
             if include:
                 # SET delivery date.
@@ -576,8 +581,8 @@ def display_invoice_for_edit(info, inv_item):
         config = query_config if inv.id == query_id else cell_config
 #        print shipment
 #        print '  ', order
-        pinming = u' {} '.format(inv.order.product.product_label if inv.order.product.product_label else order.product.inventory_name)
-        guige = u' ({} {} / {}) '.format(inv.order.product.units, inv.order.product.UM, inv.order.product.SKU)
+        pinming = u' {} '.format(inv.order.product.summary)
+#        guige = u' ({} {} / {}) '.format(inv.order.product.units, inv.order.product.UM, inv.order.product.SKU)
 #        jianshu = u'  {} {}  '.format(inv.sku_qty, order.product.UM if order.product.SKU == u'槽車' else order.product.SKU)
         by_unit = inv.order.product.unitpriced
 #        qty = inv.sku_qty
@@ -588,6 +593,7 @@ def display_invoice_for_edit(info, inv_item):
 #        if by_unit:
 #            qty *= order.product.units
         priced_qty = (inv.sku_qty * inv.order.product.units) if by_unit else inv.sku_qty
+        priced_qty = int(priced_qty) if int(priced_qty) == priced_qty else priced_qty
         meas = inv.order.product.UM if by_unit else inv.order.product.SKU
         if meas == u'槽車':
             meas = inv.order.product.UM
@@ -595,10 +601,11 @@ def display_invoice_for_edit(info, inv_item):
 #            tkMessageBox.showwarning(u'Calculation mismatch error',u'{} != {} ({})\nPlease verify totals by hand!'.format(int(order.price * qty), int(inv.amount * 100.0/105.0), inv.amount * 100.0/105.0))
 #        print int(order.price * qty), '==?', int(inv.amount * 100.0/105.0), '(', inv.amount * 100.0/105.0, ')'
         shuliang = u'  {} {}  '.format(priced_qty, meas)
-        danjia = u'  $ {}  '.format(inv.order.price)
+        price = inv.order.price
+        danjia = u'  $ {}  '.format(int(price) if int(price) == price else price)
         jin_e = u'  $ {}  '.format(inv.subtotal())
 #        this_units = u'  {} {}  '.format(order.product.units * inv.sku_qty, order.product.UM)
-        Tk.Label(info.invoiceWin, text=pinming + guige, **config).grid(row=10+row,column=0, sticky=Tk.W+Tk.E)
+        Tk.Label(info.invoiceWin, text=pinming, **config).grid(row=10+row,column=0, sticky=Tk.W+Tk.E)
 #        Tk.Label(info.invoiceWin, text=guige, **config).grid(row=10+row,column=1, sticky=Tk.W+Tk.E)
         Tk.Label(info.invoiceWin, text=shuliang, **config).grid(row=10+row,column=1, sticky=Tk.W+Tk.E)
         Tk.Label(info.invoiceWin, text=danjia, **config).grid(row=10+row,column=2, sticky=Tk.W+Tk.E)

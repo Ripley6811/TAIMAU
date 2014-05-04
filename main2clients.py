@@ -8,36 +8,26 @@ description
 :REQUIRES:
     - Database using TM2014_tables_v2.py
 
-:TODO: - Create applet for updating a companies information
-    - Delete option for order records
+:TODO:
+    - Delete all attached records when order is deleted.
     - Refactor and maybe try more lambda
-    - Ensure the MPN is unique before adding.
     - Backup the order database.
-    - Add reload database option to menus (for after editing excel)
     - Add various reports
-    - Expected delivery date is first important date
-    - Add transaction entered date (so that incorrect user dates are not lost)
-    - Check that entered dates are close to current date and confirm if not
-        To prevent wrong years when only month and day is entered.
-    - Allow user to enter only month and day for dates
     - "File" add option to output database as Excel file
-    - "File" add option to replace database from Excel file (backup old database for quick reversal)
-    - Fix adding new products and make sure transactions enter correctly
     - Create an edit button that brings up a pop-up window showing old values and
         spaces for new values. Also a delete button (this way the delete is harder to get to
         and also confirm before delete)
-    - Base "Open Orders" window on the manifest and "Not Paid" window on receipt formats.
-    - "Submit" and "Clear" fields buttons or "Update" and "Cancel" buttons.
-    - Show only company names that have entries. Add "show all" button to show a complete
-        list of companies to choose from.
-    - Add top level tab for 'pending' to see all undelivered and unpaid orders.
-    - Add alternate record view for orders. Show latest of each product.
+    - Add top level tab for 'pending' to see all orders that need attention.
 
     ## Things to fix or do after refactoring ##
-    - Change manifest to create partial orders and work with Shipment db table.
-    - Change invoice page to manage partial payments and pre-payments with Payment db table.
-    - Rewrite order placement tab to be simpler and use the correct data fields.
     - Right click option on company to open Company/Branch information.
+
+    ## Urgent
+    - Reports and ways for double-checking entries
+
+    ## Later
+    - individualize the order listings and make them multiple listboxes.
+    - improve order editing window and add validation (or restrict options).
 
 
 :AUTHOR: Jay W Johnson
@@ -74,7 +64,10 @@ import frame_company_editor
 import frame_payment
 import frame_order_entry
 import frame_manifest
+import frame_pending
 import db_manager_v2 as dmv2
+import xlwt
+
 
 #===============================================================================
 # METHODS
@@ -123,7 +116,8 @@ class Taimau_app(Tk.Tk):
 
         # REPORT MENU OPTIONS
         reportmenu = Tk.Menu(menubar, tearoff=0)
-        reportmenu.add_command(label="Report1", command=None, state=Tk.DISABLED)
+        reportmenu.add_command(label="Save client shipments to Excel file (6 months)", command=sales_shipments_to_excel)
+        reportmenu.add_command(label="Save incoming shipments to Excel file (6 months)", command=purchases_shipments_to_excel)
         reportmenu.add_command(label="Report2", command=None, state=Tk.DISABLED)
         reportmenu.add_command(label="Report3", command=None, state=Tk.DISABLED)
         reportmenu.add_command(label="Report4", command=None, state=Tk.DISABLED)
@@ -150,7 +144,7 @@ class Taimau_app(Tk.Tk):
 
         # SET AND SHOW MENU
         self.config(menu=menubar)
-        self.geometry('1020x720')
+        self.geometry('1200x740')
 
 
 #        mainframe = ttk.Frame(self)
@@ -181,9 +175,11 @@ class Taimau_app(Tk.Tk):
 
         frame = ttk.Frame(nb)
 
-#        get_purchases_frame(frame)
+        pending_refresh = frame_pending.get_pending_frame(frame, dmv2)
 
-        nb.add(frame, text='Pending', underline=2, state=Tk.DISABLED)
+        nb.add(frame, text='Pending', underline=2)
+
+#        nb.bind("<Button-1>", lambda _:pending_refresh())
 
 #        nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
 
@@ -223,6 +219,86 @@ class Taimau_app(Tk.Tk):
         self.quit()
 
 
+def sales_shipments_to_excel():
+    save_shipments_to_excel(is_sale=True)
+
+def purchases_shipments_to_excel():
+    save_shipments_to_excel(is_sale=False)
+
+def save_shipments_to_excel(is_sale=None):
+    '''Save all activity in the last half-year to Excel. Order by delivery date.'''
+    wb = xlwt.Workbook()
+    cogroups = dmv2.cogroups()
+    cutoff = datetime.date.today() - datetime.timedelta(180)
+
+    style = xlwt.XFStyle()
+    style.num_format_str = '"$"#,##0.00_);("$"#,##'
+
+    for group in cogroups:
+        query = dmv2.session.query(dmv2.Order).filter_by(group=group.name, is_sale=is_sale)
+        query = query.filter(dmv2.Order.duedate > cutoff)
+        orders = query.order_by(dmv2.Order.duedate).all()
+
+        if orders:
+            #Make sheet with cogroup name
+            ws = wb.add_sheet(group.name)
+        else:
+            continue
+        row = 0
+        for order in orders:
+            for shipment in order.shipments:
+                ws.write(row, 0, str(shipment.shipmentdate))
+                ws.write(row, 1, unicode(order.seller))
+                ws.write(row, 2, '->')
+                ws.write(row, 3, unicode(order.buyer))
+                ws.write(row, 4, unicode(order.product.summary))
+                qty = shipment.sku_qty
+                sku = order.product.SKU
+                if order.product.unitpriced or sku == u'槽車':
+                    qty *= order.product.units
+                    sku = order.product.UM
+                ws.write(row, 5, qty)
+                ws.write(row, 6, sku)
+                ws.write(row, 7, order.price, style)
+                ws.write(row, 8, u'\u214C {}'.format(sku))
+                ws.write(row, 9, qty*order.price, style)
+                row += 1
+            ws.col(0).width = 3000
+            ws.col(2).width = 700
+            ws.col(4).width = 8000
+            ws.col(7).width = 3000
+            ws.col(9).width = 3000
+
+
+    filename = 'OUTPUT.xls'
+    if is_sale:
+        filename = 'SALES_ACTIVITY.xls'
+    else:
+        filename = 'PURCHASES_ACTIVITY.xls'
+
+    base = os.getcwd()
+    path = os.path.join(base,filename)
+    wb.save(path)
+    os.system("start "+ path)
+
+
+
+def save_co_text():
+    '''Saves orders from one company to a text file.'''
+    tmpwin = Tk.Toplevel(width=700)
+    tmpwin.title(u"Pick company group to export")
+
+    cogroups = dmv2.cogroups()
+
+    co_lb = Tk.Listbox(tmpwin, width=30, height=30)
+    co_lb.grid()
+
+    for co in cogroups:
+        br_list = [br.name for br in co.branches]
+        co_lb.insert(0, u'{0.name} ({1})'.format(co, u', '.join(br_list)))
+
+
+
 def get_purchases_frame(frame):
     # Create info container to manage all Purchases data
     info = Info()
@@ -233,7 +309,7 @@ def get_purchases_frame(frame):
     info.button = Info()
     info.method = Info()
     info.settings = Info()
-    info.settings.font = "PMingLiU"
+    info.settings.font = "NSimSun"#"PMingLiU"
 #    info.dm = dm
     info.dmv2 = dmv2
     info.method.reload_orders = reload_orders
@@ -299,44 +375,45 @@ def format_order_summary(record):
         prodtmp = prodtmp[1]
     tmp = u''
 #            tmp += u'\u25C6' if val['delivered'] else u'\u25C7'
+    #Shipping icon and manifest number if available
     tmp += u'\u26DF' if record.all_shipped() else u'\u25C7'
+    man_no_txt = record.shipments[0].shipmentID[:11].strip() if record.shipments else u''
+    tmp += u"{0:<12}".format(man_no_txt)
+
+    #Invoice paid icon and invoice number if available
     tmp += u'\u265B' if record.all_paid() else u'\u25C7'
+    inv_no_txt = record.invoices[0].invoice_no[:11].strip() if record.invoices else u''
+    tmp += u"{0:<12}".format(inv_no_txt if u'random' not in inv_no_txt else u'')
+
 #    print type(record), record.__dict__.keys()
     if record.all_shipped():
         try:
-            tmp += (u"到期:{:>2}月{:>2}日{}年".format(
-                record.shipments[0].shipmentdate.month,
-                record.shipments[0].shipmentdate.day,
-                record.shipments[0].shipmentdate.year).replace(' ','  ')
+            tmp += (u"到期:{0.month:>2}月{0.day:>2}日".format(
+                record.shipments[0].shipmentdate)#.replace(' ','  ')
             )
         except:
-            tmp += u"到期:  月  日   年".replace(' ','  ')
+            tmp += u"到期:  月  日   年"#.replace(' ','  ')
     else:
         try:
-            tmp += (u"預期:{:>2}月{:>2}日{}年".format(
-                record.duedate.month,
-                record.duedate.day,
-                record.duedate.year).replace(' ','  ')
+            tmp += (u"預期:{0.month:>2}月{0.day:>2}日".format(
+                record.duedate)#.replace(' ','  ')
             )
         except:
             tmp += u'  None Entered'
     try:
-        tmp += u" \u273F  {2}  \u273F {0}\u2794{1} \u273F  {3} ({4} {5}) \u25CA ${7}".format(
+        tmp += u" \u273F {0}\u2794{1} \u273F {3:>5}{5} {2:<15} @ ${7} \u214C {8}".format(
             record.seller,#.split()[0],
             record.buyer,#.split()[0],
             prodtmp,
             record.totalskus,
             int(record.totalunits),
-            record.product.UM,
+            record.product.UM if record.product.SKU == u'槽車' else record.product.SKU,
             int(record.totalunits),
             int(record.price) if float(record.price).is_integer() else record.price,
-            record.MPN)
+            record.product.UM if record.product.unitpriced else record.product.SKU)
     except:
         pass
-    if record.shipments:
-        tmp += u"  貨單編號:{0}".format(
-            record.shipments[0].shipmentID
-        )
+
     return tmp
 
 
@@ -431,7 +508,7 @@ def get_sales_frame(frame):
     info.button = Info()
     info.method = Info()
     info.settings = Info()
-    info.settings.font = "PMingLiU"
+    info.settings.font = "NSimSun"#"PMingLiU"
 #    info.dm = dm
     info.dmv2 = dmv2
     info.method.refresh_listboxes = refresh_listboxes
@@ -488,6 +565,8 @@ def get_sales_frame(frame):
     frame_payment.set_invoice_frame(frame, info)
 
     nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
+
+
 
 
 def hello():

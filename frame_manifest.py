@@ -258,6 +258,11 @@ def create_manifest_frame(frame, info):
 
     def submit_order():
         #TODO: Check if manifest number already used and confirm to attach to previous
+        if shipment_number_str.get() in [u'', None, u'None']:
+            okay = tkMessageBox.askokcancel(u'Manifest number warning', u'You did not enter a manifest number (書或編號).\Submit anyway?')
+            if not okay:
+                return
+
         for i, (include, rec) in enumerate(zip(info.manifest.activated,info.manifest.order_recs)):
             if include:
                 # SET delivery date.
@@ -493,8 +498,14 @@ def display_manifest_for_edit(info, shipment):
 #        print '  ', order
         pinming = u' {} '.format(order.product.product_label if order.product.product_label else order.product.inventory_name)
         guige = u'  {} {} / {}  '.format(order.product.units, order.product.UM, order.product.SKU)
-        jianshu = u'  {} {}  '.format(shipment.sku_qty, order.product.UM if order.product.SKU == u'槽車' else order.product.SKU)
-        this_units = u'  {} {}  '.format(order.product.units * shipment.sku_qty, order.product.UM)
+        if order.product.SKU == u'槽車':
+            guige = u'  槽車  '
+        qty = shipment.sku_qty
+        qty = int(qty) if int(qty)==qty else qty
+        jianshu = u'  {} {}  '.format(qty, order.product.UM if order.product.SKU == u'槽車' else order.product.SKU)
+        units = order.product.units * shipment.sku_qty
+        units = int(units) if int(units)==units else units
+        this_units = u'  {} {}  '.format(units, order.product.UM)
         Tk.Label(info.shipmentWin, text=pinming, **config).grid(row=10+row,column=0, sticky=Tk.W+Tk.E)
         Tk.Label(info.shipmentWin, text=guige, **config).grid(row=10+row,column=1, sticky=Tk.W+Tk.E)
         Tk.Label(info.shipmentWin, text=jianshu, **config).grid(row=10+row,column=2, sticky=Tk.W+Tk.E)

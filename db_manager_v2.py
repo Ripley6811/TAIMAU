@@ -38,7 +38,7 @@ from sqlalchemy import or_, and_
 #===============================================================================
 # METHODS
 #===============================================================================
-dbname = r'TM2014_v2 - Copy.db'
+dbname = r'TM2014_v2.db'
 with open('settings.txt', 'r') as rfile:
     base = rfile.readline()
     dbname = os.path.join(base, dbname)
