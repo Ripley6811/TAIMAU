@@ -76,9 +76,9 @@ class Order(Base):
     #delivered = Col(Bool, nullable=False, default=False) # True = delivered, False = not delivered yet
     #paid = Col(Bool, nullable=False, default=False) # True = paid, False = not paid yet
 
-    shipments = rel('Shipment')
-    invoices = rel('InvoiceItem')
-    product = rel('Product')#, backref=backref('order', lazy='dynamic')) #TODO: backref not working
+    shipments = rel('Shipment', backref='order')
+    invoices = rel('InvoiceItem', backref='order')
+    product = rel('Product')
 
     def qty_shipped(self):
         '''By number of SKUs'''
@@ -125,7 +125,7 @@ class Shipment(Base): # Keep track of shipments/SKUs for one order
     __tablename__ = 'shipment'
     id = Col(Int, primary_key=True)
     order_id = Col(Int, ForeignKey('order.id'), nullable=False)
-    order = rel('Order')
+    #order = rel('Order')
 
     sku_qty = Col(Int, nullable=False) # Deduct from total SKUs due
 
@@ -162,7 +162,7 @@ class Invoice(Base): # Keep track of invoices/payments for one order
     note = Col(Utf) # Extra note field if needed
     checked = Col(Bool, nullable=False, default=False) # Extra boolean for matching/verifying
 
-    items = rel('InvoiceItem')
+    items = rel('InvoiceItem', backref='invoice')
 
     def subtotal(self):
         return sum([item.subtotal() for item in self.items])
@@ -185,10 +185,10 @@ class InvoiceItem(Base): # Keep track of invoices/payments for one order
     id = Col(Int, primary_key=True)
 
     invoice_no = Col(Utf, ForeignKey('invoice.invoice_no'), nullable=False)
-    invoice = rel('Invoice')
+    #invoice = rel('Invoice')
 
     order_id = Col(Int, ForeignKey('order.id'), nullable=False)
-    order = rel('Order') #Get product information through related order
+    #order = rel('Order') #Get product information through related order
 
     sku_qty = Col(Int, nullable=False)
 
@@ -312,7 +312,7 @@ class Product(Base): # Information for each unique product (including packaging)
 
     summary = Col(Utf, default=summarize, onupdate=summarize)
 
-    stock = rel('Stock')
+    stock = rel('Stock', backref='product')
     orders = rel('Order', primaryjoin="Product.MPN==Order.MPN")
 
     def __repr__(self):

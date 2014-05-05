@@ -117,6 +117,26 @@ def make_order_entry_frame(frame, info):
             info.order.recent_orders.append(
                         info.dmv2.get_product_recent_order(rec.MPN, update=True))
 
+
+        if info.incoming:
+            seller_opts = [b.name for b in info.dmv2.branches(info.curr_company)]
+            buyer_opts = [u'台茂',u'富茂',u'永茂']
+        else:
+            seller_opts = [u'台茂',u'富茂',u'永茂']
+            buyer_opts = [b.name for b in info.dmv2.branches(info.curr_company)]
+        smenu = info.order.seller_menu['menu']
+        smenu.delete(0,Tk.END)
+        bmenu = info.order.buyer_menu['menu']
+        bmenu.delete(0,Tk.END)
+        [smenu.add_command(label=choice, command=Tk._setit(seller_str, choice)) for choice in seller_opts]
+        [bmenu.add_command(label=choice, command=Tk._setit(buyer_str, choice)) for choice in buyer_opts]
+        try:
+            seller_str.set(seller_opts[0])
+            buyer_str.set(buyer_opts[0])
+        except IndexError:
+            tkMessageBox.showwarning(u'Company not in catalog.', u'Add this company to the catalog\nto avoid future errors.')
+
+
         # Fill-in or clear out the desired quantity for a product.
         def match_qty(row):
             if info.order.recent_orders[row] != None:
@@ -170,6 +190,14 @@ def make_order_entry_frame(frame, info):
                 subtax = st*0.05 if info.order.applytax.get() else 0.0
                 tax_amt.set(locale.currency( subtax, grouping=True ))
                 totalcharge.set(locale.currency( st+subtax, grouping=True ))
+
+
+                for i in range(plength):
+                    if info.order.activated[i] == True and info.order.recent_orders[i] != None:
+                        seller_str.set(info.order.recent_orders[i].seller)
+                        buyer_str.set(info.order.recent_orders[i].buyer)
+                        break
+
             except:
                 info.order.products = info.dmv2.products(info)
                 for rec in info.order.products:
@@ -254,6 +282,8 @@ def make_order_entry_frame(frame, info):
     order_delivered_bool = Tk.BooleanVar()
     order_note_str = Tk.StringVar()
     order_note_label = Tk.StringVar()
+    shipment_driver_str = Tk.StringVar()
+    shipment_truck_str = Tk.StringVar()
     Tk.Label(fp, text=u'Subtotal').grid(row=100, column=5)
     Tk.Label(fp, textvariable=subtotal).grid(row=101, column=5)
     Tk.Button(fp, text=u'Tax (?)', command=toggle_tax_all, bg='violet').grid(row=100, column=6)
@@ -262,10 +292,20 @@ def make_order_entry_frame(frame, info):
     Tk.Label(fp, textvariable=totalcharge).grid(row=101, column=7)
 
     def submit_order():
+        session = info.dmv2.session
+        Order = info.dmv2.Order
+        Shipment = info.dmv2.Shipment
+        if u'[' in seller_str.get() or not seller_str.get():
+            tkMessageBox.showerror(u'Seller selection error.', u'Please select one supplier for this invoice.')
+            return
+        if u'[' in buyer_str.get() or not buyer_str.get():
+            tkMessageBox.showerror(u'Buyer selection error.', u'Please select one client for this invoice.')
+            return
+
         for i, item in enumerate(info.order.activated):
             if item:
                 print i, "\b  submit order for", repr(info.order.products[i].MPN)
-
+                product = info.order.products[i]
                 # SET order and due dates. Order date cannot follow a due date.
                 odate = datetime.date.today()
                 ddate = datetime.date(*map(int,order_duedate_str.get().split('-')))
@@ -273,26 +313,25 @@ def make_order_entry_frame(frame, info):
                     odate = ddate
 
                 # SET seller and buyer information.
-                seller = u'台茂' if not incoming else info.curr_company
-                buyer = u'台茂' if incoming else info.curr_company
-                if info.order.recent_orders[i] != None:
-                    seller= info.order.recent_orders[i].seller
-                    buyer= info.order.recent_orders[i].buyer
+                seller= seller_str.get()
+                buyer= buyer_str.get()
 
                 # Create dictionary for database insert.
-                rec_dict = dict(
+                qty = int(info.order.qty[i].get())
+                price = float(info.order.price[i].get())
+                x = qty * price * (product.units if product.unitpriced else 1.0)
+                order = Order(
                     group= info.curr_company, #Same for all
                     seller= seller,
                     buyer= buyer,
 
-                    MPN= info.order.products[i].MPN,
+                    MPN= product.MPN,
 
                     price= float(info.order.price[i].get()),
                     totalskus= int(info.order.qty[i].get()),
-                    totalunits= float(float(info.order.qty[i].get())*info.order.products[i].units),
-                    subtotal= float(info.order.subtotal[i].get().strip('$').replace(',','')),
+                    totalunits= float(float(info.order.qty[i].get())*product.units),
+                    subtotal= float(x),
                     applytax= bool(info.order.applytax.get()), #Same for all
-#                    totalcharge= int(float(info.order.total[i].get().strip('$').replace(',',''))),
 
                     orderdate= odate, #Same for all
                     duedate= ddate, #Same for all
@@ -303,32 +342,31 @@ def make_order_entry_frame(frame, info):
 #                    delivered= order_delivered_bool.get(),  #Same for all
                     is_sale= not incoming, #Same for all
                 )
-                print rec_dict
-
-                # Create dictionary for full shipment if delivered already.
-                delivered = order_delivered_bool.get()
-                ship_dict = dict(
-                    sku_qty= rec_dict['totalskus'],
-
-                    shipmentdate= rec_dict['duedate'],
-                    shipmentID= rec_dict.pop('orderID') if delivered else u'',
-                    shipmentnote= rec_dict.pop('ordernote') if delivered else u'',
-                )
-
-                # Insert new record into the database.
-                info.dmv2.insert_order(rec_dict)
 
                 # Insert shipment record if marked as delivered.
+                delivered = order_delivered_bool.get()
                 if delivered == True:
-                    print "Add a completed shipment record to order #",
-                    print repr(info.curr_company)
-                    rec = info.dmv2.get_last_order(info.curr_company)
-                    for key, value in rec_dict.iteritems():
-                        print key, repr(value), repr(rec.__dict__[key]),
-                    if False not in [rec.__dict__[key]==value for key, value in rec_dict.iteritems()]:
-                        info.dmv2.append_shipment(rec.id, ship_dict)
-                    else:
-                        tkMessageBox.showerror(u'Record match not found!', u'Record match not found! Cannot append shipment record.')
+                    print "Add a completed shipment record to order #"
+
+                    ship_dict = dict(
+                        sku_qty= order.totalskus,
+
+                        shipmentdate= order.duedate,
+                        shipmentID= order.orderID,
+                        shipmentnote= order.ordernote,
+                        driver= shipment_driver_str.get(),
+                        truck= shipment_truck_str.get(),
+                    )
+                    shipment = Shipment(**ship_dict)
+                    shipment.order = order
+                    order.orderID = u''
+                    order.ordernote = u''
+#                    session.add(shipment) #Not necessary when backref exists.
+
+                # Insert new record into the database.
+                session.add(order)
+                session.commit()
+
 
         info.method.reload_orders(info)
         info.method.refresh_listboxes(info)
@@ -342,7 +380,7 @@ def make_order_entry_frame(frame, info):
             entry.set(u'')
         order_number_str.set(u'')
         order_note_str.set(u'')
-        order_delivered_bool.set(False)
+#        order_delivered_bool.set(False)
         order_duedate_str.set(datetime.date.today())
 
     def date_picker():
@@ -353,11 +391,27 @@ def make_order_entry_frame(frame, info):
             order_date_label.set(u'Delivery Date')
             order_note_label.set(u'Delivery Note')
             order_number_label.set(u'Delivery Number')
+            driver_field.config(state=Tk.NORMAL)
+            truck_field.config(state=Tk.NORMAL)
         else:
             order_date_label.set(u'Due Date')
             order_note_label.set(u'Order Note')
             order_number_label.set(u'Order Number')
+            driver_field.config(state=Tk.DISABLED)
+            truck_field.config(state=Tk.DISABLED)
 
+
+    seller_str = Tk.StringVar()
+    buyer_str = Tk.StringVar()
+
+
+    Tk.Label(fp, text=u'>>>>>>>>>>').grid(row=100, column=3, columnspan=2)
+    info.order.seller_menu = Tk.OptionMenu(fp, seller_str, None)
+    info.order.seller_menu.grid(row=100, column=3)
+    info.order.seller_menu.config(bg=u'DarkOrchid4', fg=u'white')
+    info.order.buyer_menu = Tk.OptionMenu(fp, buyer_str, u'台茂')
+    info.order.buyer_menu.grid(row=100, column=4)
+    info.order.buyer_menu.config(bg=u'DarkOrchid4', fg=u'white')
 
     Tk.Label(fp, textvariable=order_date_label).grid(row=100, column=0)
     order_date_label.set(u'Due Date')
@@ -374,6 +428,14 @@ def make_order_entry_frame(frame, info):
     b.grid(row=101, column=3, columnspan=2)
     b.config(bg='SpringGreen2')
     order_duedate_str.set(datetime.date.today())
+
+    Tk.Label(fp, text=u'Driver 司機').grid(row=103, column=0)
+    driver_field = Tk.Entry(fp, textvariable=shipment_driver_str, state=Tk.DISABLED)
+    driver_field.grid(row=103, column=1, columnspan=2, sticky=Tk.W+Tk.E)
+
+    Tk.Label(fp, text=u'Truck 槽車號碼').grid(row=103, column=3)
+    truck_field = Tk.Entry(fp, textvariable=shipment_truck_str, state=Tk.DISABLED)
+    truck_field.grid(row=103, column=4, columnspan=2, sticky=Tk.W+Tk.E)
 
     separator = Tk.Frame(fp, height=6, borderwidth=6, relief=Tk.SUNKEN)
     separator.grid(row=1000, column=0, columnspan=10, sticky=Tk.W+Tk.E, padx=5, pady=5)
