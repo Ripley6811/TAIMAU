@@ -355,7 +355,7 @@ def editProductWindow(info, refresh_products_list=None, group=None):
             return
 
         try:
-            float(new_prod['units'])
+            new_prod['units'] = float(new_prod['units'])
         except:
             return
 
@@ -399,5 +399,7 @@ def editProductWindow(info, refresh_products_list=None, group=None):
 #        productSVar['discontinued'].set(False)
     print prodvars
     for field in fields:
+        if field[0] in [u'summary']:
+            continue
         print field[0]
         productSVar[field[0]].set(prodvars[field[0]])

@@ -276,7 +276,7 @@ def summarize(context):
     '''Short text of product key values.
     '''
     outname = context.current_parameters['product_label']
-    units = context.current_parameters['units']
+    units = float(context.current_parameters['units'])
     units = int(units) if int(units)==units else units #Truncate if mantissa is zero
     UM = context.current_parameters['UM']
     SKU = context.current_parameters['SKU']
