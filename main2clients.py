@@ -125,15 +125,16 @@ class Taimau_app(Tk.Tk):
 
 
 #        # FONT MENU OPTIONS
-#        def setFont():
-#            self.option_add("*Font", fontsize.get())
-#        fontmenu = Tk.Menu(menubar, tearoff=0)
-#        fontsize = Tk.StringVar()
-#        fontmenu.add_radiobutton(label="12", command=setFont, value='Verdana 12')
-#        fontmenu.add_radiobutton(label="13", command=setFont, value='Verdana 13')
-#        fontmenu.add_radiobutton(label="14", command=setFont, value='Verdana 14')
-#        menubar.add_cascade(label=u"Font", menu=fontmenu)
-#        fontsize.set('Verdana 12')
+        def setFont():
+            self.option_add("*Font", fontsize.get())
+        fontmenu = Tk.Menu(menubar, tearoff=0)
+        fontsize = Tk.StringVar()
+        fontmenu.add_radiobutton(label=u'Verdana 12', variable=fontsize, command=setFont, value=u'Verdana 12')
+        fontmenu.add_radiobutton(label=u'PMingLiU 13', variable=fontsize, command=setFont, value=u'PMingLiU 13')
+        fontmenu.add_radiobutton(label=u'NSimSun 13', variable=fontsize, command=setFont, value=u'NSimSun 13')
+        menubar.add_cascade(label=u"Font", menu=fontmenu)
+#        fontsize.set(u'NSimSun 13')
+#        setFont()
 
 
         # HELP MENU OPTIONS
@@ -147,54 +148,35 @@ class Taimau_app(Tk.Tk):
         self.geometry('1200x740')
 
 
-#        mainframe = ttk.Frame(self)
-
+        # SET MAIN NOTEBOOK
         nb = ttk.Notebook()
 
         #TODO:---------- Add Purchases frame
 
         frame = ttk.Frame(nb)
-
         get_purchases_frame(frame)
-
         nb.add(frame, text='Purchases', underline=0)
-
-#        nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
 
         #---------- Add Sales frame
 
         frame = ttk.Frame(nb)
-
         get_sales_frame(frame)
-
         nb.add(frame, text='Sales', underline=0)
-
-#        nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
 
         #TODO:---------- Add Pending info frame
 
         frame = ttk.Frame(nb)
-
-        pending_refresh = frame_pending.get_pending_frame(frame, dmv2)
-
+        frame_pending.get_pending_frame(frame, dmv2)
         nb.add(frame, text='Pending', underline=2)
-
-#        nb.bind("<Button-1>", lambda _:pending_refresh())
-
-#        nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
 
         #TODO:---------- Add Company data edit frame
 
         frame = ttk.Frame(nb)
-
         frame_company_editor.get_company_editor(frame, dmv2)
-
         nb.add(frame, text='Catalog', underline=0)
 
-#        nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
-
-
         #TODO:---------- Add Warehouse management frame
+
 #        frame = ttk.Frame(nb)
 #
 #        txt = Tk.Text(frame, wrap=Tk.WORD, width=40, height=10)
@@ -209,9 +191,6 @@ class Taimau_app(Tk.Tk):
         #--------- Set arrangement of notebook frames
 
         nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
-
-
-
 
 
 
@@ -315,11 +294,19 @@ def get_purchases_frame(frame):
     info.method.reload_orders = reload_orders
     info.method.refresh_listboxes = refresh_listboxes
     info.method.format_order_summary = format_order_summary
-    info.method.convert_date = convert_date
+#    info.method.convert_date = convert_date
 
 
     #-------
     frame1 = ttk.Frame(frame)
+    def showall_companies():
+        info.listbox.companies.delete(0,Tk.END)
+        for i,each in enumerate(dmv2.cogroup_names()):
+            info.listbox.companies.insert(i,each)
+            info.listbox.companies.itemconfig(i, bg=u'white', selectbackground=u'SlateBlue4')
+
+    b = Tk.Button(frame1, text="Show All", command=lambda:showall_companies())
+    b.pack(side=Tk.BOTTOM, fill=Tk.X)
     scrollbar = Tk.Scrollbar(frame1, orient=Tk.VERTICAL)
     info.listbox.companies = Tk.Listbox(frame1, selectmode=Tk.BROWSE,
                          yscrollcommand=scrollbar.set,
@@ -513,20 +500,20 @@ def get_sales_frame(frame):
     info.dmv2 = dmv2
     info.method.refresh_listboxes = refresh_listboxes
     info.method.format_order_summary = format_order_summary
-    info.method.convert_date = convert_date
+#    info.method.convert_date = convert_date
     info.method.reload_orders = reload_orders
 
 
     #-------
     frame1 = ttk.Frame(frame)
-#    def showall_companies():
-#        info.listbox.companies.delete(0,Tk.END)
-#        for i,each in enumerate(dmv2.cogroup_names()):
-#            info.listbox.companies.insert(i,each)
-#            info.listbox.companies.itemconfig(i, bg=u'SkyBlue2', selectbackground=u'SlateBlue4')
+    def showall_companies():
+        info.listbox.companies.delete(0,Tk.END)
+        for i,each in enumerate(dmv2.cogroup_names()):
+            info.listbox.companies.insert(i,each)
+            info.listbox.companies.itemconfig(i, bg=u'white', selectbackground=u'SlateBlue4')
 
-#    b = Tk.Button(frame1, text="Show All", command=lambda:showall_companies())
-#    b.pack(side=Tk.BOTTOM, fill=Tk.X)
+    b = Tk.Button(frame1, text="Show All", command=lambda:showall_companies())
+    b.pack(side=Tk.BOTTOM, fill=Tk.X)
     scrollbar = Tk.Scrollbar(frame1, orient=Tk.VERTICAL)
     info.listbox.companies = Tk.Listbox(frame1, selectmode=Tk.BROWSE,
                          yscrollcommand=scrollbar.set,
@@ -577,31 +564,31 @@ def about():
     tkMessageBox.showinfo('About', '台茂化工\nWritten by Jay W Johnson\n2014')
 
 
-def convert_date(adate):
-    '''Converts a formatted string to a datetime.date object or from date to str
-    depending on input.'''
-    if isinstance(adate,str):
-
-        strdate = adate
-        # Try different separators until one produces a list of len 2 or 3
-        for sep in [None,'/','-','\\']:
-            if 2 <= len(adate.split(sep)) <=3:
-                strdate = adate.split(sep)
-                break
-        try:
-            # If len three, assume date is given last, if two then use closest year
-            if len(strdate) == 3:
-                return datetime.date(int(strdate[2]),int(strdate[0]),int(strdate[1]))
-            else:
-                dnow = datetime.date.today()
-                dates = [datetime.date(dnow.year+x,int(strdate[0]),int(strdate[1])) for x in [-1,0,1]]
-                diff = [abs((x-dnow).days) for x in dates]
-                return dates[diff.index(min(diff))]
-        except:
-            pass
-    elif isinstance(adate,datetime.date):
-        #Convert datetime object to string
-        return u'{}/{}/{}'.format(adate.month,adate.day,adate.year)
+#def convert_date(adate):
+#    '''Converts a formatted string to a datetime.date object or from date to str
+#    depending on input.'''
+#    if isinstance(adate,str):
+#
+#        strdate = adate
+#        # Try different separators until one produces a list of len 2 or 3
+#        for sep in [None,'/','-','\\']:
+#            if 2 <= len(adate.split(sep)) <=3:
+#                strdate = adate.split(sep)
+#                break
+#        try:
+#            # If len three, assume date is given last, if two then use closest year
+#            if len(strdate) == 3:
+#                return datetime.date(int(strdate[2]),int(strdate[0]),int(strdate[1]))
+#            else:
+#                dnow = datetime.date.today()
+#                dates = [datetime.date(dnow.year+x,int(strdate[0]),int(strdate[1])) for x in [-1,0,1]]
+#                diff = [abs((x-dnow).days) for x in dates]
+#                return dates[diff.index(min(diff))]
+#        except:
+#            pass
+#    elif isinstance(adate,datetime.date):
+#        #Convert datetime object to string
+#        return u'{}/{}/{}'.format(adate.month,adate.day,adate.year)
 
 
 if __name__ == '__main__':

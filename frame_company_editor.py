@@ -292,7 +292,7 @@ def addProductWindow(info, refresh_products_list=None, group=None):
 
 
     for i, field in enumerate(fields):
-        if field[0] in [u'MPN',u'group',u'discontinued']:
+        if field[0] in [u'MPN',u'group',u'discontinued',u'summary']:
             continue
         ttk.Label(info.prodWin, text=field[0]).grid(row=i,column=0)
         if field[1].startswith("Bool"):
@@ -378,7 +378,7 @@ def editProductWindow(info, refresh_products_list=None, group=None):
 
 
     for i, field in enumerate(fields):
-        if field[0] in [u'MPN',u'group']:
+        if field[0] in [u'MPN',u'group',u'summary']:
             continue
         ttk.Label(info.prodWin, text=field[0]).grid(row=i,column=0)
         if field[1].startswith("Bool"):

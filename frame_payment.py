@@ -416,9 +416,11 @@ def set_invoice_frame(frame, info):
 
     info.invoices.seller_menu = Tk.OptionMenu(fi, seller_str, None)
     info.invoices.seller_menu.grid(row=90, column=0)
+    info.invoices.seller_menu.config(bg=u'DarkOrchid4', fg=u'white')
     Tk.Label(fi, text=u'> \u26DF > \u26DF > \u26DF >').grid(row=90, column=1)
     info.invoices.buyer_menu = Tk.OptionMenu(fi, buyer_str, u'台茂')
     info.invoices.buyer_menu.grid(row=90, column=2)
+    info.invoices.buyer_menu.config(bg=u'DarkOrchid4', fg=u'white')
 
     Tk.Label(fi, text=u'Invoice Date 發票日期').grid(row=100, column=0)
     Tk.Button(fi, textvariable=invoice_date_str, command=date_picker, bg='DarkGoldenrod1').grid(row=100, column=1)

@@ -38,7 +38,7 @@ def get_pending_frame(frame, dmv2):
         deliver_in_listbox.delete(0, 'end')
         invoice_in_listbox.delete(0, 'end')
         pay_in_listbox.delete(0, 'end')
-        for order in orders:
+        for order in orders[::-1]:
             if not order.all_shipped():
                 txt = u'{0.month:>2}月{0.day:>2}日 : {1} : {2}{3} {4}'
                 txt = txt.format(order.duedate,
@@ -64,7 +64,7 @@ def get_pending_frame(frame, dmv2):
         deliver_out_listbox.delete(0, 'end')
         invoice_out_listbox.delete(0, 'end')
         pay_out_listbox.delete(0, 'end')
-        for order in orders:
+        for order in orders[::-1]:
             if not order.all_shipped():
                 txt = u'{0.month:>2}月{0.day:>2}日 : {1} : {2}{3} {4}'
                 txt = txt.format(order.duedate,
@@ -84,7 +84,7 @@ def get_pending_frame(frame, dmv2):
                     txt += u'   \u26DF {}'.format(order.shipments[0].shipmentID)
                 invoice_out_listbox.insert(0, txt)
 
-        for inv in inv_query.all():
+        for inv in inv_query.all()[::-1]:
             if inv.items[0].order.is_sale:
                 txt = u'{0.month:>2}月{0.day:>2}日 : {1} : {2} : ${3}'
                 txt = txt.format(inv.invoicedate,
@@ -135,10 +135,10 @@ def get_pending_frame(frame, dmv2):
     frame = ttk.Frame(nb)
     nb.add(frame, text=u'要付錢', padding=2)
 
-    Tk.Label(frame, text=u'進貨: 需要發票', bg=u'wheat').pack(side="top", fill='x')
+    Tk.Label(frame, text=u'進貨: 需要付錢的發票', bg=u'wheat').pack(side="top", fill='x')
     pay_in_listbox = Tk.Listbox(frame, height=10)
     pay_in_listbox.pack(side="top",fill="both", expand=True)
-    Tk.Label(frame, text=u'出貨: 需要發票', bg=u'wheat').pack(side="top", fill='x')
+    Tk.Label(frame, text=u'出貨: 需要付錢的發票', bg=u'wheat').pack(side="top", fill='x')
     pay_out_listbox = Tk.Listbox(frame, height=10)
     pay_out_listbox.pack(side="top",fill="both", expand=True)
 
