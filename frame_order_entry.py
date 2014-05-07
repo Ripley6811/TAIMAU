@@ -230,14 +230,14 @@ def make_order_entry_frame(frame, info):
         for row, product in enumerate(info.order.products):
             #TODO: Have button fill in data from last order, i.e. quantity, taxed.
             bw = Tk.Button(fp, text=product.summary, bg='grey',
-#                          command=None)
-                          command=lambda i=row:match_qty(i))
+                           command=lambda i=row:match_qty(i))
             bw.grid(row=row, column=0, sticky=Tk.W+Tk.E)
             info.order.buttons.append(bw)
 
             ew = Tk.Entry(fp, textvariable=info.order.qty[row], width=8, justify=Tk.CENTER)
             ew.grid(row=row,column=1)
             ew.config(selectbackground=u'LightSkyBlue1', selectforeground=u'black')
+            ew.config(highlightcolor=u'cyan', highlightthickness=4)
             info.order.entryWs.append(ew)
             info.order.qty[row].trace("w", lambda *args:activate())
 
@@ -381,7 +381,7 @@ def make_order_entry_frame(frame, info):
         order_number_str.set(u'')
         order_note_str.set(u'')
 #        order_delivered_bool.set(False)
-        order_duedate_str.set(datetime.date.today())
+#        order_duedate_str.set(datetime.date.today())
 
     def date_picker():
         dp.Calendar(fp, textvariable=order_duedate_str).grid(row=100, column=0, rowspan=3,columnspan=3, sticky=Tk.W+Tk.E)

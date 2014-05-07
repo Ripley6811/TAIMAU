@@ -150,13 +150,15 @@ def set_invoice_frame(frame, info):
         def del_invoice(i, j, b0, b1):
             print 'delete', (i,j)
             r = info.invoices.order_recs[i]
+            count = len(r.invoices[j].invoice.items)
             p = r.invoices[j]
             delete = tkMessageBox.askokcancel(u'Delete invoice?',
                                      u'Confirm to delete invoice and all items?:\n{} on {}'
                                      .format(p.invoice.invoice_no,p.invoice.invoicedate))
             if delete:
-                info.dmv2.session.query(info.dmv2.InvoiceItem).filter_by(invoice_no=p.invoice_no).delete()
-                info.dmv2.session.query(info.dmv2.Invoice).filter_by(invoice_no=p.invoice_no).delete()
+                info.dmv2.session.query(info.dmv2.InvoiceItem).filter_by(id=p.id).delete()
+                if count == 1:
+                    info.dmv2.session.query(info.dmv2.Invoice).filter_by(invoice_no=p.invoice_no).delete()
                 info.dmv2.session.commit()
 #                info.dmv2.update_order(r.id, dict(delivered=False))
                 b0.config(bg=u'red', state=Tk.DISABLED)
@@ -277,8 +279,9 @@ def set_invoice_frame(frame, info):
             """#TODO: Show buttons for previous invoices."""
 
             for col, inv_item in enumerate(rec.invoices):
-                bw = Tk.Button(fs, text=u'{} ${} ({}/{})'.format(
-                                    inv_item.invoice.seller if info.incoming else inv_item.invoice.buyer,
+                bw = Tk.Button(fs, text=u'{}>{} ${} ({}/{})'.format(
+                                    inv_item.invoice.seller,
+                                    inv_item.invoice.buyer,
                                     inv_item.subtotal(),
                                     inv_item.invoice.invoicedate.month,
                                     inv_item.invoice.invoicedate.day
@@ -292,12 +295,14 @@ def set_invoice_frame(frame, info):
                 bx.grid(row=row+10, column=4+col*2, sticky=Tk.W)
                 info.invoices.widgets.append(bx)
 
-        activate()
+        for row in range(plength):
+            if info.invoices.entry_amt[row].get() == u'':
+                match_value(row)
     #END: reload_invoice_frame()
 
     def set_inv_number():
         try:
-            if len(invoice_number_str.get()) <= 2 and u'[' not in seller_str.get():
+            if len(invoice_number_str.get()) <= 6 and u'[' not in seller_str.get():
                 code = info.invoices.codes.get(seller_str.get(), None)
                 if code != None:
                     invoice_number_str.set(code)
@@ -309,9 +314,9 @@ def set_invoice_frame(frame, info):
 
                     for inv in invoiceset:
                         if inv.invoice_no[:2].isalpha():
-                            invoice_number_str.set(inv.invoice_no[:2])
+                            invoice_number_str.set(inv.invoice_no[:6])
                             key = seller_str.get()
-                            info.invoices.codes[key] = inv.invoice_no[:2]
+                            info.invoices.codes[key] = inv.invoice_no[:6]
                             break
         except:
             pass
@@ -403,7 +408,8 @@ def set_invoice_frame(frame, info):
         invoice_note_str.set(u'')
         invoice_check_str.set(u'')
         invoice_truck_str.set(u'')
-        invoice_date_str.set(datetime.date.today())
+        #TODO: Make reseting the date an option in settings
+#        invoice_date_str.set(datetime.date.today())
 
     def date_picker():
         dp.Calendar(fi, textvariable=invoice_date_str).grid(row=100, column=0, rowspan=4,columnspan=3, sticky=Tk.W+Tk.E)

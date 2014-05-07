@@ -40,17 +40,19 @@ def get_pending_frame(frame, dmv2):
         pay_in_listbox.delete(0, 'end')
         for order in orders[::-1]:
             if not order.all_shipped():
-                txt = u'{0.month:>2}月{0.day:>2}日 : {1} : {2}{3} {4}'
+                txt = u'{0.month:>2}月{0.day:>2}日 : {1}|{2} : {3}{4} {5}'
                 txt = txt.format(order.duedate,
-                                 order.group,
+                                 order.seller,
+                                 order.buyer,
                                  order.totalskus-order.qty_shipped(),
                                  order.product.SKU if order.product.SKU != u'槽車' else order.product.UM,
                                  order.product.summary)
                 deliver_in_listbox.insert(0, txt)
             if not order.all_invoiced():
-                txt = u'{0.month:>2}月{0.day:>2}日 : {1} : {2}{3} {4}'
+                txt = u'{0.month:>2}月{0.day:>2}日 : {1}|{2} : {3}{4} {5}'
                 txt = txt.format(order.duedate,
-                                 order.group,
+                                 order.seller,
+                                 order.buyer,
                                  order.totalskus-order.qty_invoiced(),
                                  order.product.SKU if order.product.SKU != u'槽車' else order.product.UM,
                                  order.product.summary)
@@ -66,17 +68,19 @@ def get_pending_frame(frame, dmv2):
         pay_out_listbox.delete(0, 'end')
         for order in orders[::-1]:
             if not order.all_shipped():
-                txt = u'{0.month:>2}月{0.day:>2}日 : {1} : {2}{3} {4}'
+                txt = u'{0.month:>2}月{0.day:>2}日 : {1}|{2} : {3}{4} {5}'
                 txt = txt.format(order.duedate,
-                                 order.group,
+                                 order.seller,
+                                 order.buyer,
                                  order.totalskus-order.qty_shipped(),
                                  order.product.SKU if order.product.SKU != u'槽車' else order.product.UM,
                                  order.product.summary)
                 deliver_out_listbox.insert(0, txt)
             if not order.all_invoiced():
-                txt = u'{0.month:>2}月{0.day:>2}日 : {1} : {2}{3} {4}'
+                txt = u'{0.month:>2}月{0.day:>2}日 : {1}|{2} : {3}{4} {5}'
                 txt = txt.format(order.duedate,
-                                 order.group,
+                                 order.seller,
+                                 order.buyer,
                                  order.totalskus-order.qty_invoiced(),
                                  order.product.SKU if order.product.SKU != u'槽車' else order.product.UM,
                                  order.product.summary)
@@ -86,16 +90,18 @@ def get_pending_frame(frame, dmv2):
 
         for inv in inv_query.all()[::-1]:
             if inv.items[0].order.is_sale:
-                txt = u'{0.month:>2}月{0.day:>2}日 : {1} : {2} : ${3}'
+                txt = u'{0.month:>2}月{0.day:>2}日 : {1}|{2} : {3} : ${4}'
                 txt = txt.format(inv.invoicedate,
-                                 inv.items[0].order.group,
+                                 inv.items[0].order.seller,
+                                 inv.items[0].order.buyer,
                                  inv.invoice_no,
                                  inv.taxtotal())
                 pay_out_listbox.insert(0, txt)
             else:
-                txt = u'{0.month:>2}月{0.day:>2}日 : {1} : {2} : ${3}'
+                txt = u'{0.month:>2}月{0.day:>2}日 : {1}|{2} : {3} : ${4}'
                 txt = txt.format(inv.invoicedate,
-                                 inv.items[0].order.group,
+                                 inv.items[0].order.seller,
+                                 inv.items[0].order.buyer,
                                  inv.invoice_no,
                                  inv.taxtotal())
                 pay_in_listbox.insert(0, txt)
@@ -107,7 +113,7 @@ def get_pending_frame(frame, dmv2):
     nb = ttk.Notebook(frame)
 
     refresh_button = Tk.Button(frame, text=u'Refresh Data', command=refresh)
-    refresh_button.config(bg=u'gold')
+    refresh_button.config(bg=u'gold', activebackground=u'black', activeforeground=u'white')
     refresh_button.pack(side="top", fill='x')
 
     # Order entry tab

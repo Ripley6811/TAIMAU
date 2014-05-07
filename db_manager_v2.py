@@ -83,7 +83,7 @@ def update_order(id, ins_dict):
 def delete_order(del_id):
     session.query(Order).filter(Order.id==del_id).delete()
     session.query(Shipment).filter(Shipment.order_id==del_id).delete()
-    session.query(Invoice).filter(Invoice.order_id==del_id).delete()
+    session.query(InvoiceItem).filter(InvoiceItem.order_id==del_id).delete()
     session.commit()
     return True
 

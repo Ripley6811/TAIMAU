@@ -41,7 +41,7 @@ class Calendar(ttk.Frame):
         fwday = kw.pop('firstweekday', calendar.SUNDAY)
         year = kw.pop('year', self.datetime.today().year)
         month = kw.pop('month', self.datetime.today().month)
-        day = kw.pop('month', self.datetime.today().day)
+#        day = kw.pop('month', self.datetime.today().day)
         locale = kw.pop('locale', None)
         sel_bg = kw.pop('selectbackground', '#ecffc4')
         sel_fg = kw.pop('selectforeground', '#05640e')
@@ -49,7 +49,7 @@ class Calendar(ttk.Frame):
         self.strvar = kw.pop('textvariable', None)
         self.highlightnow = kw.pop('highlightnow', True)
 
-        self._date = self.datetime(year, month, day)
+        self._date = self.datetime(year, month, 1)
         self._selection = None # no date selected
 
         ttk.Frame.__init__(self, master, **kw)

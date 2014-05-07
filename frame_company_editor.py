@@ -48,6 +48,7 @@ def get_company_editor(frame,dm):
                 bgcolors = bgcolors[1:] + bgcolors[:1]
 
             info.listbox.companies.itemconfig(i, bg=idColors[co.group], selectbackground=idColors[co.group])
+            info.listbox.companies.itemconfig(i, fg=u'gray30', selectforeground=u'black')
 
 
     def refresh_products_list():

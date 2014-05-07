@@ -364,8 +364,8 @@ def format_order_summary(record):
 #            tmp += u'\u25C6' if val['delivered'] else u'\u25C7'
     #Shipping icon and manifest number if available
     tmp += u'\u26DF' if record.all_shipped() else u'\u25C7'
-    man_no_txt = record.shipments[0].shipmentID[:11].strip() if record.shipments else u''
-    tmp += u"{0:<12}".format(man_no_txt)
+    man_no_txt = record.shipments[0].shipmentID[:11].strip()[-7:] if record.shipments else u''
+    tmp += u"{0:<8}".format(man_no_txt)
 
     #Invoice paid icon and invoice number if available
     tmp += u'\u265B' if record.all_paid() else u'\u25C7'
@@ -388,7 +388,7 @@ def format_order_summary(record):
         except:
             tmp += u'  None Entered'
     try:
-        tmp += u" \u273F {0}\u2794{1} \u273F {3:>5}{5} {2:<15} @ ${7} \u214C {8}".format(
+        tmp += u" \u273F {0}\u2794{1} \u273F {3:>5}{5} {2:<14} @ ${7} \u214C {8}".format(
             record.seller,#.split()[0],
             record.buyer,#.split()[0],
             prodtmp,

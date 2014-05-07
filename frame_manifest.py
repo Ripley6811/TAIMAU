@@ -179,6 +179,7 @@ def create_manifest_frame(frame, info):
                         info.manifest.allshipped[row].set(True)
                     else:
                         info.manifest.allshipped[row].set(False)
+
             except:
                 pass
 
@@ -243,7 +244,9 @@ def create_manifest_frame(frame, info):
                 bx.grid(row=row+10, column=4+col*2, sticky=Tk.W)
                 info.manifest.widgets.append(bx)
 
-        activate()
+        for row in range(plength):
+            if info.manifest.qty[row].get() == u'':
+                match_qty(row)
     #END: reload_shipment_frame()
 
     info.listbox.rec_manifest.bind("<ButtonRelease-1>", lambda _:reload_shipment_frame())
@@ -310,7 +313,7 @@ def create_manifest_frame(frame, info):
         shipment_note_str.set(u'')
         shipment_driver_str.set(u'')
         shipment_truck_str.set(u'')
-        shipment_date_str.set(datetime.date.today())
+#        shipment_date_str.set(datetime.date.today())
 
     def date_picker():
         dp.Calendar(fi, textvariable=shipment_date_str).grid(row=100, column=0, rowspan=4,columnspan=3, sticky=Tk.W+Tk.E)
