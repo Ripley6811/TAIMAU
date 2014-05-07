@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import datetime
 
 Int = sqla.Integer
-Str = sqla.String
+Str = sqla.String  #TODO: Can probably delete this line
 Utf = sqla.Unicode
 Float = sqla.Float
 Col = sqla.Column

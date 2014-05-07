@@ -4,6 +4,8 @@ import Tkinter as Tk
 import ttk
 import datetime
 
+import tablet_data_import as tablet
+
 
 #===============================================================================
 # METHODS
@@ -153,6 +155,120 @@ def get_pending_frame(frame, dmv2):
     refresh()
     return refresh
 
+
+def get_tablet_frame(frame, dmv2):
+
+
+    q = tablet.session.query(tablet.AppRecord)
+    q = q.filter_by(recordtype=u'incoming')
+    q = q.order_by('date')
+#    q = q.limit(100)
+    in_query = q
+
+    q = tablet.session.query(tablet.AppRecord)
+    q = q.filter_by(recordtype=u'production')
+    q = q.order_by('date')
+#    q = q.limit(100)
+    pro_query = q
+
+    q = tablet.session.query(tablet.AppRecord)
+    q = q.filter_by(recordtype=u'outgoing')
+    q = q.order_by('date')
+#    q = q.limit(100)
+    out_query = q
+
+    def refresh():
+        tablet.pull_app_data()
+
+        in_recs = in_query.all()
+        incoming_listbox.delete(0, 'end')
+        pro_recs = pro_query.all()
+        production_listbox.delete(0, 'end')
+        out_recs = out_query.all()
+        outgoing_listbox.delete(0, 'end')
+
+        template = u'{0.month:>2}月{0.day:>2}日 {1.hour:>2}:{1.minute:0>2}  : {2} {3:>5}{4}   {5:<12}   : {6}'
+        for rec in in_recs:
+            txt = template.format(rec.date,
+                             rec.time if rec.time else type('',(),{'hour':0,'minute':0}),
+                             rec.lottype,
+                             rec.qty,
+                             rec.um,
+                             rec.product,
+                             rec.recordnote)
+            incoming_listbox.insert(0, txt)
+
+
+        for rec in pro_recs:
+            txt = template.format(rec.date,
+                             rec.time if rec.time else type('',(),{'hour':0,'minute':0}),
+                             rec.lottype,
+                             rec.qty,
+                             rec.um,
+                             rec.product,
+                             rec.recordnote)
+            production_listbox.insert(0, txt)
+
+
+        for rec in out_recs:
+            txt = template.format(rec.date,
+                             rec.time if rec.time else type('',(),{'hour':0,'minute':0}),
+                             rec.lottype,
+                             rec.qty,
+                             rec.um,
+                             rec.product,
+                             rec.recordnote)
+            outgoing_listbox.insert(0, txt)
+
+
+
+    #
+    #==============================================================================
+    # SET UP TABBED SECTIONS
+    #==============================================================================
+    #
+    nb = ttk.Notebook(frame)
+
+    refresh_button = Tk.Button(frame, text=u'Refresh Data', command=refresh)
+    refresh_button.config(bg=u'gold', activebackground=u'black', activeforeground=u'white')
+    refresh_button.pack(side="top", fill='x')
+
+    # Order entry tab
+    frame = ttk.Frame(nb)
+    nb.add(frame, text=u'進貨表', padding=2)
+
+#    Tk.Label(frame, text=u'進貨預期', bg=u'wheat').pack(side="top", fill='x')
+    incoming_listbox = Tk.Listbox(frame, height=10, font=("NSimSun 12"))
+    incoming_listbox.pack(side="top",fill="both", expand=True)
+#    Tk.Label(frame, text=u'出貨預期', bg=u'wheat').pack(side="top", fill='x')
+#    deliver_out_listbox = Tk.Listbox(frame, height=10)
+#    deliver_out_listbox.pack(side="top",fill="both", expand=True)
+
+    #---------------------------------------------------------
+    frame = ttk.Frame(nb)
+    nb.add(frame, text=u'生產表', padding=2)
+
+#    Tk.Label(frame, text=u'進貨: 需要發票', bg=u'wheat').pack(side="top", fill='x')
+    production_listbox = Tk.Listbox(frame, height=10, font=("NSimSun 12"))
+    production_listbox.pack(side="top",fill="both", expand=True)
+#    Tk.Label(frame, text=u'出貨: 需要發票', bg=u'wheat').pack(side="top", fill='x')
+#    invoice_out_listbox = Tk.Listbox(frame, height=10)
+#    invoice_out_listbox.pack(side="top",fill="both", expand=True)
+    #---------------------------------------------------------------
+    frame = ttk.Frame(nb)
+    nb.add(frame, text=u'出貨表', padding=2)
+
+#    Tk.Label(frame, text=u'進貨: 需要付錢的發票', bg=u'wheat').pack(side="top", fill='x')
+    outgoing_listbox = Tk.Listbox(frame, height=10, font=("NSimSun 12"))
+    outgoing_listbox.pack(side="top",fill="both", expand=True)
+#    Tk.Label(frame, text=u'出貨: 需要付錢的發票', bg=u'wheat').pack(side="top", fill='x')
+#    pay_out_listbox = Tk.Listbox(frame, height=10)
+#    pay_out_listbox.pack(side="top",fill="both", expand=True)
+
+    nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
+
+    refresh()
+    return refresh
 
 #===============================================================================
 # QUICK REFERENCE

@@ -169,6 +169,12 @@ class Taimau_app(Tk.Tk):
         frame_pending.get_pending_frame(frame, dmv2)
         nb.add(frame, text='Pending', underline=2)
 
+        #TODO:---------- Add In-Out Records info frame
+
+        frame = ttk.Frame(nb)
+        frame_pending.get_tablet_frame(frame, dmv2)
+        nb.add(frame, text='Tablet Data', underline=0)
+
         #TODO:---------- Add Company data edit frame
 
         frame = ttk.Frame(nb)
@@ -258,7 +264,7 @@ def save_shipments_to_excel(is_sale=None):
     base = os.getcwd()
     path = os.path.join(base,filename)
     wb.save(path)
-    os.system("start "+ path)
+    os.system('start "'+ base + '" ' + filename)
 
 
 

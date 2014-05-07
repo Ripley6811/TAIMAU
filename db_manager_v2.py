@@ -40,7 +40,7 @@ from sqlalchemy import or_, and_
 #===============================================================================
 dbname = r'TM2014_v2.db'
 with open('settings.txt', 'r') as rfile:
-    base = rfile.readline()
+    base = rfile.readline().strip()
     dbname = os.path.join(base, dbname)
 
 
