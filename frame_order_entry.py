@@ -229,7 +229,10 @@ def make_order_entry_frame(frame, info):
         # Add new product rows
         for row, product in enumerate(info.order.products):
             #TODO: Have button fill in data from last order, i.e. quantity, taxed.
-            bw = Tk.Button(fp, text=product.summary, bg='grey',
+            prodtext = product.summary
+            if product.ASE_PN:
+                prodtext = u'{}: {}'.format(product.ASE_PN, prodtext)
+            bw = Tk.Button(fp, text=prodtext, bg='grey',
                            command=lambda i=row:match_qty(i))
             bw.grid(row=row, column=0, sticky=Tk.W+Tk.E)
             info.order.buttons.append(bw)
@@ -272,18 +275,40 @@ def make_order_entry_frame(frame, info):
     #END: reload_products_frame()
 
     # Add order fields
+    def plate_capitalize():
+        #TODO: Auto-fill with plate by matching first letters.
+        before = shipment_truck_str.get()
+        if len(before) > 0:
+            after = before.upper()
+            if before != after:
+                shipment_truck_str.set(after)
+            plate_list = info.dmv2.session.query(info.dmv2.Vehicle.id).all()
+            plate_list = [p.id for p in plate_list]
+            for plate in plate_list:
+                if plate.startswith(after):
+                    shipment_truck_str.set(plate)
+                    break
+        before = order_number_str.get()
+        if len(before) > 0:
+            after = before.upper()
+            if before != after:
+                order_number_str.set(after)
+
+
     subtotal = Tk.StringVar()
     tax_amt = Tk.StringVar()
     totalcharge = Tk.StringVar()
     order_duedate_str = Tk.StringVar()
     order_date_label = Tk.StringVar()
     order_number_str = Tk.StringVar()
+    order_number_str.trace('w', lambda *args:plate_capitalize())
     order_number_label = Tk.StringVar()
     order_delivered_bool = Tk.BooleanVar()
     order_note_str = Tk.StringVar()
     order_note_label = Tk.StringVar()
     shipment_driver_str = Tk.StringVar()
     shipment_truck_str = Tk.StringVar()
+    shipment_truck_str.trace('w', lambda *args:plate_capitalize())
     Tk.Label(fp, text=u'Subtotal').grid(row=100, column=5)
     Tk.Label(fp, textvariable=subtotal).grid(row=101, column=5)
     Tk.Button(fp, text=u'Tax (?)', command=toggle_tax_all, bg='violet').grid(row=100, column=6)
@@ -380,6 +405,7 @@ def make_order_entry_frame(frame, info):
             entry.set(u'')
         order_number_str.set(u'')
         order_note_str.set(u'')
+        shipment_truck_str.set(u'')
 #        order_delivered_bool.set(False)
 #        order_duedate_str.set(datetime.date.today())
 

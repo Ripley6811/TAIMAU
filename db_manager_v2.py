@@ -28,7 +28,7 @@ __version__ = '0.1'
 #===============================================================================
 # IMPORT STATEMENTS
 #===============================================================================
-from TM2014_tables_v2 import get_database, CoGroup, Branch, Product, Contact, Stock, Order, Shipment, Invoice, InvoiceItem
+from TM2014_tables_v2 import get_database, CoGroup, Branch, Product, Vehicle, Contact, Stock, Order, Shipment, Invoice, InvoiceItem
 import os  # os.walk(basedir) FOR GETTING DIR STRUCTURE
 #import dict_from_excel as excel
 import datetime

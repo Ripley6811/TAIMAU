@@ -7,13 +7,12 @@ description
 
 :REQUIRES:
     - Database using TM2014_tables_v2.py
+    - gdata (Google API) for pulling Android app data.
 
 :TODO:
-    - Delete all attached records when order is deleted.
     - Refactor and maybe try more lambda
-    - Backup the order database.
+    - Backup the order database.  (already backed up by another program, create internal method)
     - Add various reports
-    - "File" add option to output database as Excel file
     - Create an edit button that brings up a pop-up window showing old values and
         spaces for new values. Also a delete button (this way the delete is harder to get to
         and also confirm before delete)
@@ -24,10 +23,17 @@ description
 
     ## Urgent
     - Reports and ways for double-checking entries
+    - Double-click list item to pull order, manifest or invoice
+    - add scrollbar to invoice and manifest output windows
+    - addd option to print or create txt file from invoice/manifest.
 
     ## Later
     - individualize the order listings and make them multiple listboxes.
     - improve order editing window and add validation (or restrict options).
+    - Write Company corrections method.
+    - Put delete record inside order edit window and still confirm (make difficult)
+    - Add search to tablet data window.
+    - Maybe add search to other windows.
 
 
 :AUTHOR: Jay W Johnson
@@ -116,9 +122,9 @@ class Taimau_app(Tk.Tk):
 
         # REPORT MENU OPTIONS
         reportmenu = Tk.Menu(menubar, tearoff=0)
-        reportmenu.add_command(label="Save client shipments to Excel file (6 months)", command=sales_shipments_to_excel)
-        reportmenu.add_command(label="Save incoming shipments to Excel file (6 months)", command=purchases_shipments_to_excel)
-        reportmenu.add_command(label="Report2", command=None, state=Tk.DISABLED)
+        reportmenu.add_command(label="Save client shipments to Excel file (last 6 months).", command=sales_shipments_to_excel)
+        reportmenu.add_command(label="Save incoming shipments to Excel file (last 6 months).", command=purchases_shipments_to_excel)
+        reportmenu.add_command(label="Save all products to Excel file.", command=save_products_to_excel)
         reportmenu.add_command(label="Report3", command=None, state=Tk.DISABLED)
         reportmenu.add_command(label="Report4", command=None, state=Tk.DISABLED)
         menubar.add_cascade(label=u"報告", menu=reportmenu)
@@ -266,6 +272,46 @@ def save_shipments_to_excel(is_sale=None):
     wb.save(path)
     os.system('start "'+ base + '" ' + filename)
 
+def save_products_to_excel():
+    '''Save all products to Excel.'''
+    wb = xlwt.Workbook()
+
+    style = xlwt.XFStyle()
+    style.num_format_str = '"$"#,##0.00_);("$"#,##'
+    def_style = xlwt.XFStyle()
+
+
+    query = dmv2.session.query(dmv2.Product)
+    recs = query.order_by(dmv2.Product.group).all()
+
+    ws = wb.add_sheet(u'Products')
+
+    headers = [u'group',u'product_label',u'inventory_name',u'curr_price',
+               u'english_name',u'units',u'UM',u'SKU',
+               u'SKUlong',u'unitpriced',u'ASE_PN',u'note',u'is_supply',u'discontinued',
+               ]
+    row = 0
+    for col, head in enumerate(headers):
+        ws.write(row, col, head)
+    for rec in recs:
+        row += 1
+        for col, head in enumerate(headers):
+
+            ws.write(row, col, rec.__dict__[head], style if head == u'curr_price' else def_style)
+#        ws.col(0).width = 3000
+#        ws.col(2).width = 700
+#        ws.col(4).width = 8000
+#        ws.col(7).width = 3000
+#        ws.col(9).width = 3000
+
+
+    filename = 'PRODUCTS.xls'
+
+    base = os.getcwd()
+    path = os.path.join(base,filename)
+    wb.save(path)
+    os.system('start "'+ base + '" ' + filename)
+
 
 
 def save_co_text():
@@ -368,14 +414,19 @@ def format_order_summary(record):
         prodtmp = prodtmp[1]
     tmp = u''
 #            tmp += u'\u25C6' if val['delivered'] else u'\u25C7'
+    #PO icon and PO number if available
+    po_no_txt = record.orderID.strip() if record.orderID else '({})'.format(record.id)
+    tmp += u"{0:<11}".format(po_no_txt)
+
     #Shipping icon and manifest number if available
     tmp += u'\u26DF' if record.all_shipped() else u'\u25C7'
-    man_no_txt = record.shipments[0].shipmentID[:11].strip()[-7:] if record.shipments else u''
-    tmp += u"{0:<8}".format(man_no_txt)
+    tmp += u'*{:<3}'.format(len(record.shipments)) if record.shipments else u''
+    man_no_txt = record.shipments[0].shipmentID[:11].strip()[-9:] if record.shipments else u''
+    tmp += u"{0:<10}".format(man_no_txt)
 
     #Invoice paid icon and invoice number if available
     tmp += u'\u265B' if record.all_paid() else u'\u25C7'
-    inv_no_txt = record.invoices[0].invoice_no[:11].strip() if record.invoices else u''
+    inv_no_txt = record.invoices[0].invoice_no[:10].strip() if record.invoices else u''
     tmp += u"{0:<12}".format(inv_no_txt if u'random' not in inv_no_txt else u'')
 
 #    print type(record), record.__dict__.keys()
@@ -394,7 +445,7 @@ def format_order_summary(record):
         except:
             tmp += u'  None Entered'
     try:
-        tmp += u" \u273F {0}\u2794{1} \u273F {3:>5}{5} {2:<14} @ ${7} \u214C {8}".format(
+        tmp += u" \u273F {0}\u2794{1} \u273F {9:>6}{3:>5}{5} {2:<14} @ ${7} \u214C {8}".format(
             record.seller,#.split()[0],
             record.buyer,#.split()[0],
             prodtmp,
@@ -403,7 +454,9 @@ def format_order_summary(record):
             record.product.UM if record.product.SKU == u'槽車' else record.product.SKU,
             int(record.totalunits),
             int(record.price) if float(record.price).is_integer() else record.price,
-            record.product.UM if record.product.unitpriced else record.product.SKU)
+            record.product.UM if record.product.unitpriced else record.product.SKU,
+            u'{}/'.format(record.qty_remaining()),
+            )
     except:
         pass
 

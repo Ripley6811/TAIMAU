@@ -221,3 +221,5 @@ pip-log.txt
 .spyderproject
 *.xlsx
 *.xls
+database_management.py
+TM2014_tables.py

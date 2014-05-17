@@ -254,9 +254,30 @@ def create_manifest_frame(frame, info):
     # Add order fields
     shipment_date_str = Tk.StringVar()
     shipment_number_str = Tk.StringVar()
+    def plate_capitalize():
+        #TODO: Detect backspace or deleting and do not fill
+        before = shipment_number_str.get()
+        if len(before) > 0:
+            after = before.upper()
+            if before != after:
+                shipment_number_str.set(after)
+        before = shipment_truck_str.get()
+        if len(before) > 0:
+            after = before.upper()
+            if before != after:
+                shipment_truck_str.set(after)
+            plate_list = info.dmv2.session.query(info.dmv2.Vehicle.id).all()
+            plate_list = [p.id for p in plate_list]
+            for plate in plate_list:
+                if plate.startswith(after):
+                    shipment_truck_str.set(plate)
+                    break
+
+    shipment_number_str.trace('w', lambda *args:plate_capitalize())
     shipment_note_str = Tk.StringVar()
     shipment_driver_str = Tk.StringVar()
     shipment_truck_str = Tk.StringVar()
+    shipment_truck_str.trace('w', lambda *args:plate_capitalize())
 
 
     def submit_order():
@@ -287,13 +308,12 @@ def create_manifest_frame(frame, info):
                 print ship_dict
                 info.dmv2.append_shipment(rec.id, ship_dict)
 
-#                # Update delivered flag in order if necessary
-#                print info.manifest.allshipped[i].get(),
-#                delivered = info.manifest.allshipped[i].get()
-#                print delivered
-#                if delivered:
-#                    info.dmv2.update_order(rec.id, dict(delivered=True))
-#                    print 'updated'
+                #Add license to database if new
+                truck_rec = info.dmv2.session.query(info.dmv2.Vehicle).get(shipment_truck_str.get())
+                if truck_rec == None:
+                    info.dmv2.session.add(info.dmv2.Vehicle(id=shipment_truck_str.get()))
+                    info.dmv2.session.commit()
+
 
         if not incoming:
             show_form()

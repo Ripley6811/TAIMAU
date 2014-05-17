@@ -33,9 +33,14 @@ import collections
 import datetime
 import os
 
-import gdata.docs.service
-import gdata.spreadsheet.service
-import gdata.spreadsheet.text_db
+google_connected = False
+try:
+    import gdata.docs.service
+    import gdata.spreadsheet.service
+    import gdata.spreadsheet.text_db
+    google_connected = True
+except ImportError:
+    print(u"Failed to import gdata module.")
 
 import sqlalchemy as sqla
 from sqlalchemy.orm import relationship as rel
@@ -91,7 +96,7 @@ def get_database(filename, echo=False):
 # METHODS
 #===============================================================================
 #class Settings(object):pass
-settings = type('Settings', (), {})
+settings = type('Settings', (), {})()
 
 settings.dbname = u'TM2014_appdata.db'
 
@@ -99,6 +104,7 @@ with open('settings.txt', 'r') as rfile:
     settings.base = rfile.readline().strip()
     settings.email = rfile.readline().strip()
     settings.password = rfile.readline().strip()
+    settings.app_data_key = rfile.readline().strip()
     settings.dbname = os.path.join(settings.base, settings.dbname)
 
 engine = get_database(settings.dbname, echo=True)
@@ -112,15 +118,13 @@ def pull_app_data():
     database if the primary_key ("recordtimestamp") is not found.
     '''
 
-    app_data_key = '0AmzDGOJCghoHdHFWcEVwM2RCX042eFNRWG9EblIza2c'
-
     service = gdata.spreadsheet.service.SpreadsheetsService()
     service.email = settings.email
     service.password = settings.password
     service.ProgrammaticLogin()
 
     sheet = {} # Mapping from sheet name to sheet id
-    for ws in service.GetWorksheetsFeed(app_data_key).entry:
+    for ws in service.GetWorksheetsFeed(settings.app_data_key).entry:
         title = ws.title.text.decode('utf8')
         ws_id = ws.id.text.rsplit('/', 1)[1] # Key of the sheet
         sheet[ title ] = ws_id
@@ -129,7 +133,7 @@ def pull_app_data():
 
     records = {}
 
-    list_feed = service.GetListFeed(app_data_key, sheet['Form Responses'])
+    list_feed = service.GetListFeed(settings.app_data_key, sheet['Form Responses'])
 #    print len(list_feed.entry)
     for entry in list_feed.entry:
         row = gdata.spreadsheet.text_db.Record(row_entry=entry).content
@@ -158,7 +162,8 @@ def pull_app_data():
             session.add(AppRecord(**record))
 
     session.commit()
-
+if not google_connected:
+    tkMessageBox.showerror(u'gdata import error',u'Could not connect to Google Spreadsheet data.')
 
 def main():
     records = session.query(AppRecord).order_by('date').all()

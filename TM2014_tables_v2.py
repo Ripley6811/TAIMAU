@@ -86,6 +86,10 @@ class Order(Base):
             return 0
         return sum([srec.sku_qty if isinstance(srec.sku_qty,int) else 0 for srec in self.shipments])
 
+    def qty_remaining(self):
+        '''By number of SKUs remaining to be shipped'''
+        return int(self.totalskus - self.qty_shipped())
+
     def all_shipped(self):
         '''By number of SKUs'''
         if len(self.shipments) == 0:
@@ -355,6 +359,21 @@ class Stock(Base): #For warehouse transactions
         retval = self.__dict__
 #        if retval.get('_sa_instance_state') != None:
 #            del retval['_sa_instance_state']
+        return repr(retval)
+
+
+
+class Vehicle(Base): #For warehouse transactions
+    __tablename__ = 'vehicle'
+    id = Col(Utf, primary_key=True) #license plate number
+
+    purchasedate = Col(Date)
+    description = Col(Utf)
+    value = Col(Float)
+    note = Col(Utf)
+
+    def __repr__(self):
+        retval = self.__dict__
         return repr(retval)
 
 

@@ -324,11 +324,23 @@ def set_invoice_frame(frame, info):
 
     info.listbox.rec_invoices.bind("<ButtonRelease-1>", lambda _:reload_invoice_frame())
 
+    def inv_capitalize():
+        #TODO: Auto-fill with plate by matching first letters.
+        before = invoice_check_str.get()
+        after = before.upper()
+        if before != after:
+            invoice_check_str.set(after)
+        before = invoice_number_str.get()
+        after = before.upper()
+        if before != after:
+            invoice_number_str.set(after)
     # Add order fields
     invoice_date_str = Tk.StringVar()
     invoice_number_str = Tk.StringVar()
+    invoice_number_str.trace('w', lambda *args:inv_capitalize())
     invoice_note_str = Tk.StringVar()
     invoice_check_str = Tk.StringVar()
+    invoice_check_str.trace('w', lambda *args:inv_capitalize())
     invoice_truck_str = Tk.StringVar()
     seller_str = Tk.StringVar()
     seller_str.trace('w', lambda *args:set_inv_number())

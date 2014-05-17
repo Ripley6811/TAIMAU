@@ -136,8 +136,14 @@ def get_company_editor(frame,dm):
 
             if is_confirmed:
                 info.tempWindow.destroy()
-                new_co = info.dmv2.Branch(group=G_ID, name=ID)
-                info.dmv2.session.add(new_co)
+                if info.dmv2.session.query(info.dmv2.CoGroup).get(G_ID) == None:
+                    new_co = info.dmv2.CoGroup(name=G_ID)
+                    info.dmv2.session.add(new_co)
+                if info.dmv2.session.query(info.dmv2.Branch).get(ID) == None:
+                    new_br = info.dmv2.Branch(group=G_ID, name=ID)
+                    info.dmv2.session.add(new_br)
+                else:
+                    tkMessageBox.showinfo(u'Branch already exists.',u'Branch name already exists.\nChoose a different abbreviated name to add this company.')
                 info.dmv2.session.commit()
                 refresh_companies_list()
                 showrecord(ID)
@@ -151,8 +157,8 @@ def get_company_editor(frame,dm):
         ttk.Label(info.tempWindow, text="Group and Branch ID's can be the same.").pack()
         info.new_id = Tk.StringVar()
         info.new_gid = Tk.StringVar()
-        new_gid = ttk.Entry(info.tempWindow, textvariable=info.new_gid, width=8).pack()
-        new_id = ttk.Entry(info.tempWindow, textvariable=info.new_id, width=8).pack()
+        ttk.Entry(info.tempWindow, textvariable=info.new_gid, width=8).pack()
+        ttk.Entry(info.tempWindow, textvariable=info.new_id, width=8).pack()
         Tk.Button(info.tempWindow, text="Submit ID", command=lambda:submit_new_id(info)).pack()
         info.tempWindow.focus_set()
 
@@ -404,3 +410,9 @@ def editProductWindow(info, refresh_products_list=None, group=None):
             continue
         print field[0]
         productSVar[field[0]].set(prodvars[field[0]])
+
+def db_corrections():
+    '''Validation and corrections to apply to the CoGroup/Branch data.'''
+    #TODO: Add corrections
+    #TODO: Ensure branches have a corresponding CoGroup.
+    pass
