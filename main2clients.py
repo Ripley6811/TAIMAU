@@ -26,6 +26,7 @@ description
     - Double-click list item to pull order, manifest or invoice
     - add scrollbar to invoice and manifest output windows
     - addd option to print or create txt file from invoice/manifest.
+    - Separate delivery destinations (addresses) from CoGroup/Branches
 
     ## Later
     - individualize the order listings and make them multiple listboxes.
@@ -416,18 +417,19 @@ def format_order_summary(record):
 #            tmp += u'\u25C6' if val['delivered'] else u'\u25C7'
     #PO icon and PO number if available
     po_no_txt = record.orderID.strip() if record.orderID else '({})'.format(record.id)
-    tmp += u"{0:<11}".format(po_no_txt)
+    tmp += u"{0:<14}".format(po_no_txt)
 
     #Shipping icon and manifest number if available
-    tmp += u'\u26DF' if record.all_shipped() else u'\u25C7'
-    tmp += u'*{:<3}'.format(len(record.shipments)) if record.shipments else u''
-    man_no_txt = record.shipments[0].shipmentID[:11].strip()[-9:] if record.shipments else u''
-    tmp += u"{0:<10}".format(man_no_txt)
+    tmp += u'\u26DF' if len(record.shipments)>0 else u'\u25C7'
+    tmp += u'*{:<3}'.format(len(record.shipments)) if record.shipments else u'    '
+#    man_no_txt = record.shipments[0].shipmentID[:11].strip()[-9:] if record.shipments else u''
+#    tmp += u"{0:<10}".format(man_no_txt)
 
     #Invoice paid icon and invoice number if available
     tmp += u'\u265B' if record.all_paid() else u'\u25C7'
-    inv_no_txt = record.invoices[0].invoice_no[:10].strip() if record.invoices else u''
-    tmp += u"{0:<12}".format(inv_no_txt if u'random' not in inv_no_txt else u'')
+    tmp += u'*{:<3}'.format(len(record.invoices)) if record.invoices else u'    '
+#    inv_no_txt = record.invoices[0].invoice_no[:10].strip() if record.invoices else u''
+#    tmp += u"{0:<12}".format(inv_no_txt if u'random' not in inv_no_txt else u'')
 
 #    print type(record), record.__dict__.keys()
     if record.all_shipped():
@@ -439,8 +441,8 @@ def format_order_summary(record):
             tmp += u"到期:  月  日   年"#.replace(' ','  ')
     else:
         try:
-            tmp += (u"預期:{0.month:>2}月{0.day:>2}日".format(
-                record.duedate)#.replace(' ','  ')
+            tmp += (u"訂單日:{0.month:>2}月{0.day:>2}日".format(
+                record.orderdate)#.replace(' ','  ')
             )
         except:
             tmp += u'  None Entered'

@@ -178,7 +178,10 @@ def get_tablet_frame(frame, dmv2):
     out_query = q
 
     def refresh():
-        tablet.pull_app_data()
+        try:
+            tablet.pull_app_data()
+        except:
+            pass
 
         in_recs = in_query.all()
         incoming_listbox.delete(0, 'end')

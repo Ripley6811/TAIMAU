@@ -3,7 +3,7 @@
 
 import sqlalchemy as sqla
 from sqlalchemy.orm import relationship as rel
-from sqlalchemy.orm import backref
+from sqlalchemy.orm import backref, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import datetime
 
@@ -27,6 +27,26 @@ Base = declarative_base()
 def today():
     return datetime.datetime.now()
 
+def repr_str(obj):
+    '''Returns a string representation of the dictionary object with
+    underscored keywords removed ("_keyword").
+    '''
+    copy = obj.__dict__.copy()
+    for key in copy.keys():
+        if key.startswith(u'_'):
+            try:
+                del copy['_sa_instance_state']
+            except KeyError:
+                pass
+    return repr(copy)
+
+def AddDictRepr(aClass):
+    aClass.__repr__ = repr_str
+    return aClass
+
+#==============================================================================
+# Order class
+#==============================================================================
 def updatetotal(context):
     subtotal = context.current_parameters['subtotal']
     taxed = context.current_parameters['applytax']
@@ -35,7 +55,7 @@ def updatetotal(context):
     else:
         return int(round(subtotal))
 
-
+@AddDictRepr
 class Order(Base):
     __tablename__ = 'order'
     id = Col(Int, primary_key=True)
@@ -68,13 +88,6 @@ class Order(Base):
 
     checked = Col(Bool, nullable=False, default=False) # Match against second party records
     is_sale = Col(Bool, nullable=False) # Boolean for purchase vs. sale. Also check against buyer/seller name.
-
-    #invoicedate = Col(Date) # Date of sending/receiving invoice
-    #invoiceID = Col(Utf) # Invoice number
-    #invoicenote = Col(Utf) # Information concerning the invoice
-    #invoiced = Col(Bool, nullable=False, default=False) # True = sent, False = not sent yet
-    #delivered = Col(Bool, nullable=False, default=False) # True = delivered, False = not delivered yet
-    #paid = Col(Bool, nullable=False, default=False) # True = paid, False = not paid yet
 
     shipments = rel('Shipment', backref='order')
     invoices = rel('InvoiceItem', backref='order')
@@ -119,12 +132,17 @@ class Order(Base):
         return not (False in [prec.invoice.paid for prec in self.invoices])
 
 
-    def __repr__(self):
-        retval = self.__dict__
-#        if retval.get('_sa_instance_state') != None:
-#            del retval['_sa_instance_state']
-        return repr(retval)
+    def formatted(self):
+        txt =  u'PO# {s.orderID:<16}  {s.seller:>8} >> {s.buyer:<8}'
+        txt += u'  {s.totalskus:>5} {s.product.product_label} '
 
+        return txt.format(s=self)
+
+
+#==============================================================================
+# Shipment (track multiple shipments in SKU's for one order)
+#==============================================================================
+@AddDictRepr
 class Shipment(Base): # Keep track of shipments/SKUs for one order
     __tablename__ = 'shipment'
     id = Col(Int, primary_key=True)
@@ -141,13 +159,17 @@ class Shipment(Base): # Keep track of shipments/SKUs for one order
     note = Col(Utf) # Extra note field if needed
     checked = Col(Bool, nullable=False, default=False) # Extra boolean for matching/verifying
 
-    def __repr__(self):
-        retval = self.__dict__
-#        if retval.get('_sa_instance_state') != None:
-#            del retval['_sa_instance_state']
-        return repr(retval)
+    def tostring(self):
+        txt = u'{date:<10} {s.shipmentID:<10} {s.sku_qty:<10}'
+        txt = txt.format(s=self, date=str(self.shipmentdate))
+        return txt
 
 
+
+#==============================================================================
+# Invoice class (track multiple invoices for one order)
+#==============================================================================
+@AddDictRepr
 class Invoice(Base): # Keep track of invoices/payments for one order
     __tablename__ = 'invoice'
     invoice_no = Col(Utf, primary_key=True) # i.e., Invoice number
@@ -179,11 +201,11 @@ class Invoice(Base): # Keep track of invoices/payments for one order
         total = self.subtotal() + (self.tax() if self.items[0].order.applytax else 0)
         return int(round(total))
 
-    def __repr__(self):
-        retval = self.__dict__
-        return repr(retval)
 
-
+#==============================================================================
+# InvoiceItem class (track multiple products for one invoice)
+#==============================================================================
+@AddDictRepr
 class InvoiceItem(Base): # Keep track of invoices/payments for one order
     __tablename__ = 'invoiceitem'
     id = Col(Int, primary_key=True)
@@ -204,7 +226,10 @@ class InvoiceItem(Base): # Keep track of invoices/payments for one order
         return int(round(subtotal))
 
 
-
+#==============================================================================
+# CoGroup (company grouping class for branches)
+#==============================================================================
+@AddDictRepr
 class CoGroup(Base):
     __tablename__ = 'cogroup'
     name = Col(Utf, primary_key=True, nullable=False) # Abbreviated name of company (2 to 4 chars)
@@ -220,13 +245,13 @@ class CoGroup(Base):
     purchases = rel('Order', primaryjoin="and_(CoGroup.name==Order.group, Order.is_sale==False)") #Purchases FROM this company
     sales = rel('Order', primaryjoin="and_(CoGroup.name==Order.group, Order.is_sale==True)") #Sales TO this company
 
-    def __repr__(self):
-        retval = self.__dict__
-#        if retval.get('_sa_instance_state') != None:
-#            del retval['_sa_instance_state']
-        return repr(retval)
 
 
+
+#==============================================================================
+# Branch class
+#==============================================================================
+@AddDictRepr
 class Branch(Base):
     __tablename__ = 'branch'
     name = Col(Utf, primary_key=True, nullable=False) # Abbreviated name of company (2 to 4 chars)
@@ -250,13 +275,12 @@ class Branch(Base):
     purchases = rel('Order', primaryjoin="and_(Branch.name==Order.seller, Order.is_sale==False)") #Purchases FROM this company
     sales = rel('Order', primaryjoin="and_(Branch.name==Order.buyer, Order.is_sale==True)") #Sales TO this company
 
-    def __repr__(self):
-        retval = self.__dict__
-#        if retval.get('_sa_instance_state') != None:
-#            del retval['_sa_instance_state']
-        return repr(retval)
 
 
+#==============================================================================
+# Contact class
+#==============================================================================
+@AddDictRepr
 class Contact(Base):
     __tablename__ = 'contact'
     id = Col(Int, primary_key=True)
@@ -269,15 +293,16 @@ class Contact(Base):
     email = Col(Utf, default=u'')
     note = Col(Utf, default=u'')
 
-    def __repr__(self):
-        retval = self.__dict__
-#        if retval.get('_sa_instance_state') != None:
-#            del retval['_sa_instance_state']
-        return repr(retval)
 
 
+
+#==============================================================================
+# Product class
+#==============================================================================
 def summarize(context):
     '''Short text of product key values.
+    "product_name (## UM SKU)"
+    e.g. "HCL (20 kg barrel)"
     '''
     outname = context.current_parameters['product_label']
     units = float(context.current_parameters['units'])
@@ -293,6 +318,7 @@ def summarize(context):
         uf = u"{0} ({1} {2} {3})"
         return uf.format(outname,units,UM,SKU)
 
+@AddDictRepr
 class Product(Base): # Information for each unique product (including packaging)
     __tablename__ = 'product'
 
@@ -308,7 +334,8 @@ class Product(Base): # Information for each unique product (including packaging)
     SKUlong = Col(Utf, default=u'')
     unitpriced = Col(Bool, nullable=False)
     ASE_PN = Col(Utf)
-    note = Col(Utf)
+    note = Col(Utf) # {JSON} contains extra data, i.e. current ASE and RT numbers
+                    # {JSON} must be appended to the end after any notes. Last char == '}'
     is_supply = Col(Bool, nullable=False)
     discontinued = Col(Bool, nullable=False, default=False)
 
@@ -319,11 +346,6 @@ class Product(Base): # Information for each unique product (including packaging)
     stock = rel('Stock', backref='product')
     orders = rel('Order', primaryjoin="Product.MPN==Order.MPN")
 
-    def __repr__(self):
-        retval = self.__dict__
-#        if retval.get('_sa_instance_state') != None:
-#            del retval['_sa_instance_state']
-        return repr(retval)
 
     def qty_available(self):
         available = dict(
@@ -344,6 +366,10 @@ class Product(Base): # Information for each unique product (including packaging)
         return available
 
 
+#==============================================================================
+# Stock class
+#==============================================================================
+@AddDictRepr
 class Stock(Base): #For warehouse transactions
     __tablename__ = 'stock'
     id = Col(Int, primary_key=True)
@@ -355,15 +381,13 @@ class Stock(Base): #For warehouse transactions
     adj_value = Col(Float, nullable=False)  #Value of units in transaction
     note = Col(Utf)
 
-    def __repr__(self):
-        retval = self.__dict__
-#        if retval.get('_sa_instance_state') != None:
-#            del retval['_sa_instance_state']
-        return repr(retval)
 
 
-
-class Vehicle(Base): #For warehouse transactions
+#==============================================================================
+# Vehicle class
+#==============================================================================
+@AddDictRepr
+class Vehicle(Base):
     __tablename__ = 'vehicle'
     id = Col(Utf, primary_key=True) #license plate number
 
@@ -372,12 +396,37 @@ class Vehicle(Base): #For warehouse transactions
     value = Col(Float)
     note = Col(Utf)
 
-    def __repr__(self):
-        retval = self.__dict__
-        return repr(retval)
 
 
+#==============================================================================
+# Database loading method
+#==============================================================================
 def get_database(filename, echo=False):
+    '''Opens a database and returns an 'engine' object.'''
     database = sqla.create_engine('sqlite:///'+filename, echo=echo)
     Base.metadata.create_all(database)   #FIRST TIME SETUP ONLY
     return database
+
+
+#==============================================================================
+# Testing and Debugging
+#==============================================================================
+if __name__ == '__main__':
+    engine = get_database(u'test.db', echo=False)
+    session = sessionmaker(bind=engine)()
+    session.add(Vehicle(id=u'MONKEY'))
+    veh = session.query(Vehicle).get(u'MONKEY')
+    print veh
+    print veh.__dict__
+
+    order = Order(orderID=u'ZV1234', seller=u'Oscorp', buyer=u'Marvel', group=u'DC comics',
+                  is_sale=True, MPN=666, subtotal=1000, duedate=datetime.date.today(), totalskus=24)
+    product = Product(MPN=666, group=u'DC comics', units=12, UM=u'ounce', SKU=u'vial', unitpriced=False, is_supply=False, product_label=u'Muscle Juice', inventory_name=u'serim 234')
+    shipment = Shipment(shipmentID=u'003568', sku_qty=10, order=order, shipmentdate=datetime.date.today())
+    session.add(product)
+    session.add(order)
+    order = session.query(Order).first()
+    print 'order', order
+    print order.formatted()
+    for each in order.shipments:
+        print each.tostring()

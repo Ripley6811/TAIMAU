@@ -33,6 +33,8 @@ import Tkinter as Tk
 import tkMessageBox
 import date_picker as dp
 import datetime
+import json
+import print_labels as label_maker
 
 #===============================================================================
 # METHODS
@@ -204,25 +206,26 @@ def create_manifest_frame(frame, info):
             Tk.Label(fs, text=each).grid(row=0,column=i)
 
         # Add new product rows
-        for row, rec in enumerate(info.manifest.order_recs):
+        row = 0
+        for rid, rec in enumerate(info.manifest.order_recs):
             #TODO: Have button fill in data from last order, i.e. quantity, taxed.
             bw = Tk.Button(fs, text=rec.product.summary, bg=u'slate gray',
 #                          command=None)
-                          command=lambda i=row:match_qty(i))
+                          command=lambda i=rid:match_qty(i))
             bw.grid(row=row+10, column=0, sticky=Tk.W+Tk.E)
             info.manifest.buttons.append(bw)
 
-            ew = Tk.Entry(fs, textvariable=info.manifest.qty[row], width=8, justify=Tk.CENTER)
+            ew = Tk.Entry(fs, textvariable=info.manifest.qty[rid], width=8, justify=Tk.CENTER)
             ew.grid(row=row+10,column=1)
             ew.config(selectbackground=u'LightSkyBlue1', selectforeground=u'black')
             info.manifest.entryWs.append(ew)
-            info.manifest.qty[row].trace("w", lambda *args:activate())
+            info.manifest.qty[rid].trace("w", lambda *args:activate())
 
-            lw = Tk.Label(fs, text=u'( {} / {} )'.format(rec.totalskus-info.manifest.shipped[row],rec.totalskus), justify=Tk.CENTER)
+            lw = Tk.Label(fs, text=u'( {} / {} )'.format(rec.totalskus-info.manifest.shipped[rid],rec.totalskus), justify=Tk.CENTER)
             lw.grid(row=row+10,column=2)#, sticky=Tk.W)
             info.manifest.totalSKUsLabel.append(lw)
 
-#            cw = Tk.Checkbutton(fs, text=u'全交了', variable=info.manifest.allshipped[row], command=lambda i=row:adj_skus(i))
+#            cw = Tk.Checkbutton(fs, text=u'全交了', variable=info.manifest.allshipped[rid], command=lambda i=rid:adj_skus(i))
 #            cw.grid(row=row+10, column=3)#, columnspan=2)
 #            info.manifest.widgets.append(cw)
 
@@ -232,17 +235,23 @@ def create_manifest_frame(frame, info):
             """#TODO: Show buttons for previous shipments."""
 
             for col, ship_rec in enumerate(rec.shipments):
-                bw = Tk.Button(fs, text=u'\u26DF {} ({}/{})'.format(
+                c = col % 8
+                if col > 0 and c == 0:
+                    row += 1
+                bw = Tk.Button(fs, text=u'{} ({}/{})'.format(
                                             ship_rec.sku_qty,
                                             ship_rec.shipmentdate.month,
                                             ship_rec.shipmentdate.day), bg=u'khaki2',
-                              command=lambda i=row, j=col:show_shipment(i,j))
-                bw.grid(row=row+10, column=3+col*2, sticky=Tk.W+Tk.E)
+                              command=lambda i=rid, j=col:show_shipment(i,j), font=(info.settings.font, "10"))
+                bw.grid(row=row+10, column=3+c*2, sticky=Tk.W+Tk.E)
                 info.manifest.widgets.append(bw)
-                bx = Tk.Button(fs, text=u'X', bg=u'red')
-                bx.config(command=lambda i=row, j=col, b0=bw, b1=bx:del_shipment(i,j,b0,b1))
-                bx.grid(row=row+10, column=4+col*2, sticky=Tk.W)
+                bx = Tk.Button(fs, text=u'X', bg=u'red', font=(info.settings.font, "8"))
+                bx.config(command=lambda i=rid, j=col, b0=bw, b1=bx:del_shipment(i,j,b0,b1))
+                bx.grid(row=row+10, column=4+c*2, sticky=Tk.W)
                 info.manifest.widgets.append(bx)
+
+            row += 1
+
 
         for row in range(plength):
             if info.manifest.qty[row].get() == u'':
@@ -321,6 +330,16 @@ def create_manifest_frame(frame, info):
         info.method.refresh_listboxes(info)
         reset_order_fields()
         reload_shipment_frame()
+
+
+#        query_shipment = rec
+#        query_shipment = rec.shipments
+        shipq = info.dmv2.session.query(info.dmv2.Shipment)
+        shipq = shipq.filter_by(shipmentID=ship_dict[u'shipmentID'])
+        shipq = shipq.all()
+        display_manifest_for_edit(info, shipq[0])
+
+
     #END: submit_order()
 
     def show_form():
@@ -418,6 +437,231 @@ def display_manifest_for_edit(info, shipment):
     info.shipmentWin.title(u"Shipment: {}".format(ship_id))
 
     mani_font = (info.settings.font, "15")
+
+    def print_labels(id):
+
+        try:
+            if info.labelWin.state() == 'normal':
+                info.labelWin.focus_set()
+            return
+        except:
+            pass
+
+
+#        print id
+        ship_rec = info.dmv2.session.query(info.dmv2.Shipment).get(id)
+        prod_rec = ship_rec.order.product
+#        print prod_rec
+
+        info.labelWin = Tk.Toplevel(width=400)
+        info.labelWin.title(u"Label: {}".format(ship_rec.id))
+
+
+
+
+        ASE_data = {u'ASE No':u'', u'RT No':u'', u'Last No':0,u'Expiration':u''}
+        set_data = {}
+        pnote = prod_rec.note
+        shnote = ship_rec.note
+
+        # Set fields according to the "last use" data in Product.note field.
+        # Then replace with data from Shipment.note field if it exists.
+        try:
+            ASE_data = json.loads(pnote[pnote.index('{'):])
+        except:
+            pass
+        try:
+            set_data = json.loads(shnote[shnote.index('{'):])
+        except:
+            pass
+
+
+        ase_no = Tk.StringVar()
+        try:
+            ase_no.set(ASE_data[u'ASE No'])
+        except:
+            pass
+        try:
+            if set_data:
+                ase_no.set(set_data[u'ASE No'])
+        except:
+            pass
+
+        rt_no = Tk.StringVar()
+        date_dic = {
+            u'year' : str(ship_rec.shipmentdate.year)[-1],
+            u'month' : ship_rec.shipmentdate.month,
+            u'day' : ship_rec.shipmentdate.day,
+        }
+        if date_dic['month'] == 10:
+            date_dic['month'] = 'A'
+        elif date_dic['month'] == 11:
+            date_dic['month'] = 'B'
+        elif date_dic['month'] == 12:
+            date_dic['month'] = 'C'
+        rt_no_text = u'{0[year]}{0[month]}{0[day]:0>2}'.format(date_dic)
+        try:
+            rt_no.set(u'{}{}'.format(rt_no_text,ASE_data[u'RT No'][4:]))
+        except:
+            rt_no.set(rt_no_text)
+        try:
+            rt_no.set(set_data[u'RT No'])
+        except:
+            pass
+
+        exp_m = Tk.StringVar()
+        try:
+            exp_m.set(ASE_data[u'Expiration'])
+        except:
+            pass
+        try:
+            exp_m.set(set_data[u'Expiration'])
+        except:
+            pass
+
+
+        pF = Tk.StringVar()
+        pL = Tk.StringVar()
+
+        Tk.Label(info.labelWin, text=u'Lot No / 範圍').grid(row=0,column=0)
+        Tk.Entry(info.labelWin, textvariable=ase_no).grid(row=0,column=1)
+        Tk.Label(info.labelWin, text=u'RT No').grid(row=1,column=0)
+        Tk.Entry(info.labelWin, textvariable=rt_no).grid(row=1,column=1)
+        Tk.Label(info.labelWin, text=u'過期 (##月)').grid(row=2,column=0)
+        Tk.Entry(info.labelWin, textvariable=exp_m).grid(row=2,column=1)
+        Tk.Label(info.labelWin, text=u'開始號碼 (可略)').grid(row=3,column=0)
+        Tk.Entry(info.labelWin, textvariable=pF).grid(row=3,column=1)
+        Tk.Label(info.labelWin, text=u'停住號碼 (可略)').grid(row=4,column=0)
+        Tk.Entry(info.labelWin, textvariable=pL).grid(row=4,column=1)
+
+        ase_no_group = Tk.StringVar()
+#        Tk.Label(info.labelWin, text=u'Start').grid(row=0,column=2)
+        Tk.Entry(info.labelWin, textvariable=ase_no_group).grid(row=0,column=2)
+
+        def set_group_nos(*args):
+            # Set to the numbers recorded in shipment if any.
+            try:
+                if set_data[u'Set #s']:
+                    ase_no_group.set(set_data[u'Set #s'])
+                    return
+            except:
+                pass
+            # Otherwise create new set numbers.
+            last_no = 0
+            try:
+                if ase_no.get() == ASE_data[u'ASE No']:
+                    last_no = ASE_data[u'Last No']
+            except:
+                pass
+            begin = last_no + 1
+            endno = last_no + ship_rec.sku_qty
+            ase_no_group.set(u'{:0>4}-{:0>4}'.format(begin, endno))
+
+            # Could preset the start and end fields or leave blank for defaults.
+#            pF.set(begin)
+#            pL.set(endno)
+
+        ase_no.trace('w', set_group_nos)
+
+        print_text = Tk.Text(info.labelWin, width=30, height=8, font=mani_font)
+        print_text.grid(row=9,column=0,columnspan=5)
+
+        vals = type('Vals',(),{})()
+        def update_print_preview(*args):
+            vals.name = prod_rec.product_label
+            if not vals.name:
+                vals.name = prod_rec.inventory_name
+            vals.PN = prod_rec.ASE_PN
+            vals.LOT = ase_no.get()
+            vals.LOT_err = u'' if len(vals.LOT) == 9 else u' (Error! Check Lot# length)'
+            vals.ASE = ase_no.get() + ase_no_group.get()
+            vals.ASE_err = u'' if len(vals.ASE) == 18 else u' (Error! Check range length "####-####")'
+            vals.QTY = ship_rec.sku_qty
+            vals.EXP = "dddddddd"
+            pdate = vals.LOT[1:7]
+            try:
+                dateDOM = datetime.date(2000+int(pdate[:2]), int(pdate[2:4]), int(pdate[4:6]))
+                vals.DOM = "{d.year:04}{d.month:02}{d.day:02}".format(d=dateDOM)
+            except:
+                vals.DOM = u'Date is out of range!'
+            vals.RT = rt_no.get()
+            vals.RT_err = u'' if len(vals.RT) == 10 else u' (Error! Check RT# length)'
+            try:
+                Exp = int(exp_m.get())
+                #dateDelta = datetime.timedelta((365/12)*Exp)
+                ''' # The following is for an exact expiration date
+                vals.DOM = "{0:04}{1:02}{2:02}".format(dateDOM.year, dateDOM.month, dateDOM.day)
+                dateEXP = dateDOM + dateDelta
+                vals.EXP = "{0:04}{1:02}{2:02}".format(dateEXP.year, dateEXP.month, dateEXP.day)
+                '''
+                inc_year = False
+                if int((dateDOM.month-1 + Exp) / 12):
+                    inc_year = True
+                vals.EXP = "{0:04}{1:02}{2:02}".format(
+                        (dateDOM.year + int((dateDOM.month-1 + Exp) / 12)) if inc_year else dateDOM.year,
+                        int((dateDOM.month-1 + Exp) % 12)+1,
+                        dateDOM.day)
+            except:
+                pass#raw_input('Error converting expiration date. Using "dddddddd"\nHIT ENTER TO CONTINUE...')
+
+
+            text = u'品名: {v.name}\nPN:   {v.PN}\nLOT:  {v.LOT}{v.LOT_err}\nASE:  {v.ASE}{v.ASE_err}\nQTY:  {v.QTY}\nEXP:  {v.EXP}\nDOM:  {v.DOM}\nRT:   {v.RT}{v.RT_err}'.format(v=vals)
+            print_text.delete(1.0,"end")
+            print_text.insert("end",text)
+
+
+            if vals.RT_err or vals.LOT_err or vals.ASE_err:
+                pb.config(state="disabled")
+            else:
+                pb.config(state="normal")
+
+        ase_no_group.trace('w', update_print_preview)
+        exp_m.trace('w', update_print_preview)
+        rt_no.trace('w', update_print_preview)
+
+
+
+        def submit_print_request():
+            print u'{}{}'.format(ase_no.get(), ase_no_group.get())
+            ASE_data[u'ASE No'] = ase_no.get()
+            ASE_data[u'Last No'] = int(ase_no_group.get()[-4:])
+            ASE_data[u'RT No'] = rt_no.get()
+            ASE_data[u'Expiration'] = int(exp_m.get())
+            try:
+                new_pnote = u'{}{}'.format(pnote[:pnote.index('{')],json.dumps(ASE_data))
+            except ValueError:
+                new_pnote = u'{}{}'.format(pnote,json.dumps(ASE_data))
+            ship_xnote = {
+                u'ASE No': ASE_data[u'ASE No'],
+                u'RT No': ASE_data[u'RT No'],
+                u'Set #s': ase_no_group.get(),
+                u'Expiration': int(exp_m.get()),
+            }
+            info.dmv2.session.query(info.dmv2.Product).filter_by(MPN=prod_rec.MPN).update({u'note':new_pnote, u'summary':prod_rec.summary})
+            info.dmv2.session.query(info.dmv2.Shipment).filter_by(id=ship_rec.id).update({u'note':json.dumps(ship_xnote)})
+            info.dmv2.session.commit()
+
+            info.labelWin.destroy()
+
+            #TODO: Actually print labels
+            begin,endno = map(int, ase_no_group.get().split("-"))
+            if pF.get().isdigit():
+                begin = int(pF.get())
+            if pL.get().isdigit():
+                endno = int(pL.get())
+            for i in range(begin,endno+1):
+                ASE = u"{0}{1:04}".format(vals.LOT, i)
+                try:
+                    label_maker.TM_label(vals.name, vals.PN, vals.LOT, ASE,
+                             vals.QTY, vals.EXP, vals.DOM, vals.RT)
+                except Exception as e:
+                    print u'Failed to print:', ASE, e
+
+        pb = Tk.Button(info.labelWin, text=u'PRINT', command=submit_print_request)
+        pb.grid(row=10,column=0,columnspan=5)
+
+        set_group_nos()
+        update_print_preview()
 
 
 
@@ -534,8 +778,12 @@ def display_manifest_for_edit(info, shipment):
         Tk.Label(info.shipmentWin, text=jianshu, **config).grid(row=10+row,column=2, sticky=Tk.W+Tk.E)
         Tk.Label(info.shipmentWin, text=this_units, **config).grid(row=10+row,column=3, sticky=Tk.W+Tk.E)
         Tk.Label(info.shipmentWin, bg=u'gray30', fg=u'gray70', text=u'  {}  '.format(order.product.SKUlong)).grid(row=10+row,column=4, sticky=Tk.W+Tk.E)
-        Tk.Label(info.shipmentWin, text=u'  {}  '.format(order.ordernote), **config).grid(row=10+row,column=5, sticky=Tk.W+Tk.E)
+        dispnote = order.ordernote
+        if order.orderID:
+            dispnote = u'PO#:{} Note:{}'.format(order.orderID, dispnote)
+        Tk.Label(info.shipmentWin, text=u'  {}  '.format(dispnote), **config).grid(row=10+row,column=5, sticky=Tk.W+Tk.E)
 
+        Tk.Button(info.shipmentWin, text=u'Print Labels', command=lambda x=shipment.id:print_labels(x)).grid(row=10+row,column=6, sticky=Tk.W+Tk.E)
 
 #    check_no = Tk.StringVar()
 #    ttk.Label(info.shipmentWin, text=u'Check number').grid(row=101,column=0)

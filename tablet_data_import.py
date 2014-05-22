@@ -107,7 +107,7 @@ with open('settings.txt', 'r') as rfile:
     settings.app_data_key = rfile.readline().strip()
     settings.dbname = os.path.join(settings.base, settings.dbname)
 
-engine = get_database(settings.dbname, echo=True)
+engine = get_database(settings.dbname, echo=False)
 
 session = sessionmaker(bind=engine)()
 
