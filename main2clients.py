@@ -10,31 +10,6 @@ description
     - gdata (Google API) for pulling Android app data.
 
 :TODO:
-    - Refactor and maybe try more lambda
-    - Backup the order database.  (already backed up by another program, create internal method)
-    - Add various reports
-    - Create an edit button that brings up a pop-up window showing old values and
-        spaces for new values. Also a delete button (this way the delete is harder to get to
-        and also confirm before delete)
-    - Add top level tab for 'pending' to see all orders that need attention.
-
-    ## Things to fix or do after refactoring ##
-    - Right click option on company to open Company/Branch information.
-
-    ## Urgent
-    - Reports and ways for double-checking entries
-    - Double-click list item to pull order, manifest or invoice
-    - add scrollbar to invoice and manifest output windows
-    - addd option to print or create txt file from invoice/manifest.
-    - Separate delivery destinations (addresses) from CoGroup/Branches
-
-    ## Later
-    - individualize the order listings and make them multiple listboxes.
-    - improve order editing window and add validation (or restrict options).
-    - Write Company corrections method.
-    - Put delete record inside order edit window and still confirm (make difficult)
-    - Add search to tablet data window.
-    - Maybe add search to other windows.
 
 
 :AUTHOR: Jay W Johnson
@@ -57,16 +32,11 @@ __version__ = '0.2'
 # IMPORT STATEMENTS
 #===============================================================================
 import os  # os.walk(basedir) FOR GETTING DIR STRUCTURE
-#from tkFileDialog import askopenfilename, askopenfile
-#from collections import namedtuple
 import datetime
-#import tables_company_data as tables
 import Tkinter as Tk
 import tkMessageBox
 import ttk
 import tkFont
-#import google_spreadsheet as gs
-#import database_management as dm
 import frame_company_editor
 import frame_payment
 import frame_order_entry
@@ -74,35 +44,31 @@ import frame_manifest
 import frame_pending
 import db_manager_v2 as dmv2
 import xlwt
+import Tix
 
-
+print os.getcwd()
 #===============================================================================
 # METHODS
 #===============================================================================
 
 # Container for passing state parameters
 # Separate into current record, product
-class Info(object):
-    def __init__(self, **attrs):
-        for key, value in attrs.iteritems():
-            if isinstance(value, dict):
-                attrs[key] = Info(**value)
-        self.__dict__.update(attrs)
+Info = type('struct', (), {})
 
 
-class Taimau_app(Tk.Tk):
+class TaimauApp(Tix.Tk):
+    '''Main application.
+    '''
     run_location = os.getcwd()
-
 
 
     def __init__(self, parent):
 
-        Tk.Tk.__init__(self, parent)
+        Tix.Tk.__init__(self, parent)
 #        self.wm_title('woot')
         self.parent = parent
         self.option_add("*Font", "PMingLiU 13")
-        s = ttk.Style()
-        s.configure('.', font=tkFont.Font(family="PMingLiU", size=-12))
+        ttk.Style().configure('.', font=tkFont.Font(family="PMingLiU", size=-12))
 
 
         #
@@ -123,8 +89,8 @@ class Taimau_app(Tk.Tk):
 
         # REPORT MENU OPTIONS
         reportmenu = Tk.Menu(menubar, tearoff=0)
-        reportmenu.add_command(label="Save client shipments to Excel file (last 6 months).", command=sales_shipments_to_excel)
-        reportmenu.add_command(label="Save incoming shipments to Excel file (last 6 months).", command=purchases_shipments_to_excel)
+        reportmenu.add_command(label="Save client shipments to Excel (6 months).", command=sales_shipments_to_excel)
+        reportmenu.add_command(label="Save incoming shipments to Excel (6 months).", command=purchases_shipments_to_excel)
         reportmenu.add_command(label="Save all products to Excel file.", command=save_products_to_excel)
         reportmenu.add_command(label="Report3", command=None, state=Tk.DISABLED)
         reportmenu.add_command(label="Report4", command=None, state=Tk.DISABLED)
@@ -136,9 +102,12 @@ class Taimau_app(Tk.Tk):
             self.option_add("*Font", fontsize.get())
         fontmenu = Tk.Menu(menubar, tearoff=0)
         fontsize = Tk.StringVar()
-        fontmenu.add_radiobutton(label=u'Verdana 12', variable=fontsize, command=setFont, value=u'Verdana 12')
-        fontmenu.add_radiobutton(label=u'PMingLiU 13', variable=fontsize, command=setFont, value=u'PMingLiU 13')
-        fontmenu.add_radiobutton(label=u'NSimSun 13', variable=fontsize, command=setFont, value=u'NSimSun 13')
+        fontmenu.add_radiobutton(label=u'Verdana 12', variable=fontsize,
+                                 command=setFont, value=u'Verdana 12')
+        fontmenu.add_radiobutton(label=u'PMingLiU 13', variable=fontsize,
+                                 command=setFont, value=u'PMingLiU 13')
+        fontmenu.add_radiobutton(label=u'NSimSun 13', variable=fontsize,
+                                 command=setFont, value=u'NSimSun 13')
         menubar.add_cascade(label=u"Font", menu=fontmenu)
 #        fontsize.set(u'NSimSun 13')
 #        setFont()
@@ -218,7 +187,9 @@ def purchases_shipments_to_excel():
     save_shipments_to_excel(is_sale=False)
 
 def save_shipments_to_excel(is_sale=None):
-    '''Save all activity in the last half-year to Excel. Order by delivery date.'''
+    '''Save all activity in the last half-year to Excel.
+    Order by delivery date.
+    '''
     wb = xlwt.Workbook()
     cogroups = dmv2.cogroups()
     cutoff = datetime.date.today() - datetime.timedelta(180)
@@ -227,7 +198,8 @@ def save_shipments_to_excel(is_sale=None):
     style.num_format_str = '"$"#,##0.00_);("$"#,##'
 
     for group in cogroups:
-        query = dmv2.session.query(dmv2.Order).filter_by(group=group.name, is_sale=is_sale)
+        query = dmv2.session.query(dmv2.Order)
+        query = query.filter_by(group=group.name, is_sale=is_sale)
         query = query.filter(dmv2.Order.duedate > cutoff)
         orders = query.order_by(dmv2.Order.duedate).all()
 
@@ -269,7 +241,7 @@ def save_shipments_to_excel(is_sale=None):
         filename = 'PURCHASES_ACTIVITY.xls'
 
     base = os.getcwd()
-    path = os.path.join(base,filename)
+    path = os.path.join(base, filename)
     wb.save(path)
     os.system('start "'+ base + '" ' + filename)
 
@@ -287,9 +259,10 @@ def save_products_to_excel():
 
     ws = wb.add_sheet(u'Products')
 
-    headers = [u'group',u'product_label',u'inventory_name',u'curr_price',
-               u'english_name',u'units',u'UM',u'SKU',
-               u'SKUlong',u'unitpriced',u'ASE_PN',u'note',u'is_supply',u'discontinued',
+    headers = [u'group', u'product_label', u'inventory_name', u'curr_price',
+               u'english_name', u'units', u'UM', u'SKU',
+               u'SKUlong', u'unitpriced', u'ASE_PN',
+               u'note', u'is_supply', u'discontinued',
                ]
     row = 0
     for col, head in enumerate(headers):
@@ -298,7 +271,9 @@ def save_products_to_excel():
         row += 1
         for col, head in enumerate(headers):
 
-            ws.write(row, col, rec.__dict__[head], style if head == u'curr_price' else def_style)
+            ws.write(row, col, rec.__dict__[head], style
+                                                    if head == u'curr_price'
+                                                    else def_style)
 #        ws.col(0).width = 3000
 #        ws.col(2).width = 700
 #        ws.col(4).width = 8000
@@ -309,7 +284,7 @@ def save_products_to_excel():
     filename = 'PRODUCTS.xls'
 
     base = os.getcwd()
-    path = os.path.join(base,filename)
+    path = os.path.join(base, filename)
     wb.save(path)
     os.system('start "'+ base + '" ' + filename)
 
@@ -353,56 +328,56 @@ def get_purchases_frame(frame):
     #-------
     frame1 = ttk.Frame(frame)
     def showall_companies():
-        info.listbox.companies.delete(0,Tk.END)
-        for i,each in enumerate(dmv2.cogroup_names()):
-            info.listbox.companies.insert(i,each)
-            info.listbox.companies.itemconfig(i, bg=u'white', selectbackground=u'SlateBlue4')
+        info.listbox.companies.delete(0, Tk.END)
+        for i, each in enumerate(dmv2.cogroup_names()):
+            info.listbox.companies.insert(i, each)
+            info.listbox.companies.itemconfig(i, bg=u'white',
+                                              selectbackground=u'SlateBlue4')
 
-    b = Tk.Button(frame1, text="Show All", command=lambda:showall_companies())
+    b = Tk.Button(frame1, text="Show All", command=lambda: showall_companies())
     b.pack(side=Tk.BOTTOM, fill=Tk.X)
     scrollbar = Tk.Scrollbar(frame1, orient=Tk.VERTICAL)
     info.listbox.companies = Tk.Listbox(frame1, selectmode=Tk.BROWSE,
                          yscrollcommand=scrollbar.set,
-                         width=10, font=(info.settings.font, "14"), exportselection=0)
+                         width=10, font=(info.settings.font, "14"),
+                         exportselection=0)
     scrollbar.config(command=info.listbox.companies.yview)
 #        scrollbar.grid(row=0,column=0, sticky=Tk.N+Tk.S)
 #        info.listbox.companies.grid(row=0,column=1,sticky=Tk.N+Tk.S)
     scrollbar.pack(side=Tk.RIGHT, fill=Tk.Y)
     info.listbox.companies.pack(side=Tk.LEFT, fill=Tk.Y)
-    info.listbox.companies.bind("<Double-Button-1>", lambda _:loadcompany(info,True))
+    info.listbox.companies.bind("<Double-Button-1>",
+                                lambda _: loadcompany(info, True))
 
 
 #    info.listbox.companies.insert(0,*dmv2.company_list_from_purchases())
-    for i,each in enumerate(dmv2.company_list_from_purchases()):
-        info.listbox.companies.insert(i,each)
-        info.listbox.companies.itemconfig(i, bg=u'seashell2', selectbackground=u'maroon4')
+    for i, each in enumerate(dmv2.company_list_from_purchases()):
+        info.listbox.companies.insert(i, each)
+        info.listbox.companies.itemconfig(i, bg=u'seashell2',
+                                          selectbackground=u'maroon4')
 
     frame1.pack(side=Tk.LEFT, fill=Tk.Y, padx=2, pady=3)
 
     #
-    #==============================================================================
+    #==========================================================================
     # SET UP TABBED SECTIONS
-    #==============================================================================
+    #==========================================================================
     #
     info.record = {}
     nb = ttk.Notebook(frame)
     #--------------- Order entry tab -----------------------
     frame = ttk.Frame(nb)
     frame_order_entry.make_order_entry_frame(frame, info)
-    nb.add(frame, text=u'訂單', padding=2)
+    nb.add(frame, text=u'訂單 (造出貨單)', padding=2)
 
     #------------------ Manifest tab ----------------------------
     frame = ttk.Frame(nb)
     frame_manifest.create_manifest_frame(frame, info)
-    nb.add(frame, text=u'出貨單', padding=2, state=Tk.NORMAL)
+    nb.add(frame, text=u'出貨單 (造發票)', padding=2)
     #------------------ Invoice tab -----------------------------
     frame = ttk.Frame(nb)
     frame_payment.set_invoice_frame(frame, info)
-    nb.add(frame, text=u'發票', padding=2)
-#    #------------------ Payment tab -----------------------------
-#    frame = ttk.Frame(nb)
-#    frame_payment.set_invoice_frame(frame, info)
-#    nb.add(frame, text=u'發票', padding=2)
+    nb.add(frame, text=u'發票 (已支付?)', padding=2)
     #------------------ Pack notebook ----------------------------
     nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
 
@@ -416,18 +391,21 @@ def format_order_summary(record):
     tmp = u''
 #            tmp += u'\u25C6' if val['delivered'] else u'\u25C7'
     #PO icon and PO number if available
-    po_no_txt = record.orderID.strip() if record.orderID else '({})'.format(record.id)
+    po_no_txt = (record.orderID.strip() if record.orderID
+                                        else '({})'.format(record.id))
     tmp += u"{0:<14}".format(po_no_txt)
 
     #Shipping icon and manifest number if available
-    tmp += u'\u26DF' if len(record.shipments)>0 else u'\u25C7'
-    tmp += u'*{:<3}'.format(len(record.shipments)) if record.shipments else u'    '
+    tmp += u'\u26DF' if len(record.shipments) > 0 else u'\u25C7'
+    tmp += (u'*{:<3}'.format(len(record.shipments)) if record.shipments
+                                                    else u'    ')
 #    man_no_txt = record.shipments[0].shipmentID[:11].strip()[-9:] if record.shipments else u''
 #    tmp += u"{0:<10}".format(man_no_txt)
 
     #Invoice paid icon and invoice number if available
     tmp += u'\u265B' if record.all_paid() else u'\u25C7'
-    tmp += u'*{:<3}'.format(len(record.invoices)) if record.invoices else u'    '
+    tmp += (u'*{:<3}'.format(len(record.invoices)) if record.invoices
+                                                    else u'    ')
 #    inv_no_txt = record.invoices[0].invoice_no[:10].strip() if record.invoices else u''
 #    tmp += u"{0:<12}".format(inv_no_txt if u'random' not in inv_no_txt else u'')
 
@@ -486,8 +464,9 @@ def loadcompany(info, grab_index=False):
     reload_orders(info)
     refresh_listboxes(info)
     info.method.reload_products_frame()
-    info.method.reload_shipment_frame()
-    info.method.reload_invoice_frame()
+    info.method.refresh_manifest_listbox()
+    info.method.refresh_invoice_listbox()
+#    info.method.reload_invoice_frame()
 
 
 
@@ -507,42 +486,41 @@ def refresh_listboxes(info):
     #TODO: Split up and put in their respective modules.
     '''
     # Add previous orders to order listbox
-    info.listbox.rec_orders.delete(0,Tk.END)
-    info.listbox.rec_manifest.delete(0,Tk.END)
-    info.listbox.rec_invoices.delete(0,Tk.END)
+    info.listbox.rec_orders.delete(0, Tk.END)
+#    info.listbox.rec_manifest.delete(0, Tk.END)
+#    info.listbox.rec_invoices.delete(0, Tk.END)
 
     # List of order summaries
-    tmp = [format_order_summary(rec) for rec in info.order_records]
+    tmp = [rec.listbox_summary() for rec in info.order_records]
 
     #TODO: Different colors for different products. Not necessary...
     for i, each in enumerate(tmp):
-        info.listbox.rec_orders.insert(i,each)
-        info.listbox.rec_orders.itemconfig(i, bg=u'lavender', selectbackground=u'dark orchid')
-        shipped_color = dict(bg=u'SlateGray4', fg=u'gray79', selectbackground=u'tomato', selectforeground=u'black')
-        no_ship_color = dict(bg=u'pale green', selectbackground=u'yellow', selectforeground=u'black')
-        info.listbox.rec_manifest.insert(i,each)
-        ins_colors = shipped_color if info.order_records[i].all_shipped() else no_ship_color
-        info.listbox.rec_manifest.itemconfig(i, ins_colors)
+        info.listbox.rec_orders.insert(i, each)
+        info.listbox.rec_orders.itemconfig(i, bg=u'lavender',
+                                           selectbackground=u'dark orchid')
 
-        invoiced_color = dict(bg=u'CadetBlue1', selectbackground=u'blue2')
-        no_ship_color = dict(bg=u'pale green', selectbackground=u'yellow', selectforeground=u'black')
-        info.listbox.rec_invoices.insert(i,each)
-        ins_colors = invoiced_color if info.order_records[i].all_invoiced() else no_ship_color
-        if info.order_records[i].all_paid():
-            ins_colors = dict(bg=u'SlateGray4', fg=u'gray79', selectbackground=u'tomato', selectforeground=u'black')
-        info.listbox.rec_invoices.itemconfig(i, ins_colors)
+
+#        shipped_color = dict(bg=u'SlateGray4', fg=u'gray79',
+#                             selectbackground=u'tomato',
+#                             selectforeground=u'black')
+#        no_ship_color = dict(bg=u'pale green', selectbackground=u'yellow',
+#                             selectforeground=u'black')
+#        info.listbox.rec_manifest.insert(i, each)
+#        ins_colors = shipped_color if info.order_records[i].all_shipped() else no_ship_color
+#        info.listbox.rec_manifest.itemconfig(i, ins_colors)
+
+#        invoiced_color = dict(bg=u'CadetBlue1', selectbackground=u'blue2')
+#        no_ship_color = dict(bg=u'pale green', selectbackground=u'yellow',
+#                             selectforeground=u'black')
+#        info.listbox.rec_invoices.insert(i, each)
+#        ins_colors = invoiced_color if info.order_records[i].all_invoiced() else no_ship_color
+#        if info.order_records[i].all_paid():
+#            ins_colors = dict(bg=u'SlateGray4', fg=u'gray79',
+#                              selectbackground=u'tomato',
+#                              selectforeground=u'black')
+#        info.listbox.rec_invoices.itemconfig(i, ins_colors)
 #    info.listbox.rec_orders.selection_set(Tk.END)
-#    info.listbox.rec_orders.see(Tk.END)
-#    info.listbox.rec_orders.activate(Tk.END)
-#
-##        info.listbox.rec_manifest.selection_set(Tk.END)
-#    info.listbox.rec_manifest.see(Tk.END)
-#        info.listbox.rec_manifest.activate(Tk.END)
 
-#    info.listbox.branches.delete(0,Tk.END)
-#    [info.listbox.branches.insert(i,compsum) for i, compsum in enumerate(dmv2.get_branch_numbers(info.curr_company.encode('utf8')))]
-
-#    info.method.reload_invoice_frame()
 
 
 
@@ -568,26 +546,29 @@ def get_sales_frame(frame):
     #-------
     frame1 = ttk.Frame(frame)
     def showall_companies():
-        info.listbox.companies.delete(0,Tk.END)
-        for i,each in enumerate(dmv2.cogroup_names()):
-            info.listbox.companies.insert(i,each)
-            info.listbox.companies.itemconfig(i, bg=u'white', selectbackground=u'SlateBlue4')
+        info.listbox.companies.delete(0, Tk.END)
+        for i, each in enumerate(dmv2.cogroup_names()):
+            info.listbox.companies.insert(i, each)
+            info.listbox.companies.itemconfig(i, bg=u'white',
+                                              selectbackground=u'SlateBlue4')
 
-    b = Tk.Button(frame1, text="Show All", command=lambda:showall_companies())
+    b = Tk.Button(frame1, text="Show All", command=lambda: showall_companies())
     b.pack(side=Tk.BOTTOM, fill=Tk.X)
     scrollbar = Tk.Scrollbar(frame1, orient=Tk.VERTICAL)
     info.listbox.companies = Tk.Listbox(frame1, selectmode=Tk.BROWSE,
-                         yscrollcommand=scrollbar.set,
-                         width=10, font=(info.settings.font, "14"), exportselection=0)
+                                         yscrollcommand=scrollbar.set,
+                                         width=10,
+                                         font=(info.settings.font, "14"),
+                                         exportselection=0)
     scrollbar.config(command=info.listbox.companies.yview)
 #        scrollbar.grid(row=0,column=0, sticky=Tk.N+Tk.S)
 #        info.listbox.companies.grid(row=0,column=1,sticky=Tk.N+Tk.S)
     scrollbar.pack(side=Tk.RIGHT, fill=Tk.Y)
     info.listbox.companies.pack(side=Tk.LEFT, fill=Tk.Y)
-    info.listbox.companies.bind("<Double-Button-1>", lambda _:loadcompany(info,True))
+    info.listbox.companies.bind("<Double-Button-1>", lambda _: loadcompany(info, True))
 #    info.listbox.companies.insert(0,*dmv2.company_list_from_sales())
-    for i,each in enumerate(dmv2.company_list_from_sales()):
-        info.listbox.companies.insert(i,each)
+    for i, each in enumerate(dmv2.company_list_from_sales()):
+        info.listbox.companies.insert(i, each)
         info.listbox.companies.itemconfig(i, bg=u'CadetBlue1', selectbackground=u'SlateBlue4')
     frame1.pack(side=Tk.LEFT, fill=Tk.Y, padx=2, pady=3)
 
@@ -598,62 +579,38 @@ def get_sales_frame(frame):
     #
     info.record = {}
     nb = ttk.Notebook(frame)
-
-    # Order entry tab
+    #--------------- Order entry tab -----------------------
     frame = ttk.Frame(nb)
     frame_order_entry.make_order_entry_frame(frame, info)
-    nb.add(frame, text=u'訂單', padding=2)
-    #---------------------------------------------------------
+    nb.add(frame, text=u'訂單 (造出貨單)', padding=2)
+    #------------------ Manifest tab ----------------------------
     frame = ttk.Frame(nb)
     frame_manifest.create_manifest_frame(frame, info)
-    nb.add(frame, text=u'出貨單', padding=2, state=Tk.NORMAL)
-    #---------------------------------------------------------------
+    nb.add(frame, text=u'出貨單 (造發票)', padding=2)
+    #------------------ Invoice tab -----------------------------
     frame = ttk.Frame(nb)
-    nb.add(frame, text=u'發票', padding=2)
     frame_payment.set_invoice_frame(frame, info)
-
+    nb.add(frame, text=u'發票 (已支付?)', padding=2)
+    #------------------ Pack notebook ----------------------------
     nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
 
 
 
 
 def hello():
+    '''Filler function.'''
     print("It works")
     tkMessageBox.showinfo('About', 'This is about nothing')
 
 def about():
+    '''Display program author and date.'''
     tkMessageBox.showinfo('About', '台茂化工\nWritten by Jay W Johnson\n2014')
 
 
-#def convert_date(adate):
-#    '''Converts a formatted string to a datetime.date object or from date to str
-#    depending on input.'''
-#    if isinstance(adate,str):
-#
-#        strdate = adate
-#        # Try different separators until one produces a list of len 2 or 3
-#        for sep in [None,'/','-','\\']:
-#            if 2 <= len(adate.split(sep)) <=3:
-#                strdate = adate.split(sep)
-#                break
-#        try:
-#            # If len three, assume date is given last, if two then use closest year
-#            if len(strdate) == 3:
-#                return datetime.date(int(strdate[2]),int(strdate[0]),int(strdate[1]))
-#            else:
-#                dnow = datetime.date.today()
-#                dates = [datetime.date(dnow.year+x,int(strdate[0]),int(strdate[1])) for x in [-1,0,1]]
-#                diff = [abs((x-dnow).days) for x in dates]
-#                return dates[diff.index(min(diff))]
-#        except:
-#            pass
-#    elif isinstance(adate,datetime.date):
-#        #Convert datetime object to string
-#        return u'{}/{}/{}'.format(adate.month,adate.day,adate.year)
 
 
 if __name__ == '__main__':
-    app = Taimau_app(None)
+    app = TaimauApp(None)
     app.title('Taimau')
     app.mainloop()
 

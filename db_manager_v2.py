@@ -28,7 +28,9 @@ __version__ = '0.1'
 #===============================================================================
 # IMPORT STATEMENTS
 #===============================================================================
-from TM2014_tables_v2 import get_database, CoGroup, Branch, Product, Vehicle, Contact, Stock, Order, Shipment, Invoice, InvoiceItem
+from TM2014_tables_v2 import (get_database, CoGroup, Branch, Product,
+                            Vehicle, Contact, Stock, Order, Shipment,
+                            Invoice, InvoiceItem)
 import os  # os.walk(basedir) FOR GETTING DIR STRUCTURE
 #import dict_from_excel as excel
 import datetime
@@ -112,7 +114,6 @@ def get_entire_invoice(rec):
 
 def get_entire_shipment(rec):
     '''Actually retrieves all partial shipments that make up one shipment.'''
-
     return session.query(Shipment).filter_by(shipmentID = rec.shipmentID,
                                              shipmentdate = rec.shipmentdate).all()
 
@@ -127,16 +128,16 @@ def get_entire_shipment(rec):
 #        this_units = int(rec.units) if rec.units.is_integer() else rec.units
 #        return u"{0} ({1} {2} {3})".format(outname,this_units,rec.UM,rec.SKU)
 
-def get_product_summary(group_id, is_supply):
-    '''Returns a list of MPN's for one company'''
-    group_id = group_id.decode('utf8')
-    if not group_id:
-        return []
-
-    query = session.query(Product).filter((Product.group==group_id)
-                                        & (Product.discontinued==False)
-                                        & (Product.is_supply==is_supply)).all()
-    return [formatrec(rec) for rec in query]
+#def get_product_summary(group_id, is_supply):
+#    '''Returns a list of MPN's for one company'''
+#    group_id = group_id.decode('utf8')
+#    if not group_id:
+#        return []
+#
+#    query = session.query(Product).filter((Product.group==group_id)
+#                                        & (Product.discontinued==False)
+#                                        & (Product.is_supply==is_supply)).all()
+#    return [formatrec(rec) for rec in query]
 
 
 #def branches(group=None):
@@ -335,7 +336,10 @@ def adj_stock(mpn, units=0.0, value=None, SKUs=0.0, date=None, note=u''):
 
 
 
-def debug():
+#==============================================================================
+# Testing and debugging
+#==============================================================================
+if __name__ == '__main__':
     import subprocess
     with open('DEBUG_db_manager_v2.txt', 'w') as wf:
         wf.write(u'METHOD:cogroups()\n    ')
@@ -464,6 +468,3 @@ def debug():
         wf.write(repr(outlist).encode('utf8'))
 
     subprocess.call(['Notepad.exe', 'DEBUG_db_manager_v2.txt'])
-
-if __name__ == '__main__':
-    debug()

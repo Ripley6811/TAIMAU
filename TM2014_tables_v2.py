@@ -27,20 +27,23 @@ Base = declarative_base()
 def today():
     return datetime.datetime.now()
 
-def repr_str(obj):
-    '''Returns a string representation of the dictionary object with
-    underscored keywords removed ("_keyword").
-    '''
-    copy = obj.__dict__.copy()
-    for key in copy.keys():
-        if key.startswith(u'_'):
-            try:
-                del copy['_sa_instance_state']
-            except KeyError:
-                pass
-    return repr(copy)
+
 
 def AddDictRepr(aClass):
+
+    def repr_str(obj):
+        '''Returns a string representation of the dictionary object with
+        underscored keywords removed ("_keyword").
+        '''
+        copy = obj.__dict__.copy()
+        for key in copy.keys():
+            if key.startswith(u'_'):
+                try:
+                    del copy['_sa_instance_state']
+                except KeyError:
+                    pass
+        return repr(copy)
+
     aClass.__repr__ = repr_str
     return aClass
 
@@ -73,9 +76,9 @@ class Order(Base):
     discount = Col(Int) # Discount percentage as integer (0-100)
     totalskus = Col(Int)
     totalunits = Col(Float) # AUTO: unitssku * totalskus
-    subtotal = Col(Float)
+    subtotal = Col(Float) #TODO: Remove and leave final totals in attached invoice.
     applytax = Col(Bool) # True = 5%, False = 0%
-    totalcharge = Col(Int, default=updatetotal, onupdate=updatetotal) # AUTO
+    totalcharge = Col(Int, default=updatetotal, onupdate=updatetotal) #TODO: Remove
 
     orderdate = Col(Date)  # Use as "expected" delivery date. (Originally was order placement date)
     duedate = Col(Date, nullable=False)  # Expected delivery date
@@ -131,12 +134,73 @@ class Order(Base):
             return False
         return not (False in [prec.invoice.paid for prec in self.invoices])
 
+    def qty_quote(self, qty):
+        subtotal = self.price * qty
+        if self.product.unitpriced:
+            subtotal *= self.product.units
+        return int(round(subtotal))
 
-    def formatted(self):
-        txt =  u'PO# {s.orderID:<16}  {s.seller:>8} >> {s.buyer:<8}'
-        txt += u'  {s.totalskus:>5} {s.product.product_label} '
+#    def formatted(self):
+#        txt =  u'PO# {s.orderID:<16}  {s.seller:>8} >> {s.buyer:<8}'
+#        txt += u'  {s.totalskus:>5} {s.product.product_label} '
+#
+#        return txt.format(s=self)
 
-        return txt.format(s=self)
+
+    def listbox_summary(self):
+        """
+        Single line unicode text summary of order intended for use in a listbox.
+
+        Only displays number of attached shipments and invoices.
+        """
+
+        prodtmp = self.product.product_label, self.product.inventory_name
+        if prodtmp[0] and prodtmp[0] != prodtmp[1]:
+            prodtmp = u'{} (台茂:{})'.format(*prodtmp)
+        else:
+            prodtmp = prodtmp[1]
+
+        #Start with checkbox to show that order is completed (delivered and paid)
+        tmp = u'\u2611' if self.all_paid() and self.all_invoiced() and self.all_shipped() else u'\u2610'
+
+        #PO number if available
+        po_no_txt = self.orderID.strip() if self.orderID else '({})'.format(self.id)
+        tmp += u"{0:<14}".format(po_no_txt)
+
+        #Shipping icon and number of shipments
+        tmp += u'\u26DF' if len(self.shipments)>0 else u'\u25C7'
+        tmp += u'*{:<3}'.format(len(self.shipments)) if self.shipments else u'    '
+
+        #Invoice sent icon and number of invoices
+        tmp += u'\u2696' if len(self.invoices)>0 else u'\u25C7'
+        tmp += u'*{:<3}'.format(len(self.invoices)) if self.invoices else u'    '
+
+
+        try:
+            tmp += u"訂單日:{0.month:>2}月{0.day:>2}日".format(self.orderdate)
+        except:
+            tmp += u'(Order date not entered)'
+
+        try:
+            tmp += u" \u273F {s.seller}\u2794{s.buyer} \u273F ".format(s=self)
+        except Exception as e:
+            tmp += u'(ERROR: {})'.format(e)
+
+        try:
+            tmp += u"{rem_qty:>6}{s.totalskus:>5}{2} {0:<14} @ ${4} \u214C {5}".format(
+                prodtmp,
+                int(self.totalunits),
+                self.product.UM if self.product.SKU == u'槽車' else self.product.SKU,
+                int(self.totalunits),
+                int(self.price) if float(self.price).is_integer() else self.price,
+                self.product.UM if self.product.unitpriced else self.product.SKU,
+                rem_qty= u'{}/'.format(self.qty_remaining()),
+                s= self,
+                )
+        except Exception as e:
+            tmp += u'(ERROR: {})'.format(e)
+
+        return tmp
 
 
 #==============================================================================
@@ -144,26 +208,34 @@ class Order(Base):
 #==============================================================================
 @AddDictRepr
 class Shipment(Base): # Keep track of shipments/SKUs for one order
+    '''
+    #TODO: Separate manifest info and manifest items.
+    order : backref to Order
+    '''
     __tablename__ = 'shipment'
     id = Col(Int, primary_key=True)
     order_id = Col(Int, ForeignKey('order.id'), nullable=False)
-    #order = rel('Order')
 
     sku_qty = Col(Int, nullable=False) # Deduct from total SKUs due
 
     shipmentdate = Col(Date, nullable=False)
     shipmentID = Col(Utf, default=u'') # i.e., Manifest number
     shipmentnote = Col(Utf, default=u'') # Information concerning the delivery
+
+    #TODO: Add destination or add to note (maybe JSON)
     driver = Col(Utf) # Track vehicle driver (optional)
     truck = Col(Utf) # Track vehicle by license (optional)
     note = Col(Utf) # Extra note field if needed
     checked = Col(Bool, nullable=False, default=False) # Extra boolean for matching/verifying
 
-    def tostring(self):
-        txt = u'{date:<10} {s.shipmentID:<10} {s.sku_qty:<10}'
+    # METHODS
+    def listbox_summary(self):
+        """
+        Return a single line unicode summary intended for a listbox.
+        """
+        txt = u'{date:<10}   編號: {s.shipmentID:<10}   QTY: {s.sku_qty:>5} {s.order.product.SKU:<6}   品名: {s.order.product.inventory_name}'
         txt = txt.format(s=self, date=str(self.shipmentdate))
         return txt
-
 
 
 #==============================================================================
@@ -207,14 +279,18 @@ class Invoice(Base): # Keep track of invoices/payments for one order
 #==============================================================================
 @AddDictRepr
 class InvoiceItem(Base): # Keep track of invoices/payments for one order
+    '''
+    order : backref to Order
+    invoice : backref to Invoice
+
+    #TODO: Add ref from InvoiceItem to ShipmentItem, one-to-one
+    '''
     __tablename__ = 'invoiceitem'
     id = Col(Int, primary_key=True)
 
     invoice_no = Col(Utf, ForeignKey('invoice.invoice_no'), nullable=False)
-    #invoice = rel('Invoice')
 
     order_id = Col(Int, ForeignKey('order.id'), nullable=False)
-    #order = rel('Order') #Get product information through related order
 
     sku_qty = Col(Int, nullable=False)
 
@@ -224,6 +300,15 @@ class InvoiceItem(Base): # Keep track of invoices/payments for one order
         if self.order.product.unitpriced:
             subtotal *= self.order.product.units
         return int(round(subtotal))
+    
+    def listbox_summary(self):
+        """
+        Return a single line unicode summary intended for a listbox.
+        """
+        txt = u'{date:<10}   編號: {s.invoice_no:<10}   QTY: {s.sku_qty:>5} {s.order.product.SKU:<6}   Subtotal: ${total:<6}   品名: {s.order.product.inventory_name}'
+        txt = txt.format(s=self, date=str(self.invoice.invoicedate), total=self.subtotal())
+        return txt
+        
 
 
 #==============================================================================
@@ -365,6 +450,17 @@ class Product(Base): # Information for each unique product (including packaging)
             available['SKU_value'] = available['value'] / available['SKUs']
         return available
 
+    def label(self):
+        '''Returns product_label, which is the client supplied name.
+        If a product_label does not exist, then return our inventory_name
+        for the product.
+        '''
+        if self.product_label != u'':
+            return self.product_label
+        else:
+            return self.inventory_name
+    
+
 
 #==============================================================================
 # Stock class
@@ -429,4 +525,4 @@ if __name__ == '__main__':
     print 'order', order
     print order.formatted()
     for each in order.shipments:
-        print each.tostring()
+        print each.listbox_summary()
