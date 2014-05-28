@@ -1,33 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-summary
 
-description
-
-:REQUIRES:
-
-:TODO:
-
-:AUTHOR: Ripley6811
-:ORGANIZATION: None
-:CONTACT: python@boun.cr
-:SINCE: Mon Apr 28 13:28:16 2014
-:VERSION: 0.1
-"""
-#===============================================================================
-# PROGRAM METADATA
-#===============================================================================
-__author__ = 'Ripley6811'
-__contact__ = 'python@boun.cr'
-__copyright__ = ''
-__license__ = ''
-__date__ = 'Mon Apr 28 13:28:16 2014'
-__version__ = '0.1'
-
-#===============================================================================
-# IMPORT STATEMENTS
-#===============================================================================
 import ttk
 import Tkinter as Tk
 from Tkinter import BOTTOM, W, E, N, S
@@ -118,9 +91,7 @@ def create_manifest_frame(frame, info):
         info.method.refresh_manifest_listbox()
 #        info.method.refresh_invoice_listbox()
 
-#    orderPopMenu.add_command(label=u"編輯 (下劃線的記錄)", command=lambda:copyrecord(info, editmode=True))
-#    orderPopMenu.add_command(label=u'切換:已交貨', command=lambda:toggle_delivered(info))
-#    orderPopMenu.add_command(label=u'切換:已支付', command=lambda:toggle_paid(info))
+
     orderPopMenu.add_command(label=u'刪除', command=lambda: delete_order(info))
 
     def orderoptions(event):
@@ -243,8 +214,6 @@ def create_manifest_frame(frame, info):
             info.method.refresh_manifest_listbox()
             info.method.refresh_invoice_listbox()
             fi.destroy()
-#            reset_order_fields()
-#            reload_invoice_frame()
         #END: submit_order()
 
         plength = len(so_tuples)
@@ -382,7 +351,6 @@ def display_manifest_for_edit(info, shipment=None):
 
 
 
-
         ASE_data = {u'ASE No':u'', u'RT No':u'', u'Last No':0,u'Expiration':u''}
         set_data = {}
         pnote = prod_rec.note
@@ -481,9 +449,6 @@ def display_manifest_for_edit(info, shipment=None):
             endno = last_no + ship_rec.sku_qty
             ase_no_group.set(u'{:0>4}-{:0>4}'.format(begin, endno))
 
-            # Could preset the start and end fields or leave blank for defaults.
-#            pF.set(begin)
-#            pL.set(endno)
 
         ase_no.trace('w', set_group_nos)
 
@@ -601,11 +566,6 @@ def display_manifest_for_edit(info, shipment=None):
             b = Tk.Button(info.shipmentWin, text=b_text)
             b['command'] = lambda x=shipment.id: print_labels(x)
             b.grid(row=10+row, column=1, columnspan=4, sticky=Tk.W+Tk.E)
-
-#    check_no = Tk.StringVar()
-#    ttk.Label(info.shipmentWin, text=u'Check number').grid(row=101,column=0)
-#    ttk.Entry(info.shipmentWin, textvariable=check_no, width=20).grid(row=101,column=1,columnspan=2)
-
 
     b = Tk.Button(info.shipmentWin, text="Close window")
     b['command'] = lambda: submit_changes(info)

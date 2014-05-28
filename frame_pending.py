@@ -15,7 +15,6 @@ datelimit = datetime.date.today() - datetime.timedelta(90)
 
 def get_pending_frame(frame, dmv2):
 
-
     q = dmv2.session.query(dmv2.Order)
     q = q.filter_by(is_sale=False)
     q = q.filter(dmv2.Order.duedate > datelimit)
@@ -225,11 +224,9 @@ def get_tablet_frame(frame, dmv2):
 
 
 
-    #
-    #==============================================================================
+    #==========================================================================
     # SET UP TABBED SECTIONS
-    #==============================================================================
-    #
+    #==========================================================================
     nb = ttk.Notebook(frame)
 
     refresh_button = Tk.Button(frame, text=u'Refresh Data', command=refresh)
@@ -240,48 +237,22 @@ def get_tablet_frame(frame, dmv2):
     frame = ttk.Frame(nb)
     nb.add(frame, text=u'進貨表', padding=2)
 
-#    Tk.Label(frame, text=u'進貨預期', bg=u'wheat').pack(side="top", fill='x')
     incoming_listbox = Tk.Listbox(frame, height=10, font=("NSimSun 12"))
     incoming_listbox.pack(side="top",fill="both", expand=True)
-#    Tk.Label(frame, text=u'出貨預期', bg=u'wheat').pack(side="top", fill='x')
-#    deliver_out_listbox = Tk.Listbox(frame, height=10)
-#    deliver_out_listbox.pack(side="top",fill="both", expand=True)
-
-    #---------------------------------------------------------
+    #---------------------------------------------------------------
     frame = ttk.Frame(nb)
     nb.add(frame, text=u'生產表', padding=2)
 
-#    Tk.Label(frame, text=u'進貨: 需要發票', bg=u'wheat').pack(side="top", fill='x')
     production_listbox = Tk.Listbox(frame, height=10, font=("NSimSun 12"))
     production_listbox.pack(side="top",fill="both", expand=True)
-#    Tk.Label(frame, text=u'出貨: 需要發票', bg=u'wheat').pack(side="top", fill='x')
-#    invoice_out_listbox = Tk.Listbox(frame, height=10)
-#    invoice_out_listbox.pack(side="top",fill="both", expand=True)
     #---------------------------------------------------------------
     frame = ttk.Frame(nb)
     nb.add(frame, text=u'出貨表', padding=2)
 
-#    Tk.Label(frame, text=u'進貨: 需要付錢的發票', bg=u'wheat').pack(side="top", fill='x')
     outgoing_listbox = Tk.Listbox(frame, height=10, font=("NSimSun 12"))
     outgoing_listbox.pack(side="top",fill="both", expand=True)
-#    Tk.Label(frame, text=u'出貨: 需要付錢的發票', bg=u'wheat').pack(side="top", fill='x')
-#    pay_out_listbox = Tk.Listbox(frame, height=10)
-#    pay_out_listbox.pack(side="top",fill="both", expand=True)
 
     nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
 
     refresh()
     return refresh
-
-#===============================================================================
-# QUICK REFERENCE
-#===============================================================================
-'''Templates and markup notes
-
->>SPYDER Note markers
-    #XXX: !
-    #TODO: ?
-    #FIXME: ?
-    #HINT: !
-    #TIP: !
-'''

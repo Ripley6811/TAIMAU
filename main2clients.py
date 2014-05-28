@@ -70,13 +70,10 @@ class TaimauApp(Tix.Tk):
         self.option_add("*Font", "PMingLiU 13")
         ttk.Style().configure('.', font=tkFont.Font(family="PMingLiU", size=-12))
 
-
         #
         # SET UP MENU BAR
         #
-
         menubar = Tk.Menu(self)
-
 
         # FILE MENU OPTIONS: LOAD, SAVE, EXIT...
         filemenu = Tk.Menu(menubar, tearoff=0)
@@ -84,7 +81,6 @@ class TaimauApp(Tix.Tk):
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=self.endsession)
         menubar.add_cascade(label="File", menu=filemenu)
-
 
 
         # REPORT MENU OPTIONS
@@ -126,52 +122,30 @@ class TaimauApp(Tix.Tk):
 
         # SET MAIN NOTEBOOK
         nb = ttk.Notebook()
-
-        #TODO:---------- Add Purchases frame
-
+        #---------- Add Purchases frame
         frame = ttk.Frame(nb)
         get_purchases_frame(frame)
         nb.add(frame, text='Purchases', underline=0)
-
         #---------- Add Sales frame
-
         frame = ttk.Frame(nb)
         get_sales_frame(frame)
         nb.add(frame, text='Sales', underline=0)
-
-        #TODO:---------- Add Pending info frame
-
+        #---------- Add Pending info frame
         frame = ttk.Frame(nb)
         frame_pending.get_pending_frame(frame, dmv2)
         nb.add(frame, text='Pending', underline=2)
-
         #TODO:---------- Add In-Out Records info frame
-
         frame = ttk.Frame(nb)
         frame_pending.get_tablet_frame(frame, dmv2)
         nb.add(frame, text='Tablet Data', underline=0)
-
         #TODO:---------- Add Company data edit frame
-
         frame = ttk.Frame(nb)
         frame_company_editor.get_company_editor(frame, dmv2)
         nb.add(frame, text='Catalog', underline=0)
-
         #TODO:---------- Add Warehouse management frame
 
-#        frame = ttk.Frame(nb)
-#
-#        txt = Tk.Text(frame, wrap=Tk.WORD, width=40, height=10)
-#        vscroll = ttk.Scrollbar(frame, orient=Tk.VERTICAL, command=txt.yview)
-#        txt['yscroll'] = vscroll.set
-#        vscroll.pack(side=Tk.RIGHT, fill=Tk.Y)
-#        txt.pack(fill=Tk.BOTH, expand=Tk.Y)
-#
-#        # add to notebook (underline = index for short-cut character)
-#        nb.add(frame, text='Warehouse', underline=0)
 
         #--------- Set arrangement of notebook frames
-
         nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
 
 
@@ -499,27 +473,6 @@ def refresh_listboxes(info):
         info.listbox.rec_orders.itemconfig(i, bg=u'lavender',
                                            selectbackground=u'dark orchid')
 
-
-#        shipped_color = dict(bg=u'SlateGray4', fg=u'gray79',
-#                             selectbackground=u'tomato',
-#                             selectforeground=u'black')
-#        no_ship_color = dict(bg=u'pale green', selectbackground=u'yellow',
-#                             selectforeground=u'black')
-#        info.listbox.rec_manifest.insert(i, each)
-#        ins_colors = shipped_color if info.order_records[i].all_shipped() else no_ship_color
-#        info.listbox.rec_manifest.itemconfig(i, ins_colors)
-
-#        invoiced_color = dict(bg=u'CadetBlue1', selectbackground=u'blue2')
-#        no_ship_color = dict(bg=u'pale green', selectbackground=u'yellow',
-#                             selectforeground=u'black')
-#        info.listbox.rec_invoices.insert(i, each)
-#        ins_colors = invoiced_color if info.order_records[i].all_invoiced() else no_ship_color
-#        if info.order_records[i].all_paid():
-#            ins_colors = dict(bg=u'SlateGray4', fg=u'gray79',
-#                              selectbackground=u'tomato',
-#                              selectforeground=u'black')
-#        info.listbox.rec_invoices.itemconfig(i, ins_colors)
-#    info.listbox.rec_orders.selection_set(Tk.END)
 
 
 

@@ -23,9 +23,7 @@ def make_order_entry_frame(frame, info):
     create_manifest_button = Tk.Button(frameIn, text=u'\u26DF 創造出貨表 \u26DF',
                                        bg=u'light salmon')
     create_manifest_button.pack(side=BOTTOM, fill=Tk.X)
-#    b = Tk.Button(frameIn, text=u"編輯 (下劃線的記錄)",
-#            command=lambda:copyrecord(info,True))
-#    b.pack(side=Tk.BOTTOM, fill=Tk.X)
+
     scrollbar2 = Tk.Scrollbar(frameIn, orient=Tk.VERTICAL)
     info.listbox.rec_orders = Tk.Listbox(frameIn, selectmode=Tk.EXTENDED,
                          yscrollcommand=scrollbar2.set,
@@ -70,14 +68,6 @@ def make_order_entry_frame(frame, info):
             info.listbox.rec_orders.insert(i, each)
             info.listbox.rec_orders.itemconfig(i, bg=u'lavender',
                                                selectbackground=u'dark orchid')
-#            shipped_color = dict(bg=u'SlateGray4', fg=u'gray79',
-#                                 selectbackground=u'tomato',
-#                                 selectforeground=u'black')
-#            no_ship_color = dict(bg=u'pale green', selectbackground=u'yellow',
-#                                 selectforeground=u'black')
-#            info.listbox.rec_manifest.insert(i, each)
-#            ins_colors = shipped_color if info.order_records[i].all_shipped() else no_ship_color
-#            info.listbox.rec_manifest.itemconfig(i, ins_colors)
 
 
     def refresh_order_listbox_item(id, index):
@@ -96,26 +86,6 @@ def make_order_entry_frame(frame, info):
 
     info.method.refresh_order_listbox_item = refresh_order_listbox_item
 
-#    def toggle_delivered(info):
-#        #TODO: Auto enter and attach a shipment
-#        active_index = info.listbox.rec_orders.index(Tk.ACTIVE)
-#        rec_id = info.order_rec_IDs[active_index]
-#        rec = info.dmv2.get_order(rec_id)
-#        updates = dict(delivered=False if rec.delivered else True)
-##        if u'.0' in rec.deliveryID:
-##            updates['deliveryID'] = '{:0>7}'.format(int(float(rec.deliveryID)))
-#        info.dmv2.update_order(rec_id, updates)
-#        refresh_order_listbox_item(rec_id, active_index)
-#
-#
-#    def toggle_paid(info):
-#        #TODO: Auto enter and attach a payment
-#        active_index = info.listbox.rec_orders.index(Tk.ACTIVE)
-#        rec_id = info.order_rec_IDs[active_index]
-#        rec = info.dmv2.get_order(rec_id)
-#        updates = dict(paid=False if rec.paid else True)
-#        info.dmv2.update_order(rec_id, updates)
-#        refresh_order_listbox_item(rec_id, active_index)
 
     def delete_order(info):
         info.dmv2.delete_order(info.order_rec_IDs[info.listbox.rec_orders.index(Tk.ACTIVE)])
@@ -124,20 +94,11 @@ def make_order_entry_frame(frame, info):
         info.method.refresh_manifest_listbox()
         info.method.refresh_invoice_listbox()
 
-#    orderPopMenu.add_command(label=u"編輯 (下劃線的記錄)", command=lambda:copyrecord(info, editmode=True))
-#    orderPopMenu.add_command(label=u'切換:已交貨', command=lambda:toggle_delivered(info))
-#    orderPopMenu.add_command(label=u'切換:已支付', command=lambda:toggle_paid(info))
     orderPopMenu.add_command(label=u'刪除', command=lambda: delete_order(info))
 
     def orderoptions(event):
         orderPopMenu.post(event.x_root, event.y_root)
     info.listbox.rec_orders.bind("<Button-3>", orderoptions)
-#    info.listbox.rec_orders.bind("<F1>", lambda _:toggle_delivered(info))
-#    info.listbox.rec_orders.bind("<F2>", lambda _:toggle_paid(info))
-#    info.listbox.rec_orders.insert(0,*orderlist)
-
-
-
 
 
 
@@ -447,7 +408,6 @@ def make_order_entry_frame(frame, info):
         info.method.reload_orders(info)
         refresh_order_listbox_all()
         reset_order_fields()
-#        toggle_delivery_labels() #TIP: Can change this to adding a trace on the BoolenVar.
     #END: submit_order()
 
 
@@ -466,19 +426,6 @@ def make_order_entry_frame(frame, info):
         _=dp.Calendar(fp, textvariable=tvar)
         _.grid(row=100, column=0, rowspan=3, columnspan=3, sticky=Tk.W+Tk.E)
 
-#    def toggle_delivery_labels():
-#        if order_delivered_bool.get():
-#            order_date_label.set(u'Delivery Date')
-#            order_note_label.set(u'Delivery Note')
-#            order_number_label.set(u'Delivery Number')
-#            driver_field.config(state=Tk.NORMAL)
-#            truck_field.config(state=Tk.NORMAL)
-#        else:
-#            order_date_label.set(u'Due Date')
-#            order_note_label.set(u'Order Note')
-#            order_number_label.set(u'Order Number')
-#            driver_field.config(state=Tk.DISABLED)
-#            truck_field.config(state=Tk.DISABLED)
 
 
     seller_str = Tk.StringVar()
@@ -1103,14 +1050,6 @@ def make_order_entry_frame(frame, info):
             else:
                 # Clear field if the number was already entered (undo auto-entry)
                 qty_SV[row].set(u'')
-#            w_entryfields[row].focus()
-#            w_entryfields[row].icursor(Tk.END)
-#            w_entryfields[row].selection_range(0, Tk.END)
-
-
-#        w_labels_MPNs = []
-#        w_entryfields = []
-#        w_labels_SKUs = []
 
 
         for i, each in enumerate([u'品名',u'這次件數',u'(剩下/要求)']):#,u'全交了?'

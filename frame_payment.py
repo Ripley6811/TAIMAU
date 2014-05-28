@@ -108,24 +108,8 @@ def set_invoice_frame(frame, info):
 
     info.listbox.rec_invoices.bind("<Double-Button-1>", lambda _: display_invoice_for_edit(info))
 
-#
-#    def edit_invoice(info):
-#        rec_ID = info.order_rec_IDs[info.listbox.rec_invoices.index(Tk.ACTIVE)]
-#        info.method.reload_orders(info)
-#        info.method.refresh_listboxes(info)
 
     orderPopMenu = Tk.Menu(frameIn, tearoff=0)
-#    orderPopMenu.add_command(label=u"編輯 (下劃線的記錄)", command=lambda:copyrecord(info, editmode=True))
-#    orderPopMenu.add_command(label=u'切換:已交貨', command=lambda:toggle_delivered(info))
-#    orderPopMenu.add_command(label=u'切換:已支付', command=lambda:toggle_paid(info))
-#    orderPopMenu.add_command(label=u'顯示發票', command=lambda:edit_invoice(info))
-
-#    def orderoptions(event):
-#        orderPopMenu.post(event.x_root, event.y_root)
-#    info.listbox.rec_invoices.bind("<Button-3>", orderoptions)
-#    info.listbox.rec_invoices.bind("<F1>", lambda _:toggle_delivered(info))
-#    info.listbox.rec_invoices.bind("<F2>", lambda _:toggle_paid(info))
-#    info.listbox.rec_invoices.insert(0,*orderlist)
 
     def delete_order(info):
         inv_item, _, _ = info.invoices.invoice_recs[info.listbox.rec_invoices.index(Tk.ACTIVE)]
@@ -136,9 +120,6 @@ def set_invoice_frame(frame, info):
 #        info.method.refresh_manifest_listbox()
         info.method.refresh_invoice_listbox()
 
-#    orderPopMenu.add_command(label=u"編輯 (下劃線的記錄)", command=lambda:copyrecord(info, editmode=True))
-#    orderPopMenu.add_command(label=u'切換:已交貨', command=lambda:toggle_delivered(info))
-#    orderPopMenu.add_command(label=u'切換:已支付', command=lambda:toggle_paid(info))
     orderPopMenu.add_command(label=u'刪除', command=lambda: delete_order(info))
 
     def orderoptions(event):
@@ -215,8 +196,6 @@ def display_invoice_for_edit(info, inv_item=None):
 
 
     #TODO: Auto-fill the first two letters from previous invoice
-#    fapiao = u'發票號碼'.format(u'')
-#    invoiceID_str = Tk.StringVar()
     Tk.Label(info.invoiceWin, text=u'發票號碼: {}'.format(u' '.join(inv_no)), **cell_config).grid(row=0,column=0, columnspan=2, sticky=Tk.W+Tk.E)
 #    Tk.Label(info.invoiceWin, text=).grid(row=1,column=0, columnspan=2, sticky=Tk.W+Tk.E)
 
@@ -230,9 +209,6 @@ def display_invoice_for_edit(info, inv_item=None):
 
     riqi = u'中 華 民 國 103年 {0.month}月 {0.day}日'.format(invoice.invoicedate)
     Tk.Label(info.invoiceWin, text=riqi, **cell_config).grid(row=3,column=2, columnspan=2, sticky=Tk.W+Tk.E)
-
-#    huodan = u'貨單編號: {}'.format(ship_id)
-#    Tk.Label(info.invoiceWin, text=huodan, **cell_config).grid(row=2,column=4, columnspan=2, sticky=Tk.W+Tk.E)
 
 
     cell_config = dict(
