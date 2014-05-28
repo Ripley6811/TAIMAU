@@ -76,7 +76,6 @@ def set_invoice_frame(frame, info):
     scrollbar2.pack(side=Tk.RIGHT, fill=Tk.Y)
     info.listbox.rec_invoices.pack(side=TOP, fill=Tk.BOTH)
     # Add right-click popup menu
-    orderPopMenu = Tk.Menu(frameIn, tearoff=0)
     def refresh_invoice_listbox():
         # Add previous orders to order listbox
         info.listbox.rec_invoices.delete(0, Tk.END)
@@ -115,6 +114,7 @@ def set_invoice_frame(frame, info):
 #        info.method.reload_orders(info)
 #        info.method.refresh_listboxes(info)
 
+    orderPopMenu = Tk.Menu(frameIn, tearoff=0)
 #    orderPopMenu.add_command(label=u"編輯 (下劃線的記錄)", command=lambda:copyrecord(info, editmode=True))
 #    orderPopMenu.add_command(label=u'切換:已交貨', command=lambda:toggle_delivered(info))
 #    orderPopMenu.add_command(label=u'切換:已支付', command=lambda:toggle_paid(info))
@@ -127,6 +127,23 @@ def set_invoice_frame(frame, info):
 #    info.listbox.rec_invoices.bind("<F2>", lambda _:toggle_paid(info))
 #    info.listbox.rec_invoices.insert(0,*orderlist)
 
+    def delete_order(info):
+        inv_item, _, _ = info.invoices.invoice_recs[info.listbox.rec_invoices.index(Tk.ACTIVE)]
+        info.dmv2.session.query(info.dmv2.InvoiceItem).filter_by(id=inv_item.id).delete()
+        info.dmv2.session.commit()
+        info.method.reload_orders(info)
+        info.method.refresh_listboxes(info)
+#        info.method.refresh_manifest_listbox()
+        info.method.refresh_invoice_listbox()
+
+#    orderPopMenu.add_command(label=u"編輯 (下劃線的記錄)", command=lambda:copyrecord(info, editmode=True))
+#    orderPopMenu.add_command(label=u'切換:已交貨', command=lambda:toggle_delivered(info))
+#    orderPopMenu.add_command(label=u'切換:已支付', command=lambda:toggle_paid(info))
+    orderPopMenu.add_command(label=u'刪除', command=lambda: delete_order(info))
+
+    def orderoptions(event):
+        orderPopMenu.post(event.x_root, event.y_root)
+    info.listbox.rec_invoices.bind("<Button-3>", orderoptions)
 
     frameIn.pack(fill=Tk.BOTH)
 

@@ -60,8 +60,6 @@ def create_manifest_frame(frame, info):
     scrollbar2.config(command=info.listbox.rec_manifest.yview)
     scrollbar2.pack(side=Tk.RIGHT, fill=Tk.Y)
     info.listbox.rec_manifest.pack(side=Tk.TOP, fill=Tk.BOTH)
-    # Add right-click popup menu
-    orderPopMenu = Tk.Menu(frameIn, tearoff=0)
 
 
     def create_invoice():
@@ -108,6 +106,26 @@ def create_manifest_frame(frame, info):
 
     info.listbox.rec_manifest.bind("<Double-Button-1>", lambda _: display_manifest_for_edit(info))
 
+
+    # Add right-click popup menu
+    orderPopMenu = Tk.Menu(frameIn, tearoff=0)
+    def delete_order(info):
+        shiprec, _ = info.manifest.shipment_recs[info.listbox.rec_manifest.index(Tk.ACTIVE)]
+        info.dmv2.session.query(info.dmv2.Shipment).filter_by(id=shiprec.id).delete()
+        info.dmv2.session.commit()
+        info.method.reload_orders(info)
+        info.method.refresh_listboxes(info)
+        info.method.refresh_manifest_listbox()
+#        info.method.refresh_invoice_listbox()
+
+#    orderPopMenu.add_command(label=u"編輯 (下劃線的記錄)", command=lambda:copyrecord(info, editmode=True))
+#    orderPopMenu.add_command(label=u'切換:已交貨', command=lambda:toggle_delivered(info))
+#    orderPopMenu.add_command(label=u'切換:已支付', command=lambda:toggle_paid(info))
+    orderPopMenu.add_command(label=u'刪除', command=lambda: delete_order(info))
+
+    def orderoptions(event):
+        orderPopMenu.post(event.x_root, event.y_root)
+    info.listbox.rec_manifest.bind("<Button-3>", orderoptions)
 
 
 
