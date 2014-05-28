@@ -121,6 +121,8 @@ def make_order_entry_frame(frame, info):
         info.dmv2.delete_order(info.order_rec_IDs[info.listbox.rec_orders.index(Tk.ACTIVE)])
         info.method.reload_orders(info)
         refresh_order_listbox_all()
+        info.method.refresh_manifest_listbox()
+        info.method.refresh_invoice_listbox()
 
 #    orderPopMenu.add_command(label=u"編輯 (下劃線的記錄)", command=lambda:copyrecord(info, editmode=True))
 #    orderPopMenu.add_command(label=u'切換:已交貨', command=lambda:toggle_delivered(info))
