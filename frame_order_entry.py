@@ -506,7 +506,18 @@ def make_order_entry_frame(frame, info):
             buyer = buyer_str.get()
             delivered = delivered_bool.get()
             invoiced = invoiced_bool.get()
-            if invoiced == True and invoice_no.get():
+
+            if invoiced == True and not invoice_no.get():
+                tkMessageBox.showwarning(u'Invoice number required',u'Invoice number is required. Invoice not submitted.')
+                invoiced = False
+
+            if delivered == True and not deliveryID.get():
+                delivered = tkMessageBox.askokcancel(u'Manifest Number Warning.',u'Continue without a manifest number?')
+
+
+            if invoiced == True:
+                #XXX: Will prevent adding to previously entered invoice.
+                #TODO: Warn if invoice already exists
                 inv_dict = dict(
                     seller= seller,
                     buyer= buyer,
@@ -551,9 +562,7 @@ def make_order_entry_frame(frame, info):
                 )
 
                 # Insert shipment record if marked as delivered.
-                if delivered == True and deliveryID.get():
-                    print "Add a completed shipment record to order #"
-
+                if delivered == True:
                     ship_dict = dict(
                         sku_qty= int(p_qty[i].get()),
 
@@ -568,17 +577,13 @@ def make_order_entry_frame(frame, info):
 #                    session.add(shipment) #Not necessary when backref exists.
 
                 # Insert shipment record if marked as delivered.
-                if invoiced == True and invoice_no.get():
-                    print "Add a completed invoice record to order #"
-
-
+                if invoiced == True:
                     invit_dict = dict(
                         sku_qty= int(p_qty[i].get()),
                     )
                     invoice_item = InvoiceItem(**invit_dict)
                     invoice_item.order = order
                     invoice_item.invoice = invoice
-
 
                 # Insert new record into the database.
                 session.add(order)
@@ -921,6 +926,9 @@ def make_order_entry_frame(frame, info):
 
 
     def create_manifest_form(orders):
+        if len(orders) > 5:
+            tkMessageBox.showerror(u'5 items per manifest.',u'Select 1 to 5 Records. (Max is 5)')
+            return False
 
         fs = Tix.Toplevel(width=700)
         fs.title(u"New Manifest Form")
@@ -983,10 +991,14 @@ def make_order_entry_frame(frame, info):
         def submit_manifest():
             #TODO: Check if manifest number already used and confirm to attach to previous
             if shipment_number_str.get() in [u'', None, u'None']:
-                okay = tkMessageBox.askokcancel(u'Manifest number warning', u'You did not enter a manifest number (書或編號).\Submit anyway?')
+                okay = tkMessageBox.askokcancel(u'Manifest number warning', u'You did not enter a manifest number (書或編號).\nSubmit anyway?')
                 if not okay:
                     return
 
+            if validate_qty_SV() == False:
+                okay = tkMessageBox.askokcancel(u'Manifest SKU value', u'QTY must be a whole number. Check numbers.')
+                fs.focus_set()
+                return
 
             for i, rec in enumerate(orders):
                 # SET delivery date.
@@ -1038,7 +1050,49 @@ def make_order_entry_frame(frame, info):
 
         plength = len(orders)
         qty_SV = [Tk.StringVar() for i in range(plength)]
+        units_SV = [Tk.StringVar() for i in range(plength)]
 #        allshipped_BV = [Tk.BooleanVar() for i in range(plength)]
+
+        info.order.trace_lock = None
+        def update_units_SV(i):
+            if info.order.trace_lock == None:
+                info.order.trace_lock = u'updating units'
+#                for i in range(plength):
+                try:
+                    qty = float(qty_SV[i].get())
+                    pu = orders[i].product.units
+                    new_val = qty * pu
+                    new_val = int(new_val) if new_val.is_integer() else new_val
+                    units_SV[i].set(new_val)
+                except ValueError:
+                    units_SV[i].set(u'')
+            info.order.trace_lock = None
+
+
+        def update_qty_SV(i):
+            if info.order.trace_lock == None:
+                info.order.trace_lock = u'updating SKUs'
+#                for i in range(plength):
+                try:
+                    units = float(units_SV[i].get())
+                    pu = orders[i].product.units
+                    new_val = units / pu if pu != 0 else 0
+                    new_val = int(new_val) if new_val.is_integer() else new_val
+                    qty_SV[i].set(new_val)
+                except ValueError:
+                    qty_SV[i].set(u'')
+            info.order.trace_lock = None
+
+
+        def validate_qty_SV():
+            for i in range(plength):
+                try:
+                    if not float(qty_SV[i].get()).is_integer():
+                        return False
+                except ValueError:
+                    return False
+            return True
+
 
 
         # Fill-in or clear out the desired quantity for a product.
@@ -1052,7 +1106,7 @@ def make_order_entry_frame(frame, info):
                 qty_SV[row].set(u'')
 
 
-        for i, each in enumerate([u'品名',u'這次件數',u'(剩下/要求)']):#,u'全交了?'
+        for i, each in enumerate([u'品名',u'這次件數',u'(剩下/要求)', u'Total units']):
             Tk.Label(fs, text=each).grid(row=9,column=i)
 
         # Add new product rows
@@ -1063,9 +1117,15 @@ def make_order_entry_frame(frame, info):
             ew = Tk.Entry(fs, textvariable=qty_SV[rid], width=8, justify=Tk.CENTER)
             ew.grid(row=rid+10,column=1)
             ew.config(selectbackground=u'LightSkyBlue1', selectforeground=u'black')
+            qty_SV[rid].trace('w', lambda a, b, c, i=rid: update_units_SV(i))
 
             lw = Tk.Label(fs, text=u'( {} / {} )'.format(rec.totalskus-shipped_qty[rid],rec.totalskus), justify=Tk.CENTER)
             lw.grid(row=rid+10,column=2)#, sticky=Tk.W)
+
+            ew = Tk.Entry(fs, textvariable=units_SV[rid], width=8, justify=Tk.CENTER)
+            ew.grid(row=rid+10,column=3)
+            ew.config(selectbackground=u'LightSkyBlue1', selectforeground=u'black')
+            units_SV[rid].trace('w', lambda a, b, c, i=rid: update_qty_SV(i))
 
             #Fill in remaining qty
             match_qty(rid)

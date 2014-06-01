@@ -60,16 +60,16 @@ def get_company_editor(frame,dm):
             return number
         alist = [u"{1} {0}{2}{0}  ({3})".format(u'\u26D4' if c.discontinued else u'',
                     u'$' if not c.is_supply else u'\u2697',
-                    c.product_label if c.product_label else c.inventory_name,
+                    c.label(),
                     c.inventory_name) for c in queryresult]
         clist = [u"{0}{1} {2} per {3} ({4}){0}".format(u'\u26D4' if c.discontinued else u'',
                     truncate(c.units), c.UM, c.SKU, c.SKUlong) for c in queryresult]
         info.listbox.pIDs = [c.MPN for c in queryresult]
 
-        info.listbox.products.delete(0,Tk.END)
-        info.listbox.products.insert(0,*alist)
-        info.listbox.products2.delete(0,Tk.END)
-        info.listbox.products2.insert(0,*clist)
+        info.listbox.products.delete(0, Tk.END)
+        info.listbox.products.insert(0, *alist)
+        info.listbox.products2.delete(0, Tk.END)
+        info.listbox.products2.insert(0, *clist)
 
 
     def toggle_discontinued():
@@ -77,7 +77,8 @@ def get_company_editor(frame,dm):
         id = info.listbox.pIDs[activeP_ID]
         print 'id', repr(id)
         thisprod = info.dmv2.session.query(info.dmv2.Product).get(id)
-        updates = {'discontinued': False if thisprod.discontinued else True, 'summary':thisprod.summary}
+        updates = {'discontinued': False if thisprod.discontinued else True,
+                   'summary': thisprod.summary}
         info.dmv2.session.query(info.dmv2.Product).filter_by(MPN=id).update(updates)
         info.dmv2.session.commit()
 

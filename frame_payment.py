@@ -2,70 +2,76 @@
 # -*- coding: utf-8 -*-
 
 import Tkinter as Tk
-from Tkinter import EXTENDED, TOP, END
+from Tkinter import EXTENDED, TOP, END, N, S, E, W, BOTTOM, X
 import tkMessageBox
 import ttk
 import tkFont
 import date_picker as dp
 import datetime
+import Tix
 
 
-def format_pay_info(record):
-    '''TODO: Replace delivery date with invoice date if available.'''
-    pdate = record.duedate
-    txt = u''
-    txt += u'\u2691' if record.all_shipped() else u'\u2690'
-    txt += u'\u2611' if record.all_paid() else u'\u2610'
-    txt += u'\u269A' if record.applytax else u'  '
-    txt += u'  {}\u2794{}'.format(record.seller, record.buyer)
-    try:
-        ddate = record.invoices[0].invoicedate if record.invoices[0].invoicedate else record.orderdate
-        txt += u'  \u26DF{}/{}/{}'.format(ddate.year,ddate.month,ddate.day)
-    except:
-        pass
-    txt += u'  {}'.format(record.product.inventory_name)
-    txt += u'  ${}'.format(record.totalcharge)
-    if len(record.invoices) > 0:
-        txt += u'  \u2116 {}'.format(record.invoices[0].invoice_no)
-    if pdate:
-        txt += u'  \u2696{}/{}/{}'.format(pdate.year,pdate.month,pdate.day)
-    return txt
-
-
-def convert_date(adate):
-    '''Converts a formatted string to a datetime.date object or from date to str
-    depending on input.'''
-    if isinstance(adate,str):
-
-        strdate = adate
-        # Try different separators until one produces a list of len 2 or 3
-        for sep in [None,'/','-','\\']:
-            if 2 <= len(adate.split(sep)) <=3:
-                strdate = adate.split(sep)
-                break
-        print '    strdate', strdate
-        try:
-            # If len three, assume date is given last, if two then use closest year
-            if len(strdate) == 3:
-                return datetime.date(int(strdate[2]),int(strdate[0]),int(strdate[1]))
-            else:
-                dnow = datetime.date.today()
-                dates = [datetime.date(dnow.year+x,int(strdate[0]),int(strdate[1])) for x in [-1,0,1]]
-                diff = [abs((x-dnow).days) for x in dates]
-                return dates[diff.index(min(diff))]
-        except:
-            raise TypeError, "Date not in the form MM/DD or MM/DD/YYYY"
-    elif isinstance(adate,datetime.date):
-        #Convert datetime object to string
-        return u'{}/{}/{}'.format(adate.month,adate.day,adate.year)
+#def format_pay_info(record):
+#    '''TODO: Replace delivery date with invoice date if available.'''
+#    pdate = record.duedate
+#    txt = u''
+#    txt += u'\u2691' if record.all_shipped() else u'\u2690'
+#    txt += u'\u2611' if record.all_paid() else u'\u2610'
+#    txt += u'\u269A' if record.applytax else u'  '
+#    txt += u'  {}\u2794{}'.format(record.seller, record.buyer)
+#    try:
+#        ddate = record.invoices[0].invoicedate if record.invoices[0].invoicedate else record.orderdate
+#        txt += u'  \u26DF{}/{}/{}'.format(ddate.year,ddate.month,ddate.day)
+#    except:
+#        pass
+#    txt += u'  {}'.format(record.product.inventory_name)
+#    txt += u'  ${}'.format(record.totalcharge)
+#    if len(record.invoices) > 0:
+#        txt += u'  \u2116 {}'.format(record.invoices[0].invoice_no)
+#    if pdate:
+#        txt += u'  \u2696{}/{}/{}'.format(pdate.year,pdate.month,pdate.day)
+#    return txt
+#
+#
+#def convert_date(adate):
+#    '''Converts a formatted string to a datetime.date object or from date to str
+#    depending on input.'''
+#    if isinstance(adate,str):
+#
+#        strdate = adate
+#        # Try different separators until one produces a list of len 2 or 3
+#        for sep in [None,'/','-','\\']:
+#            if 2 <= len(adate.split(sep)) <=3:
+#                strdate = adate.split(sep)
+#                break
+#        print '    strdate', strdate
+#        try:
+#            # If len three, assume date is given last, if two then use closest year
+#            if len(strdate) == 3:
+#                return datetime.date(int(strdate[2]),int(strdate[0]),int(strdate[1]))
+#            else:
+#                dnow = datetime.date.today()
+#                dates = [datetime.date(dnow.year+x,int(strdate[0]),int(strdate[1])) for x in [-1,0,1]]
+#                diff = [abs((x-dnow).days) for x in dates]
+#                return dates[diff.index(min(diff))]
+#        except:
+#            raise TypeError, "Date not in the form MM/DD or MM/DD/YYYY"
+#    elif isinstance(adate,datetime.date):
+#        #Convert datetime object to string
+#        return u'{}/{}/{}'.format(adate.month,adate.day,adate.year)
 
 
 def set_invoice_frame(frame, info):
     info.invoices = info.__class__()
     info.invoices.codes = dict()
-    incoming = info.incoming = False if info.src == 'Sales' else True
+    info.invoices.selection = Tk.StringVar()
+#    incoming = info.incoming = False if info.src == 'Sales' else True
 
     frameIn = ttk.Frame(frame)
+
+    create_payment_button = Tk.Button(frameIn, text=u'$ $ $ Multiple Invoice Payment Information $ $ $',
+                                       bg=u'light salmon')
+    create_payment_button.pack(side=BOTTOM, fill=X)
 
     scrollbar2 = Tk.Scrollbar(frameIn, orient=Tk.VERTICAL)
     info.listbox.rec_invoices = Tk.Listbox(frameIn, selectmode=EXTENDED,
@@ -75,10 +81,26 @@ def set_invoice_frame(frame, info):
     scrollbar2.config(command=info.listbox.rec_invoices.yview)
     scrollbar2.pack(side=Tk.RIGHT, fill=Tk.Y)
     info.listbox.rec_invoices.pack(side=TOP, fill=Tk.BOTH)
+
+
+    def store_indices(info):
+        indices = map(int, info.listbox.rec_invoices.curselection())
+        info.invoices.selection.set(indices)
+
+
+    def create_payment():
+#        indices = map(int, info.listbox.rec_invoices.curselection())
+#        invoices = [info.invoices.invoice_recs[i][-1] for i in indices]
+        create_payment_form()
+
+
+    create_payment_button['command'] = create_payment
+
+
     # Add right-click popup menu
     def refresh_invoice_listbox():
         # Add previous orders to order listbox
-        info.listbox.rec_invoices.delete(0, Tk.END)
+        info.listbox.rec_invoices.delete(0, END)
 
         # List of order summaries
         query = info.dmv2.session.query
@@ -99,7 +121,7 @@ def set_invoice_frame(frame, info):
             shipped_color = dict(bg=u'SlateGray4', fg=u'gray79',
                                  selectbackground=u'tomato',
                                  selectforeground=u'black')
-            no_ship_color = dict(bg=u'pale green', selectbackground=u'yellow',
+            no_ship_color = dict(bg=u'khaki', selectbackground=u'yellow',
                                  selectforeground=u'black')
             info.listbox.rec_invoices.insert(i, each)
             ins_colors = shipped_color if invoice_recs[i][2].paid else no_ship_color
@@ -107,6 +129,7 @@ def set_invoice_frame(frame, info):
     info.method.refresh_invoice_listbox = refresh_invoice_listbox
 
     info.listbox.rec_invoices.bind("<Double-Button-1>", lambda _: display_invoice_for_edit(info))
+    info.listbox.rec_invoices.bind("<ButtonRelease-1>", lambda _: store_indices(info))
 
 
     orderPopMenu = Tk.Menu(frameIn, tearoff=0)
@@ -127,6 +150,81 @@ def set_invoice_frame(frame, info):
     info.listbox.rec_invoices.bind("<Button-3>", orderoptions)
 
     frameIn.pack(fill=Tk.BOTH)
+
+
+    def create_payment_form():
+        fi = Tix.Toplevel(width=700)
+        fi.title(u"New Invoice Form")
+
+        def date_picker():
+            _=dp.Calendar(fi, textvariable=date_SV)
+            _.grid(row=0, column=0, rowspan=30, columnspan=6, sticky=W+E+N+S)
+
+        paid_BV = Tk.BooleanVar()
+        paid_BV.set(True)
+        date_SV = Tk.StringVar()
+        check_SV = Tk.StringVar()
+        total_SV = Tk.StringVar()
+        count_SV = Tk.StringVar()
+        inv_names_SV = Tk.StringVar()
+
+        ttk.Label(fi, text=u'Total:', anchor=E).grid(row=1, column=0, sticky=W+E)
+        ttk.Label(fi, textvariable=total_SV, anchor=W).grid(row=1, column=1, columnspan=2, sticky=W+E)
+
+        ttk.Label(fi, text=u'Invoice(s):', anchor=E).grid(row=2, column=0, sticky=W+E)
+        ttk.Label(fi, textvariable=count_SV).grid(row=2, column=1, sticky=W+E)
+        ttk.Label(fi, textvariable=inv_names_SV, anchor=W).grid(row=2, column=10, sticky=W+E)
+
+        ttk.Label(fi, text=u'Pay Date:', anchor=E).grid(row=3, column=0, sticky=W+E)
+        ttk.Button(fi, textvariable=date_SV, command=date_picker).grid(row=3, column=1, columnspan=2, sticky=W)
+        date_SV.set(datetime.date.today())
+
+        ttk.Label(fi, text=u'Mark invoice(s) as paid?').grid(row=1000,column=0)
+        Tk.Radiobutton(fi, text="Yes", variable=paid_BV, value=True)\
+                .grid(row=1000,column=1)
+        Tk.Radiobutton(fi, text="No", variable=paid_BV, value=False)\
+                .grid(row=1000,column=2)
+
+        ttk.Label(fi, text=u'Check number').grid(row=1001,column=0)
+        ttk.Entry(fi, textvariable=check_SV, width=20).grid(row=1001,column=1,columnspan=2)
+
+
+        sb = Tk.Button(fi, text="Update & Close Window")
+        sb.grid(row=1003,column=0,columnspan=3)
+
+        def submit_changes():
+            indices = eval(info.invoices.selection.get())
+            invoices = set([info.invoices.invoice_recs[i][-1] for i in indices])
+            for each in invoices:
+                query = info.dmv2.session.query
+                Invoice = info.dmv2.Invoice
+                q = query(Invoice).filter_by(invoice_no=each.invoice_no)
+                q.update(dict(
+                    check_no=check_SV.get(),
+                    paid=paid_BV.get(),
+                    paydate=datetime.date(*map(int,date_SV.get().split('-'))),
+                ))
+            info.dmv2.session.commit()
+            fi.destroy()
+            info.method.reload_orders(info)
+            info.method.refresh_listboxes(info)
+            info.method.refresh_invoice_listbox()
+        sb['command'] = submit_changes
+
+
+        def update_total(*args):
+            indices = eval(info.invoices.selection.get())
+            invoices = set([info.invoices.invoice_recs[i][-1] for i in indices])
+
+            value = sum([inv.taxtotal() for inv in invoices])
+            total_SV.set(u'${:,.2f}'.format(value))
+
+            invoice_numbers = set([inv.invoice_no for inv in invoices])
+            inv_names_SV.set(u', '.join(invoice_numbers))
+            count_SV.set(u'({})'.format(len(invoice_numbers)))
+        info.invoices.selection.trace('w', update_total)
+        # Enter initial values.
+        update_total()
 
 
 def display_invoice_for_edit(info, inv_item=None):
@@ -153,8 +251,27 @@ def display_invoice_for_edit(info, inv_item=None):
     except:
         pass
 
-    info.invoiceWin = Tk.Toplevel(width=700)
+    info.invoiceWin = Tk.Toplevel(width=1200, height=600)
     info.invoiceWin.title(u"Invoice: {}".format(inv_no))
+
+
+    yscrollbar = Tk.Scrollbar(info.invoiceWin)
+    yscrollbar.grid(row=0, column=1, sticky=N+S)
+    xscrollbar = Tk.Scrollbar(info.invoiceWin, orient=Tk.HORIZONTAL)
+    xscrollbar.grid(row=1, column=0, sticky=E+W)
+    canvas = Tk.Canvas(info.invoiceWin, width=900, height=600, #scrollregion=(0, 0, 1200, 600),
+                yscrollcommand=yscrollbar.set,
+                xscrollcommand=xscrollbar.set)
+    canvas.grid(row=0, column=0, sticky=N+S+E+W)
+    yscrollbar.config(command=canvas.yview)
+    xscrollbar.config(command=canvas.xview)
+
+    #
+    # create canvas contents
+
+    frame = Tk.Frame(canvas)
+#    frame.rowconfigure(1, weight=1)
+#    frame.columnconfigure(1, weight=1)
 
     def submit_changes(info):
         #Check field entries
@@ -196,19 +313,19 @@ def display_invoice_for_edit(info, inv_item=None):
 
 
     #TODO: Auto-fill the first two letters from previous invoice
-    Tk.Label(info.invoiceWin, text=u'發票號碼: {}'.format(u' '.join(inv_no)), **cell_config).grid(row=0,column=0, columnspan=2, sticky=Tk.W+Tk.E)
-#    Tk.Label(info.invoiceWin, text=).grid(row=1,column=0, columnspan=2, sticky=Tk.W+Tk.E)
+    Tk.Label(frame, text=u'發票號碼: {}'.format(u' '.join(inv_no)), **cell_config).grid(row=0,column=0, columnspan=2, sticky=Tk.W+Tk.E)
+#    Tk.Label(frame, text=).grid(row=1,column=0, columnspan=2, sticky=Tk.W+Tk.E)
 
     cell_config.update(anchor=Tk.W)
 
     kehu = u'買 受 人: {}'.format(branch.fullname)
-    Tk.Label(info.invoiceWin, text=kehu, **cell_config).grid(row=2,column=0, columnspan=2, sticky=Tk.W+Tk.E)
+    Tk.Label(frame, text=kehu, **cell_config).grid(row=2,column=0, columnspan=2, sticky=Tk.W+Tk.E)
 
     tongyi = u'統一編號: {}'.format(u' '.join(branch.tax_id))
-    Tk.Label(info.invoiceWin, text=tongyi, **cell_config).grid(row=3,column=0, columnspan=2, sticky=Tk.W+Tk.E)
+    Tk.Label(frame, text=tongyi, **cell_config).grid(row=3,column=0, columnspan=2, sticky=Tk.W+Tk.E)
 
     riqi = u'中 華 民 國 103年 {0.month}月 {0.day}日'.format(invoice.invoicedate)
-    Tk.Label(info.invoiceWin, text=riqi, **cell_config).grid(row=3,column=2, columnspan=2, sticky=Tk.W+Tk.E)
+    Tk.Label(frame, text=riqi, **cell_config).grid(row=3,column=2, columnspan=2, sticky=Tk.W+Tk.E)
 
 
     cell_config = dict(
@@ -217,12 +334,12 @@ def display_invoice_for_edit(info, inv_item=None):
         relief=Tk.RAISED,
     )
     for i, each in enumerate([u'品名',u'數量',u'單價',u'金額',u'備註']):
-        Tk.Label(info.invoiceWin, text=each, **cell_config).grid(row=9,column=i, sticky=Tk.W+Tk.E)
+        Tk.Label(frame, text=each, **cell_config).grid(row=9,column=i, sticky=Tk.W+Tk.E)
 
-    Tk.Label(info.invoiceWin, text=u'銷售額合計', **cell_config).grid(row=50,column=1, columnspan=2, sticky=Tk.W+Tk.E)
-    Tk.Label(info.invoiceWin, text=u'統一發票專用章', **cell_config).grid(row=50,column=4, columnspan=2, sticky=Tk.W+Tk.E)
-    Tk.Label(info.invoiceWin, text=u'營  業  稅', **cell_config).grid(row=51,column=1, columnspan=2, sticky=Tk.W+Tk.E)
-    Tk.Label(info.invoiceWin, text=u'總      計', **cell_config).grid(row=52,column=1, columnspan=2, sticky=Tk.W+Tk.E)
+    Tk.Label(frame, text=u'銷售額合計', **cell_config).grid(row=550,column=1, columnspan=2, sticky=Tk.W+Tk.E)
+    Tk.Label(frame, text=u'統一發票專用章', **cell_config).grid(row=550,column=4, columnspan=2, sticky=Tk.W+Tk.E)
+    Tk.Label(frame, text=u'營  業  稅', **cell_config).grid(row=551,column=1, columnspan=2, sticky=Tk.W+Tk.E)
+    Tk.Label(frame, text=u'總      計', **cell_config).grid(row=552,column=1, columnspan=2, sticky=Tk.W+Tk.E)
 
 
     mani_font = (info.settings.font, "15")
@@ -264,47 +381,52 @@ def display_invoice_for_edit(info, inv_item=None):
         danjia = u'  $ {}  '.format(int(price) if int(price) == price else price)
         jin_e = u'  $ {}  '.format(inv.subtotal())
 #        this_units = u'  {} {}  '.format(order.product.units * inv.sku_qty, order.product.UM)
-        Tk.Label(info.invoiceWin, text=pinming, **config).grid(row=10+row,column=0, sticky=Tk.W+Tk.E)
-#        Tk.Label(info.invoiceWin, text=guige, **config).grid(row=10+row,column=1, sticky=Tk.W+Tk.E)
-        Tk.Label(info.invoiceWin, text=shuliang, **config).grid(row=10+row,column=1, sticky=Tk.W+Tk.E)
-        Tk.Label(info.invoiceWin, text=danjia, **config).grid(row=10+row,column=2, sticky=Tk.W+Tk.E)
-#        Tk.Label(info.invoiceWin, bg=u'gray30', fg=u'gray70', text=u'  {}  '.format(order.product.SKUlong)).grid(row=10+row,column=4, sticky=Tk.W+Tk.E)
-        Tk.Label(info.invoiceWin, text=jin_e, **config).grid(row=10+row,column=3, sticky=Tk.W+Tk.E)
+        Tk.Label(frame, text=pinming, **config).grid(row=10+row,column=0, sticky=Tk.W+Tk.E)
+#        Tk.Label(frame, text=guige, **config).grid(row=10+row,column=1, sticky=Tk.W+Tk.E)
+        Tk.Label(frame, text=shuliang, **config).grid(row=10+row,column=1, sticky=Tk.W+Tk.E)
+        Tk.Label(frame, text=danjia, **config).grid(row=10+row,column=2, sticky=Tk.W+Tk.E)
+#        Tk.Label(frame, bg=u'gray30', fg=u'gray70', text=u'  {}  '.format(order.product.SKUlong)).grid(row=10+row,column=4, sticky=Tk.W+Tk.E)
+        Tk.Label(frame, text=jin_e, **config).grid(row=10+row,column=3, sticky=Tk.W+Tk.E)
 
     heji = Tk.StringVar()
-    Tk.Label(info.invoiceWin, textvariable=heji, **cell_config).grid(row=50,column=3, sticky=Tk.W+Tk.E)
+    Tk.Label(frame, textvariable=heji, **cell_config).grid(row=550,column=3, sticky=Tk.W+Tk.E)
     heji.set(u'  $ {}  '.format(sum([inv.subtotal() for inv in invoiceset])))
 
     bigtext_config = dict(cell_config)
     bigtext_config.update(font=(info.settings.font, "30"))
     sellertxt = Tk.StringVar()
-    Tk.Label(info.invoiceWin, textvariable=sellertxt, **bigtext_config).grid(row=51,column=4, rowspan=2, sticky=Tk.W+Tk.E+Tk.N+Tk.S)
+    Tk.Label(frame, textvariable=sellertxt, **bigtext_config).grid(row=551,column=4, rowspan=2, sticky=Tk.W+Tk.E+Tk.N+Tk.S)
     sellertxt.set(u'  {{ {} }}  '.format(orderset[0].seller))
 
     #Tax and Total after tax based on subtotal of all products. NOT taxed individually, which may give a different total.
     yingshui = Tk.StringVar()
-    Tk.Label(info.invoiceWin, textvariable=yingshui, **cell_config).grid(row=51,column=3, sticky=Tk.W+Tk.E)
+    Tk.Label(frame, textvariable=yingshui, **cell_config).grid(row=551,column=3, sticky=Tk.W+Tk.E)
     yingshui.set(u'  $ {}  '.format(int(round(sum([inv.subtotal() for inv in invoiceset]) * (0.05 if inv_item.order.applytax else 0.0)))))
 
     zongji = Tk.StringVar()
-    Tk.Label(info.invoiceWin, textvariable=zongji, **cell_config).grid(row=52,column=3, sticky=Tk.W+Tk.E)
+    Tk.Label(frame, textvariable=zongji, **cell_config).grid(row=552,column=3, sticky=Tk.W+Tk.E)
     zongji.set(u'  $ {}  '.format(int(round(sum([inv.subtotal() for inv in invoiceset]) * (1.05 if inv_item.order.applytax else 1.0)))))
 
 
 
     allpaid = Tk.BooleanVar()
-    ttk.Label(info.invoiceWin, text=u'Mark invoice as paid?').grid(row=100,column=0)
-    Tk.Radiobutton(info.invoiceWin, text="Yes", variable=allpaid, value=True)\
-            .grid(row=100,column=1)
-    Tk.Radiobutton(info.invoiceWin, text="No", variable=allpaid, value=False)\
-            .grid(row=100,column=2)
+    ttk.Label(frame, text=u'Mark invoice as paid?').grid(row=1000,column=0)
+    Tk.Radiobutton(frame, text="Yes", variable=allpaid, value=True)\
+            .grid(row=1000,column=1)
+    Tk.Radiobutton(frame, text="No", variable=allpaid, value=False)\
+            .grid(row=1000,column=2)
     allpaid.set(invoice.paid)
 
     check_no = Tk.StringVar()
-    ttk.Label(info.invoiceWin, text=u'Check number').grid(row=101,column=0)
-    ttk.Entry(info.invoiceWin, textvariable=check_no, width=20).grid(row=101,column=1,columnspan=2)
+    ttk.Label(frame, text=u'Check number').grid(row=1001,column=0)
+    ttk.Entry(frame, textvariable=check_no, width=20).grid(row=1001,column=1,columnspan=2)
     if invoice.check_no not in [None, u'None']:
         check_no.set(invoice.check_no)
 
-    Tk.Button(info.invoiceWin, text="Update & Close Window", command=lambda:submit_changes(info)).grid(row=103,column=0,columnspan=3)
+    Tk.Button(frame, text="Update & Close Window", command=lambda:submit_changes(info)).grid(row=1003,column=0,columnspan=3)
 
+    canvas.create_window(0, 0, anchor=Tk.NW, window=frame)
+
+    frame.update_idletasks()
+
+    canvas.config(scrollregion=canvas.bbox("all"))
