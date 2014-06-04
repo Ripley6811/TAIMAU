@@ -45,6 +45,7 @@ import frame_pending
 import db_manager_v2 as dmv2
 import xlwt
 import Tix
+import analytics
 
 print os.getcwd()
 #===============================================================================
@@ -147,7 +148,6 @@ class TaimauApp(Tix.Tk):
 
         #--------- Set arrangement of notebook frames
         nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
-
 
 
     def endsession(self):
@@ -297,7 +297,6 @@ def get_purchases_frame(frame):
     info.method.refresh_listboxes = refresh_listboxes
     info.method.format_order_summary = format_order_summary
 #    info.method.convert_date = convert_date
-
 
     #-------
     frame1 = ttk.Frame(frame)
@@ -495,7 +494,6 @@ def get_sales_frame(frame):
 #    info.method.convert_date = convert_date
     info.method.reload_orders = reload_orders
 
-
     #-------
     frame1 = ttk.Frame(frame)
     def showall_companies():
@@ -547,6 +545,12 @@ def get_sales_frame(frame):
     #------------------ Pack notebook ----------------------------
     nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
 
+
+    #==============================================================================
+    # DATABASE ANALYSIS
+    #==============================================================================
+    # Calculate if ASE quotas will go over in the next order
+    analytics.ASE_analysis(info)
 
 
 
