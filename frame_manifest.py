@@ -3,7 +3,7 @@
 
 import ttk
 import Tkinter as Tk
-from Tkinter import BOTTOM, W, E, N, S
+from Tkinter import BOTTOM, TOP,  W, E, N, S, X
 import tkMessageBox
 import date_picker as dp
 import datetime
@@ -22,9 +22,15 @@ def create_manifest_frame(frame, info):
 
     frameIn = ttk.Frame(frame)
 
+    info.manifest.filterterm_SV = Tk.StringVar()
+
+    tle = Tix.LabelEntry(frameIn, label=u'Filter:')
+    tle.entry.configure(textvariable=info.manifest.filterterm_SV)
+    tle.pack(side=TOP, fill=X)
+
     create_invoice_button = Tk.Button(frameIn, text=u'\u2696 創造發票 \u2696',
                                        bg=u'light salmon')
-    create_invoice_button.pack(side=BOTTOM, fill=Tk.X)
+    create_invoice_button.pack(side=BOTTOM, fill=X)
     scrollbar2 = Tk.Scrollbar(frameIn, orient=Tk.VERTICAL)
     info.listbox.rec_manifest = Tk.Listbox(frameIn, selectmode=Tk.EXTENDED,
                          yscrollcommand=scrollbar2.set,
@@ -76,6 +82,16 @@ def create_manifest_frame(frame, info):
             info.listbox.rec_manifest.itemconfig(i, ins_colors)
     info.method.refresh_manifest_listbox = refresh_manifest_listbox
 
+    def apply_list_filter(*args):
+        lb = info.listbox.rec_manifest # Temp short name
+        ft = info.manifest.filterterm_SV.get() # Temp short name
+        for i in range(lb.size()):
+            if ft in lb.get(i):
+                lb.itemconfig(i, fg=u'black')
+            else:
+                lb.itemconfig(i, fg=u'gray72')
+
+    info.manifest.filterterm_SV.trace('w',apply_list_filter)
 
     info.listbox.rec_manifest.bind("<Double-Button-1>", lambda _: display_manifest_for_edit(info))
 

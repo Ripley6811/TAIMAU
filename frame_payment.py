@@ -11,55 +11,6 @@ import datetime
 import Tix
 
 
-#def format_pay_info(record):
-#    '''TODO: Replace delivery date with invoice date if available.'''
-#    pdate = record.duedate
-#    txt = u''
-#    txt += u'\u2691' if record.all_shipped() else u'\u2690'
-#    txt += u'\u2611' if record.all_paid() else u'\u2610'
-#    txt += u'\u269A' if record.applytax else u'  '
-#    txt += u'  {}\u2794{}'.format(record.seller, record.buyer)
-#    try:
-#        ddate = record.invoices[0].invoicedate if record.invoices[0].invoicedate else record.orderdate
-#        txt += u'  \u26DF{}/{}/{}'.format(ddate.year,ddate.month,ddate.day)
-#    except:
-#        pass
-#    txt += u'  {}'.format(record.product.inventory_name)
-#    txt += u'  ${}'.format(record.totalcharge)
-#    if len(record.invoices) > 0:
-#        txt += u'  \u2116 {}'.format(record.invoices[0].invoice_no)
-#    if pdate:
-#        txt += u'  \u2696{}/{}/{}'.format(pdate.year,pdate.month,pdate.day)
-#    return txt
-#
-#
-#def convert_date(adate):
-#    '''Converts a formatted string to a datetime.date object or from date to str
-#    depending on input.'''
-#    if isinstance(adate,str):
-#
-#        strdate = adate
-#        # Try different separators until one produces a list of len 2 or 3
-#        for sep in [None,'/','-','\\']:
-#            if 2 <= len(adate.split(sep)) <=3:
-#                strdate = adate.split(sep)
-#                break
-#        print '    strdate', strdate
-#        try:
-#            # If len three, assume date is given last, if two then use closest year
-#            if len(strdate) == 3:
-#                return datetime.date(int(strdate[2]),int(strdate[0]),int(strdate[1]))
-#            else:
-#                dnow = datetime.date.today()
-#                dates = [datetime.date(dnow.year+x,int(strdate[0]),int(strdate[1])) for x in [-1,0,1]]
-#                diff = [abs((x-dnow).days) for x in dates]
-#                return dates[diff.index(min(diff))]
-#        except:
-#            raise TypeError, "Date not in the form MM/DD or MM/DD/YYYY"
-#    elif isinstance(adate,datetime.date):
-#        #Convert datetime object to string
-#        return u'{}/{}/{}'.format(adate.month,adate.day,adate.year)
-
 
 def set_invoice_frame(frame, info):
     info.invoices = info.__class__()
@@ -68,6 +19,12 @@ def set_invoice_frame(frame, info):
 #    incoming = info.incoming = False if info.src == 'Sales' else True
 
     frameIn = ttk.Frame(frame)
+
+    info.invoices.filterterm_SV = Tk.StringVar()
+
+    tle = Tix.LabelEntry(frameIn, label=u'Filter:')
+    tle.entry.configure(textvariable=info.invoices.filterterm_SV)
+    tle.pack(side=TOP, fill=X)
 
     create_payment_button = Tk.Button(frameIn, text=u'$ $ $ Multiple Invoice Payment Information $ $ $',
                                        bg=u'light salmon')
@@ -150,6 +107,17 @@ def set_invoice_frame(frame, info):
     info.listbox.rec_invoices.bind("<Button-3>", orderoptions)
 
     frameIn.pack(fill=Tk.BOTH)
+
+    def apply_list_filter(*args):
+        lb = info.listbox.rec_invoices # Temp short name
+        ft = info.invoices.filterterm_SV.get() # Temp short name
+        for i in range(lb.size()):
+            if ft in lb.get(i):
+                lb.itemconfig(i, fg=u'black')
+            else:
+                lb.itemconfig(i, fg=u'gray72')
+
+    info.invoices.filterterm_SV.trace('w',apply_list_filter)
 
 
     def create_payment_form():

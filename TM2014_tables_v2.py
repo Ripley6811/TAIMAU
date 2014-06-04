@@ -181,13 +181,13 @@ class Order(Base):
         except:
             tmp += u'(Order date not entered)'
 
-        try:
-            tmp += u" \u273F {s.seller}\u2794{s.buyer} \u273F ".format(s=self)
-        except Exception as e:
-            tmp += u'(ERROR: {})'.format(e)
+#        try:
+#            tmp += u" \u273F {s.seller}\u2794{s.buyer} ".format(s=self)
+#        except Exception as e:
+#            tmp += u'(ERROR: {})'.format(e)
 
         try:
-            tmp += u"{rem_qty:>6}{s.totalskus:>5}{2} {0:<14} @ ${4} \u214C {5}".format(
+            tmp += u"\u273F {rem_qty:>6}{s.totalskus:>5}{2} {0:<14} @ ${4} \u214C {5}".format(
                 prodtmp,
                 int(self.totalunits),
                 self.product.UM if self.product.SKU == u'槽車' else self.product.SKU,

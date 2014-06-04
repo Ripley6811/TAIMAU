@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import Tkinter as Tk
-from Tkinter import N, S, E, W, BOTTOM, TOP, BOTH, END
+from Tkinter import N, S, E, W, BOTTOM, TOP, BOTH, END, X
 import tkMessageBox
 import ttk
 #import tkFont
@@ -17,6 +17,13 @@ def make_order_entry_frame(frame, info):
     info.order = info.__class__()
     incoming = False if info.src == 'Sales' else True
     frameIn = ttk.Frame(frame)
+
+    info.order.filterterm_SV = Tk.StringVar()
+
+    tle = Tix.LabelEntry(frameIn, label=u'Filter:')
+    tle.entry.configure(textvariable=info.order.filterterm_SV)
+    tle.pack(side=TOP, fill=X)
+
     #TODO: remove edit button and rely on double-click for editing
     editb = Tk.Button(frameIn, text=u"編輯紀錄", bg=u'light salmon')
     editb.pack(side=BOTTOM, fill=Tk.X)
@@ -99,6 +106,17 @@ def make_order_entry_frame(frame, info):
     def orderoptions(event):
         orderPopMenu.post(event.x_root, event.y_root)
     info.listbox.rec_orders.bind("<Button-3>", orderoptions)
+
+    def apply_list_filter(*args):
+        lb = info.listbox.rec_orders # Temp short name
+        ft = info.order.filterterm_SV.get() # Temp short name
+        for i in range(lb.size()):
+            if ft in lb.get(i):
+                lb.itemconfig(i, fg=u'black')
+            else:
+                lb.itemconfig(i, fg=u'gray72')
+
+    info.order.filterterm_SV.trace('w',apply_list_filter)
 
 
 
