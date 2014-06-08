@@ -16,7 +16,7 @@ locale.setlocale(locale.LC_ALL, '')
 def make_order_entry_frame(frame, info):
     info.order = info.__class__()
     incoming = False if info.src == 'Sales' else True
-    frameIn = ttk.Frame(frame)
+    frameIn = Tix.Frame(frame)
 
     info.order.filterterm_SV = Tk.StringVar()
 
@@ -35,6 +35,7 @@ def make_order_entry_frame(frame, info):
     info.listbox.rec_orders = Tk.Listbox(frameIn, selectmode=Tk.EXTENDED,
                          yscrollcommand=scrollbar2.set,
                          font=(info.settings.font, "12"), height=100, exportselection=0)
+
 
     def get_index_edit_PO():
 
@@ -75,6 +76,8 @@ def make_order_entry_frame(frame, info):
             info.listbox.rec_orders.insert(i, each)
             info.listbox.rec_orders.itemconfig(i, bg=u'lavender',
                                                selectbackground=u'dark orchid')
+
+
 
 
     def refresh_order_listbox_item(id, index):
@@ -499,7 +502,7 @@ def make_order_entry_frame(frame, info):
         b['command'] = lambda tv=duedate_str: date_picker(tv)
         l.grid(row=1, column=3)
         b.grid(row=1, column=4)
-        duedate_str.set(datetime.date.today())
+        duedate_str.set(u'(訂貨日)')
 
         def submit_new_order():
             '''
@@ -525,8 +528,8 @@ def make_order_entry_frame(frame, info):
             delivered = delivered_bool.get()
             invoiced = invoiced_bool.get()
 
-            if invoiced == True and not invoice_no.get():
-                tkMessageBox.showwarning(u'Invoice number required',u'Invoice number is required. Invoice not submitted.')
+            if invoiced == True and (not invoice_no.get() or len(invoice_no.get()) != 10):
+                tkMessageBox.showwarning(u'Invoice number required',u'10-digit invoice number is required. Invoice not submitted.')
                 invoiced = False
 
             if delivered == True and not deliveryID.get():
@@ -546,6 +549,13 @@ def make_order_entry_frame(frame, info):
                 )
                 invoice = Invoice(**inv_dict)
                 session.add(invoice)
+
+            if u'(訂貨日)' in duedate_str.get():
+                duedate_str.set(orderdate_str.get())
+            if u'(訂貨日)' in deliverydate.get():
+                deliverydate.set(orderdate_str.get())
+            if u'(訂貨日)' in invoicedate.get():
+                invoicedate.set(orderdate_str.get())
 
             for i, product in enumerate(products):
                 # SET order and due dates. Order date cannot follow a due date.
@@ -803,7 +813,7 @@ def make_order_entry_frame(frame, info):
             b = Tk.Button(editPOwin, textvariable=deliverydate, bg='DarkGoldenrod1')
             b['command'] = lambda tv=deliverydate: date_picker(tv)
             b.grid(row=11, column=4)
-            deliverydate.set(datetime.date.today())
+            deliverydate.set(u'(訂貨日)')
             delivery_fields.append(b)
             entry = Tk.Entry(editPOwin, textvariable=deliverydriver)
             entry.grid(row=12, column=1, columnspan=2, sticky=W+E)
@@ -842,7 +852,7 @@ def make_order_entry_frame(frame, info):
             b = Tk.Button(editPOwin, textvariable=invoicedate, bg='DarkGoldenrod1')
             b['command'] = lambda tv=invoicedate: date_picker(tv)
             b.grid(row=21, column=4)
-            invoicedate.set(datetime.date.today())
+            invoicedate.set(u'(訂貨日)')
             invoice_fields.append(b)
             entry = Tk.Entry(editPOwin, textvariable=invoicenote)
             entry.grid(row=23, column=1, columnspan=6, sticky=W+E)

@@ -90,6 +90,8 @@ def get_pending_frame(frame, dmv2):
                 invoice_out_listbox.insert(0, txt)
 
         for inv in inv_query.all()[::-1]:
+            if len(inv.items) == 0:
+                continue
             if inv.items[0].order.is_sale:
                 txt = u'{0.month:>2}月{0.day:>2}日 : {1}|{2} : {3} : ${4}'
                 txt = txt.format(inv.invoicedate,

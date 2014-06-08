@@ -179,7 +179,7 @@ def create_manifest_frame(frame, info):
                 tkMessageBox.showerror(u'Multiple buyers selected.', u'Please select one client for this invoice.')
                 return
 
-            if len(invoice_number_str.get()) <=2:
+            if len(invoice_number_str.get()) != 10:
                 okay = tkMessageBox.askokcancel(u'Invoice number warning', u'You did not enter an invoice number (發票號碼).\Submit anyway?')
                 if not okay:
                     return
@@ -208,9 +208,9 @@ def create_manifest_frame(frame, info):
                     sku_qty= int(qty_SV[i].get()),
                 )
 
-                if len(invoice_number_str.get()) > 2:
+                if len(invoice_number_str.get()) > 6:
                     key = seller_str.get()
-                    info.invoices.codes[key]=invoice_number_str.get()[:2]
+                    info.invoices.codes[key]=invoice_number_str.get()[:6]
 
                 # If check number is entered then update payment fields.
                 if invoice_check_str.get():

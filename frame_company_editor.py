@@ -160,7 +160,7 @@ def get_company_editor(frame,dm):
         info.new_gid = Tk.StringVar()
         ttk.Entry(info.tempWindow, textvariable=info.new_gid, width=8).pack()
         ttk.Entry(info.tempWindow, textvariable=info.new_id, width=8).pack()
-        Tk.Button(info.tempWindow, text="Submit ID", command=lambda:submit_new_id(info)).pack()
+        Tk.Button(info.tempWindow, text="Submit ID", command=lambda: submit_new_id(info)).pack()
         info.tempWindow.focus_set()
 
 
@@ -186,7 +186,7 @@ def get_company_editor(frame,dm):
                          yscrollcommand=scrollbar.set,
                          font=("PMingLiU", "14"), width=40, exportselection=0)
 
-    info.listbox.companies.bind("<Double-Button-1>", lambda _:showrecord())
+    info.listbox.companies.bind("<Double-Button-1>", lambda _: showrecord())
     scrollbar.config(command=info.listbox.companies.yview)
     scrollbar.pack(side=Tk.RIGHT, fill=Tk.Y)
     info.listbox.companies.pack(side=Tk.LEFT, fill=Tk.Y)
