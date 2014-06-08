@@ -39,7 +39,7 @@ import ttk
 import tkFont
 import frame_company_editor
 import frame_payment
-import frame_order_entry
+import frame_order_entry, frame_overview
 import frame_manifest
 import frame_pending
 import db_manager_v2 as dmv2
@@ -279,11 +279,16 @@ def save_co_text():
         co_lb.insert(0, u'{0.name} ({1})'.format(co, u', '.join(br_list)))
 
 
-
 def get_purchases_frame(frame):
-    # Create info container to manage all Purchases data
+    get_orders_frame(frame, u'Purchases')
+
+def get_sales_frame(frame):
+    get_orders_frame(frame, u'Sales')
+
+def get_orders_frame(frame, src):
+    # Create info container to manage all Order data
     info = Info()
-    info.src = "Purchases"
+    info.src = src
     info.curr_company = None
     info.edit_ID = None
     info.listbox = Info()
@@ -295,49 +300,114 @@ def get_purchases_frame(frame):
     info.dmv2 = dmv2
     info.method.reload_orders = reload_orders
     info.method.refresh_listboxes = refresh_listboxes
-    info.method.format_order_summary = format_order_summary
-#    info.method.convert_date = convert_date
 
     #-------
     frame1 = ttk.Frame(frame)
-    def showall_companies():
-        info.listbox.companies.delete(0, Tk.END)
-        for i, each in enumerate(dmv2.cogroup_names()):
-            info.listbox.companies.insert(i, each)
-            info.listbox.companies.itemconfig(i, bg=u'white',
-                                              selectbackground=u'SlateBlue4')
+    def manage_companies():
+        try:
+            if info.co_select.state() == 'normal':
+                info.co_select.focus_set()
+            return
+        except:
+            pass
 
-    b = Tk.Button(frame1, text="Show All", command=lambda: showall_companies())
+        info.co_select = Tix.Toplevel(width=1200, height=600)
+        info.co_select.title(u"公司清單管理")
+
+        grouplist = info.dmv2.cogroups()
+        ROWperCOL = 25
+        wlist = {}
+        for i, group in enumerate(grouplist):
+            # Show company group name and additional branches.
+            branchlist = [br.name for br in group.branches]
+            try:
+                branchlist.remove(group.name)
+            except ValueError as e:
+                print e
+            text = u'          {}'.format(group.name)
+            if len(branchlist):
+                text += u' ({})'.format(u', '.join(branchlist))
+            tl = Tix.Label(info.co_select, text=text)
+            tl.grid(row=i%ROWperCOL, column=2*(i/ROWperCOL))
+
+            # 'Supplier' and 'Customer' switches.
+            # Not using 'Select' label option in order to keep things aligned.
+            selectParams = dict(
+                radio=False,
+                allowzero=True,
+                selectedbg=u'cyan',
+            )
+            tsel = Tix.Select(info.co_select, **selectParams)
+            tsel.add(u's', text=u'Supplier')
+            tsel.add(u'c', text=u'Customer')
+            tsel.grid(row=i%ROWperCOL, column=2*(i/ROWperCOL)+1)
+
+            # Activate buttons according to database records.
+            if group.is_supplier:
+                tsel.invoke(u's')
+            if group.is_customer:
+                tsel.invoke(u'c')
+
+            # Add 'Select' widget to widget list
+            wlist[group.name] = tsel
+            print group.is_supplier,  group.is_customer
+
+        tb = Tix.Button(info.co_select, text=u'提交改變', bg=u'light salmon')
+        def submit():
+            session = info.dmv2.session
+            CG = info.dmv2.CoGroup
+            for coname, tsel in wlist.iteritems():
+                updates = dict(
+                    is_supplier= u's' in tsel['value'],
+                    is_customer= u'c' in tsel['value'],
+                )
+                print updates
+                session.query(CG).filter_by(name=coname).update(updates)
+                session.commit()
+            info.co_select.destroy()
+        tb['command'] = submit
+        tb.grid(row=100, columnspan=20)
+
+
+
+    b = Tk.Button(frame1, text=u"公司清單管理")
+    b['command'] = manage_companies
     b.pack(side=Tk.BOTTOM, fill=Tk.X)
+
+    # Set up company listbox on left side of application.
     scrollbar = Tk.Scrollbar(frame1, orient=Tk.VERTICAL)
     info.listbox.companies = Tk.Listbox(frame1, selectmode=Tk.BROWSE,
                          yscrollcommand=scrollbar.set,
                          width=10, font=(info.settings.font, "14"),
                          exportselection=0)
     scrollbar.config(command=info.listbox.companies.yview)
-#        scrollbar.grid(row=0,column=0, sticky=Tk.N+Tk.S)
-#        info.listbox.companies.grid(row=0,column=1,sticky=Tk.N+Tk.S)
+
     scrollbar.pack(side=Tk.RIGHT, fill=Tk.Y)
     info.listbox.companies.pack(side=Tk.LEFT, fill=Tk.Y)
     info.listbox.companies.bind("<Double-Button-1>",
-                                lambda _: loadcompany(info, True))
+                        lambda _: company_listbox_dbl_click(info, True))
 
-
-#    info.listbox.companies.insert(0,*dmv2.company_list_from_purchases())
-    for i, each in enumerate(dmv2.company_list_from_purchases()):
+    cogroups = dmv2.cogroups()
+    if src == u'Sales':
+        companies = [cg.name for cg in cogroups if cg.is_customer]
+    else:
+        companies = [cg.name for cg in cogroups if cg.is_supplier]
+    for i, each in enumerate(companies):
         info.listbox.companies.insert(i, each)
         info.listbox.companies.itemconfig(i, bg=u'seashell2',
                                           selectbackground=u'maroon4')
 
     frame1.pack(side=Tk.LEFT, fill=Tk.Y, padx=2, pady=3)
 
-    #
     #==========================================================================
     # SET UP TABBED SECTIONS
     #==========================================================================
-    #
     info.record = {}
     nb = ttk.Notebook(frame)
+    #--------------- Overview of database ---------------------
+    frame = Tix.Frame(nb)
+    frame_overview.create_frame(frame, info)
+    nb.add(frame, text=u'概貌', padding=2)
     #--------------- Order entry tab -----------------------
     frame = ttk.Frame(nb)
     frame_order_entry.make_order_entry_frame(frame, info)
@@ -355,79 +425,18 @@ def get_purchases_frame(frame):
     nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
 
 
-def format_order_summary(record):
-    prodtmp = record.product.product_label, record.product.inventory_name
-    if prodtmp[0] and prodtmp[0] != prodtmp[1]:
-        prodtmp = u'{} (台茂:{})'.format(*prodtmp)
-    else:
-        prodtmp = prodtmp[1]
-    tmp = u''
-#            tmp += u'\u25C6' if val['delivered'] else u'\u25C7'
-    #PO icon and PO number if available
-    po_no_txt = (record.orderID.strip() if record.orderID
-                                        else '({})'.format(record.id))
-    tmp += u"{0:<14}".format(po_no_txt)
 
-    #Shipping icon and manifest number if available
-    tmp += u'\u26DF' if len(record.shipments) > 0 else u'\u25C7'
-    tmp += (u'*{:<3}'.format(len(record.shipments)) if record.shipments
-                                                    else u'    ')
-#    man_no_txt = record.shipments[0].shipmentID[:11].strip()[-9:] if record.shipments else u''
-#    tmp += u"{0:<10}".format(man_no_txt)
-
-    #Invoice paid icon and invoice number if available
-    tmp += u'\u265B' if record.all_paid() else u'\u25C7'
-    tmp += (u'*{:<3}'.format(len(record.invoices)) if record.invoices
-                                                    else u'    ')
-#    inv_no_txt = record.invoices[0].invoice_no[:10].strip() if record.invoices else u''
-#    tmp += u"{0:<12}".format(inv_no_txt if u'random' not in inv_no_txt else u'')
-
-#    print type(record), record.__dict__.keys()
-    if record.all_shipped():
-        try:
-            tmp += (u"到期:{0.month:>2}月{0.day:>2}日".format(
-                record.shipments[0].shipmentdate)#.replace(' ','  ')
-            )
-        except:
-            tmp += u"到期:  月  日   年"#.replace(' ','  ')
-    else:
-        try:
-            tmp += (u"訂單日:{0.month:>2}月{0.day:>2}日".format(
-                record.orderdate)#.replace(' ','  ')
-            )
-        except:
-            tmp += u'  None Entered'
-    try:
-        tmp += u" \u273F {0}\u2794{1} \u273F {9:>6}{3:>5}{5} {2:<14} @ ${7} \u214C {8}".format(
-            record.seller,#.split()[0],
-            record.buyer,#.split()[0],
-            prodtmp,
-            record.totalskus,
-            int(record.totalunits),
-            record.product.UM if record.product.SKU == u'槽車' else record.product.SKU,
-            int(record.totalunits),
-            int(record.price) if float(record.price).is_integer() else record.price,
-            record.product.UM if record.product.unitpriced else record.product.SKU,
-            u'{}/'.format(record.qty_remaining()),
-            )
-    except:
-        pass
-
-    return tmp
-
-
-
-def loadcompany(info, grab_index=False):
+def company_listbox_dbl_click(info, grab_index=False):
     '''This function runs when the order list is opened for the first time
     or when it needs to be reloaded to show updates.
-    #TODO: Split into two functions: loadcompany() and refreshlists()
+    #TODO: Split into two functions: company_listbox_dbl_click() and refreshlists()
 
     Use info.src for origin of call.
 
     grab_index = True updates the info.curr_company to list selection.
     grab_index = False (default) uses the company already stored in databook.
     '''
-    print 'LOADCOMPANY'
+    print 'company_listbox_dbl_click'
     if grab_index:
         info.curr_company = info.listbox.companies.get(Tk.ACTIVE)
     elif not info.curr_company:
@@ -436,6 +445,7 @@ def loadcompany(info, grab_index=False):
     # Reload orders preloads all records for a selected company into info.order_records
     reload_orders(info)
     refresh_listboxes(info)
+    info.method.refresh_po_tree()
     info.method.reload_products_frame()
     info.method.refresh_manifest_listbox()
     info.method.refresh_invoice_listbox()
@@ -446,7 +456,7 @@ def loadcompany(info, grab_index=False):
 def reload_orders(info):
     '''Create a link to records and corresponding ID's and store in "info".
     '''
-    if info.src == "Sales":
+    if info.src == u"Sales":
         info.order_records = dmv2.sales(group=info.curr_company)[::-1]
         info.order_rec_IDs = [rec.id for rec in info.order_records]
     else:
@@ -473,84 +483,6 @@ def refresh_listboxes(info):
                                            selectbackground=u'dark orchid')
 
 
-
-
-
-def get_sales_frame(frame):
-    # Create info container to manage all Sales data
-    info = Info()
-    info.src = "Sales"
-    info.curr_company = None
-    info.edit_ID = None
-    info.listbox = Info()
-    info.button = Info()
-    info.method = Info()
-    info.settings = Info()
-    info.settings.font = "NSimSun"#"PMingLiU"
-#    info.dm = dm
-    info.dmv2 = dmv2
-    info.method.refresh_listboxes = refresh_listboxes
-    info.method.format_order_summary = format_order_summary
-#    info.method.convert_date = convert_date
-    info.method.reload_orders = reload_orders
-
-    #-------
-    frame1 = ttk.Frame(frame)
-    def showall_companies():
-        info.listbox.companies.delete(0, Tk.END)
-        for i, each in enumerate(dmv2.cogroup_names()):
-            info.listbox.companies.insert(i, each)
-            info.listbox.companies.itemconfig(i, bg=u'white',
-                                              selectbackground=u'SlateBlue4')
-
-    b = Tk.Button(frame1, text="Show All", command=lambda: showall_companies())
-    b.pack(side=Tk.BOTTOM, fill=Tk.X)
-    scrollbar = Tk.Scrollbar(frame1, orient=Tk.VERTICAL)
-    info.listbox.companies = Tk.Listbox(frame1, selectmode=Tk.BROWSE,
-                                         yscrollcommand=scrollbar.set,
-                                         width=10,
-                                         font=(info.settings.font, "14"),
-                                         exportselection=0)
-    scrollbar.config(command=info.listbox.companies.yview)
-#        scrollbar.grid(row=0,column=0, sticky=Tk.N+Tk.S)
-#        info.listbox.companies.grid(row=0,column=1,sticky=Tk.N+Tk.S)
-    scrollbar.pack(side=Tk.RIGHT, fill=Tk.Y)
-    info.listbox.companies.pack(side=Tk.LEFT, fill=Tk.Y)
-    info.listbox.companies.bind("<Double-Button-1>", lambda _: loadcompany(info, True))
-#    info.listbox.companies.insert(0,*dmv2.company_list_from_sales())
-    for i, each in enumerate(dmv2.company_list_from_sales()):
-        info.listbox.companies.insert(i, each)
-        info.listbox.companies.itemconfig(i, bg=u'CadetBlue1', selectbackground=u'SlateBlue4')
-    frame1.pack(side=Tk.LEFT, fill=Tk.Y, padx=2, pady=3)
-
-    #
-    #==============================================================================
-    # SET UP TABBED SECTIONS
-    #==============================================================================
-    #
-    info.record = {}
-    nb = ttk.Notebook(frame)
-    #--------------- Order entry tab -----------------------
-    frame = ttk.Frame(nb)
-    frame_order_entry.make_order_entry_frame(frame, info)
-    nb.add(frame, text=u'訂單 (造出貨單)', padding=2)
-    #------------------ Manifest tab ----------------------------
-    frame = ttk.Frame(nb)
-    frame_manifest.create_manifest_frame(frame, info)
-    nb.add(frame, text=u'出貨單 (造發票)', padding=2)
-    #------------------ Invoice tab -----------------------------
-    frame = ttk.Frame(nb)
-    frame_payment.set_invoice_frame(frame, info)
-    nb.add(frame, text=u'發票 (已支付?)', padding=2)
-    #------------------ Pack notebook ----------------------------
-    nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
-
-
-    #==============================================================================
-    # DATABASE ANALYSIS
-    #==============================================================================
-    # Calculate if ASE quotas will go over in the next order
-    analytics.ASE_analysis(info)
 
 
 

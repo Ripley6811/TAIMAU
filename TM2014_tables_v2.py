@@ -127,7 +127,7 @@ class Order(Base):
     def total_paid(self):
         if len(self.invoices) == 0:
             return 0
-        return sum([prec.sku_qty if prec.paid else 0 for prec in self.invoices])
+        return sum([prec.sku_qty if prec.invoice.paid else 0 for prec in self.invoices])
 
     def all_paid(self):
         if len(self.invoices) == 0:
@@ -135,6 +135,7 @@ class Order(Base):
         return not (False in [prec.invoice.paid for prec in self.invoices])
 
     def qty_quote(self, qty):
+        '''Subtotal of total order.'''
         subtotal = self.price * qty
         if self.product.unitpriced:
             subtotal *= self.product.units
@@ -187,13 +188,10 @@ class Order(Base):
 #            tmp += u'(ERROR: {})'.format(e)
 
         try:
-            tmp += u"\u273F {rem_qty:>6}{s.totalskus:>5}{2} {0:<14} @ ${4} \u214C {5}".format(
-                prodtmp,
-                int(self.totalunits),
-                self.product.UM if self.product.SKU == u'槽車' else self.product.SKU,
-                int(self.totalunits),
-                int(self.price) if float(self.price).is_integer() else self.price,
-                self.product.UM if self.product.unitpriced else self.product.SKU,
+            tmp += u"\u273F {rem_qty:>6}{s.totalskus:>5}{um} {pt:<14} @ ${pr} \u214C {um}".format(
+                pt= prodtmp,
+                pr= int(self.price) if float(self.price).is_integer() else self.price,
+                um= self.product.UM if self.product.unitpriced else self.product.SKU,
                 rem_qty= u'{}/'.format(self.qty_remaining()),
                 s= self,
                 )
@@ -300,7 +298,7 @@ class InvoiceItem(Base): # Keep track of invoices/payments for one order
         if self.order.product.unitpriced:
             subtotal *= self.order.product.units
         return int(round(subtotal))
-    
+
     def listbox_summary(self):
         """
         Return a single line unicode summary intended for a listbox.
@@ -308,7 +306,7 @@ class InvoiceItem(Base): # Keep track of invoices/payments for one order
         txt = u'{date:<10}   編號: {s.invoice_no:<10}   QTY: {s.sku_qty:>5} {s.order.product.SKU:<6}   Subtotal: ${total:<6}   品名: {s.order.product.inventory_name}'
         txt = txt.format(s=self, date=str(self.invoice.invoicedate), total=self.subtotal())
         return txt
-        
+
 
 
 #==============================================================================
@@ -316,6 +314,8 @@ class InvoiceItem(Base): # Keep track of invoices/payments for one order
 #==============================================================================
 @AddDictRepr
 class CoGroup(Base):
+    # Primary key is abbreviated "name" of group.
+    #
     __tablename__ = 'cogroup'
     name = Col(Utf, primary_key=True, nullable=False) # Abbreviated name of company (2 to 4 chars)
     is_active = Col(Bool, nullable=False, default=True) # Boolean for listing the company. Continuing business.
@@ -338,6 +338,8 @@ class CoGroup(Base):
 #==============================================================================
 @AddDictRepr
 class Branch(Base):
+    # Primary key is abbreviated "name" of branch company.
+    #
     __tablename__ = 'branch'
     name = Col(Utf, primary_key=True, nullable=False) # Abbreviated name of company (2 to 4 chars)
     group= Col(Utf, ForeignKey('cogroup.name'), nullable=False) # Name of main company representing all branches
@@ -459,7 +461,7 @@ class Product(Base): # Information for each unique product (including packaging)
             return self.product_label
         else:
             return self.inventory_name
-    
+
 
 
 #==============================================================================
