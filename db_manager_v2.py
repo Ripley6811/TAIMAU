@@ -117,36 +117,7 @@ def get_entire_shipment(rec):
     return session.query(Shipment).filter_by(shipmentID = rec.shipmentID,
                                              shipmentdate = rec.shipmentdate).all()
 
-#def formatrec(rec):
-#    outname = rec.product_label
-#    if not outname:
-#        outname = rec.inventory_name
-#    if rec.SKU == u'槽車':
-#        return u"{0} ({1})".format(outname,rec.SKU)
-#    else:
-##        print type(rec.discontinued), type(rec.incoming), type(rec.units), rec.units.is_integer(),int(rec.units) if rec.units.is_integer() else rec.units
-#        this_units = int(rec.units) if rec.units.is_integer() else rec.units
-#        return u"{0} ({1} {2} {3})".format(outname,this_units,rec.UM,rec.SKU)
 
-#def get_product_summary(group_id, is_supply):
-#    '''Returns a list of MPN's for one company'''
-#    group_id = group_id.decode('utf8')
-#    if not group_id:
-#        return []
-#
-#    query = session.query(Product).filter((Product.group==group_id)
-#                                        & (Product.discontinued==False)
-#                                        & (Product.is_supply==is_supply)).all()
-#    return [formatrec(rec) for rec in query]
-
-
-#def branches(group=None):
-#    if group:
-#        group = group.decode('utf8')
-#        return session.query(Branch).filter(Branch.group==group).all()
-#    else:
-#        return session.query(Branch).all()
-#get_branches = branches
 
 #==============================================================================
 # CoGroup table methods
@@ -165,9 +136,8 @@ company_list = cogroup_names # name changed
 #==============================================================================
 # Branch table methods
 #==============================================================================
-'''
-Note: Branches can be accessed from their respective CoGroup object.
-'''
+# Note: Branches can be accessed from their respective CoGroup object.
+#
 def branches(group=None):
     if group:
         return session.query(Branch).filter_by(group=group).all()
@@ -195,9 +165,8 @@ def get_branch_summary(group_id):
 #==============================================================================
 # Order table methods
 #==============================================================================
-'''
-Note: Lists of orders, sales, or purchases can be accessed from CoGroup or Branch objects.
-'''
+# Note: Lists of orders, sales, or purchases can be accessed from CoGroup or Branch objects.
+#
 def orders(is_sale, group=None, limit=1000):
     '''Limit is applied when group parameter is given. Otherwise returns all records.
     '''
@@ -251,9 +220,8 @@ def get_last_order(group):
 #==============================================================================
 # Product table methods
 #==============================================================================
-'''
-Note: The product for an order can be accessed through the Order object.
-'''
+# Note: The product for an order can be accessed through the Order object.
+#
 def products(info=None, include_discontinued=False):
     if info != None:
         query = session.query(Product).filter(Product.group==info.curr_company)
@@ -333,6 +301,27 @@ def adj_stock(mpn, units=0.0, value=None, SKUs=0.0, date=None, note=u''):
 
 
 
+#def db_adjustments():
+    # Convert any float manifest numbers into a 6-7 digit integer string.
+#    shipments = session.query(Shipment).all()
+#    for shipment in shipments:
+#        if shipment.shipmentID.endswith(u'.0'):
+#            new_no = u'{:0>7}'.format(int(float(shipment.shipmentID)))
+#            session.query(Shipment).filter_by(id=shipment.id).update({"shipmentID":new_no})
+#    session.commit()
+
+    # Add orderdate if missing. Use earliest available date in record/subrecs.
+#    orders = session.query(Order).all()
+#    for order in orders:
+#        if not order.orderdate:
+#            newdict = dict(
+#                orderdate = order.duedate,
+#                subtotal = order.subtotal,
+#                applytax = order.applytax,
+#            )
+#            session.query(Order).filter_by(id=order.id).update(newdict)
+#    session.commit()
+#db_adjustments()
 
 
 
