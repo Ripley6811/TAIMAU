@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship as rel
 from sqlalchemy.orm import backref, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import datetime
+import json
 
 Int = sqla.Integer
 Str = sqla.String  #TODO: Can probably delete this line
@@ -39,7 +40,7 @@ def AddDictRepr(aClass):
         for key in copy.keys():
             if key.startswith(u'_'):
                 try:
-                    del copy['_sa_instance_state']
+                    del copy[key]
                 except KeyError:
                     pass
         return repr(copy)
@@ -178,7 +179,7 @@ class Order(Base):
 
 
         try:
-            tmp += u"訂單日:{0.month:>2}月{0.day:>2}日".format(self.orderdate)
+            tmp += u"{0:%y}年{0.month:>2}月{0.day:>2}日".format(self.orderdate)
         except:
             tmp += u'(Order date not entered)'
 
@@ -428,7 +429,7 @@ class Product(Base): # Information for each unique product (including packaging)
 
     curr_price = Col(Float, default=0.0)
 
-    summary = Col(Utf, default=summarize, onupdate=summarize)
+    summary = Col(Utf)
 
     stock = rel('Stock', backref='product')
     orders = rel('Order', primaryjoin="Product.MPN==Order.MPN")
@@ -461,6 +462,34 @@ class Product(Base): # Information for each unique product (including packaging)
             return self.product_label
         else:
             return self.inventory_name
+
+    def SKUlabel(self):
+        if self.unitpriced or self.SKU == u'槽車':
+            return self.UM
+        else:
+            return self.SKU
+
+    def json(self, new_dic=None):
+        '''Saves 'new_dic' as a json string and overwrites previous json.
+        Returns contents of json string as a dictionary object.
+        Note: Commit session after making changes.'''
+        if new_dic == None:
+            if self.note.find(u'}') != -1:
+                return json.loads(self.note[self.note.index(u'{'):])
+            else:
+                return None
+        else:
+            old_dic = dict()
+            # Delete existing json string
+            if self.note.find(u'}') != -1:
+                old_dic = self.json()
+                self.note = self.note.split(u'{')[0]
+            # Merge and overwrite old with new.
+            new_dic = dict(old_dic.items() + new_dic.items())
+            self.note += json.dumps(new_dic)
+            return True
+        return False
+
 
 
 
