@@ -427,7 +427,11 @@ def get_orders_frame(frame, src):
 
 
     # Run ASE purchase order analysis
-    analytics.ASE_analysis(info)
+    try:
+        #TODO: Find out why it started failing halfway through recently.
+        analytics.ASE_analysis(info)
+    except AssertionError as e:
+        print "Analysis interrupted!", e
 
 
 
