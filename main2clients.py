@@ -426,6 +426,11 @@ def get_orders_frame(frame, src):
 
 
 
+    # Run ASE purchase order analysis
+    analytics.ASE_analysis(info)
+
+
+
 def company_listbox_dbl_click(info, grab_index=False):
     '''This function runs when the order list is opened for the first time
     or when it needs to be reloaded to show updates.

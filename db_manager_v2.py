@@ -302,15 +302,15 @@ def adj_stock(mpn, units=0.0, value=None, SKUs=0.0, date=None, note=u''):
 
 
 #def db_adjustments():
-    # Convert any float manifest numbers into a 6-7 digit integer string.
+#    # Convert any float manifest numbers into a 6-7 digit integer string.
 #    shipments = session.query(Shipment).all()
 #    for shipment in shipments:
 #        if shipment.shipmentID.endswith(u'.0'):
-#            new_no = u'{:0>7}'.format(int(float(shipment.shipmentID)))
+#            new_no = u'{:0>6}'.format(int(float(shipment.shipmentID)))
 #            session.query(Shipment).filter_by(id=shipment.id).update({"shipmentID":new_no})
 #    session.commit()
-
-    # Add orderdate if missing. Use earliest available date in record/subrecs.
+#
+#    # Add orderdate if missing. Use earliest available date in record/subrecs.
 #    orders = session.query(Order).all()
 #    for order in orders:
 #        if not order.orderdate:

@@ -536,6 +536,14 @@ def make_order_entry_frame(frame, info):
                 delivered = tkMessageBox.askokcancel(u'Manifest Number Warning.',u'Continue without a manifest number?')
 
 
+            if u'(訂貨日)' in duedate_str.get():
+                duedate_str.set(orderdate_str.get())
+            if u'(訂貨日)' in deliverydate.get():
+                deliverydate.set(orderdate_str.get())
+            if u'(訂貨日)' in invoicedate.get():
+                invoicedate.set(orderdate_str.get())
+
+
             if invoiced == True:
                 #XXX: Will prevent adding to previously entered invoice.
                 #TODO: Warn if invoice already exists
@@ -549,13 +557,6 @@ def make_order_entry_frame(frame, info):
                 )
                 invoice = Invoice(**inv_dict)
                 session.add(invoice)
-
-            if u'(訂貨日)' in duedate_str.get():
-                duedate_str.set(orderdate_str.get())
-            if u'(訂貨日)' in deliverydate.get():
-                deliverydate.set(orderdate_str.get())
-            if u'(訂貨日)' in invoicedate.get():
-                invoicedate.set(orderdate_str.get())
 
             for i, product in enumerate(products):
                 # SET order and due dates. Order date cannot follow a due date.
