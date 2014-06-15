@@ -228,6 +228,20 @@ def get_purchases(company, recent=False, thirty=True):
         return records[-100:]
     return records
 
+def get_purchases_2(company, recent=False, thirty=True):
+    start_date = datetime.date.today()-datetime.timedelta(365)
+    query = purchases.select()
+    query = query.where(purchases.c.parentcompany == company)
+    if recent:
+         query = query.where(purchases.c.orderdate >= start_date)
+#    if thirty:
+#         query = query.limit(30)
+    query = query.order_by('orderdate')
+    selconn = conn.execute(query)
+    records = selconn.fetchall()
+    if thirty:
+        return records[-100:]
+    return records
 
 def get_sales(company, recent=False, thirty=True):
     start_date = datetime.date.today()-datetime.timedelta(365)

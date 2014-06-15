@@ -91,6 +91,79 @@ def recat(origenname):
 
 
 Base = declarative_base()
+
+'''
+class OrderProgress(Base):
+    __tablename__ = 'salesrec'
+    id = Col(Int, primary_key=True)
+    rec_id = Col(Int, ForeignKey('sales.id'))
+    date = Col(Utf)
+    qty = Col(Int)
+    note = Col(Utf)
+'''
+
+class Purchases(Base):
+    __tablename__ = 'purchases'
+    id = Col(Int, primary_key=True)
+    recorddate = Col(Date) # Date of entering a record (Now use as order placement date)
+
+    parentcompany = Col(Str(8)) # Of second party
+    sellercompany = Col(Str(8)) # For billing/receipts
+    buyingcompany = Col(Str(8)) # For billing/receipts
+
+    # Keep all product information in the outgoing product list
+    mpn = Col(Str(10)) # Product code
+
+    price = Col(Float) # Price for one SKU or unit
+    totalskus = Col(Int)
+    totalunits = Col(Float) # AUTO: unitssku * totalskus
+    applytax = Col(Bool) # True = 5%, False = 0%
+    totalcharge = Col(Int) # AUTO: pricing * (totalskus or totalunits)
+
+    orderdate = Col(Date)  # Use as "expected" delivery date. (Originally was order placement date)
+    orderID = Col(Str(20))  # i.e., PO Number
+    ordernote = Col(Str(100)) # Information concerning the order
+    deliverydate = Col(Date)
+    delivered = Col(Bool) # True = delivered, False = not delivered yet
+    deliveryID = Col(Str(20)) # i.e., Manifest number
+    deliverynote = Col(Str(100)) # Information concerning the delivery
+    paymentdate = Col(Date)
+    paymentID = Col(Str(20)) # i.e., Invoice or Receipt number
+    paymentnote = Col(Str(100)) # Information concerning the invoice
+    paid = Col(Bool) # True = paid, False = not paid yet
+    
+    
+class Sales(Base):
+    __tablename__ = 'sales'
+    id = Col(Int, primary_key=True)
+    recorddate = Col(Date) # Date of entering a record (Now use as order placement date)
+
+    parentcompany = Col(Str(8)) # Of second party
+    sellercompany = Col(Str(8)) # For billing/receipts
+    buyingcompany = Col(Str(8)) # For billing/receipts
+
+    # Keep all product information in the outgoing product list
+    mpn = Col(Str(10)) # Product code
+
+    price = Col(Float) # Price for one SKU or unit
+    totalskus = Col(Int)
+    totalunits = Col(Float) # AUTO: unitssku * totalskus
+    applytax = Col(Bool) # True = 5%, False = 0%
+    totalcharge = Col(Int) # AUTO: pricing * (totalskus or totalunits)
+
+    orderdate = Col(Date)  # Use as "expected" delivery date. (Originally was order placement date)
+    orderID = Col(Str(20))  # i.e., PO Number
+    ordernote = Col(Str(100)) # Information concerning the order
+    deliverydate = Col(Date)
+    delivered = Col(Bool) # True = delivered, False = not delivered yet
+    deliveryID = Col(Str(20)) # i.e., Manifest number
+    deliverynote = Col(Str(100)) # Information concerning the delivery
+    paymentdate = Col(Date)
+    paymentID = Col(Str(20)) # i.e., Invoice or Receipt number
+    paymentnote = Col(Str(100)) # Information concerning the invoice
+    paid = Col(Bool) # True = paid, False = not paid yet
+
+    
 class Company(Base):
     __tablename__ = 'company'
     id = Col(Utf, primary_key=True) # Abbreviated name of company (2 to 4 chars)

@@ -100,6 +100,7 @@ settings = type('Settings', (), {})()
 
 settings.dbname = u'TM2014_appdata.db'
 
+
 with open('settings.txt', 'r') as rfile:
     settings.base = rfile.readline().strip()
     settings.email = rfile.readline().strip()
