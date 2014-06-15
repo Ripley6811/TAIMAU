@@ -59,7 +59,7 @@ class myPDF(FPDF):
         else:
             # Company logo centered and the top
             self.image(u'TaimauChemicals.png', x=84, y=8, w=40)
-        self.image(u'hsinfa.png', x=45, y=240, w=28)
+        self.image(u'hsinfa.png', x=48, y=240, w=24)
         self.add_font(family=u'SimHei', style='B', fname=font, uni=True) # Only .ttf and not .ttc
         self.set_font(family=u'SimHei', style='B', size=16)
 #        self.set_xy(lm, 25)
@@ -70,6 +70,21 @@ class myPDF(FPDF):
         self.set_xy(lm, 37)
         self.cell(mw, 8, u'產品檢驗報告', align=C)
 
+        # Fill in headers
+        self.set_font(u'SimHei', 'B', 13)
+        self.set_fill_color(240,240,240)
+        self.set_xy(30, 95) # Next cell auto-set to right
+        self.cell(48, 10, txt=u'檢 驗 項 目', align=C, fill=True)
+        self.cell(50, 10, txt=u'規 格', align=C, fill=True)
+        self.cell(50, 10, txt=u'檢 驗 結 果', align=C, fill=True)
+        self.set_xy(30, 210)
+        self.cell(66-lm, 15, txt=u'結果研判:', align=C)
+        self.cell(rm-66, 15, txt=u'符合規格', align=C)
+        self.set_xy(30, 225)
+        self.cell(104-lm, 10, txt=u'製表', align=C)
+        self.cell(rm-104, 10, txt=u'檢驗人員', align=C)
+
+        # Draw lines last, otherwise cell fill will overwrite.
         # Top table borders
         self.rect(lm, 50, mw, 40) # x, y, w, h
         for ea in [65,73,81]:
@@ -89,19 +104,6 @@ class myPDF(FPDF):
             self.line(lm, ea, rm, ea) # x1, y1, x2, y2
         self.line(66, 210, 66, 225)
         self.line(104, 225, 104, 260)
-
-        # Fill in headers
-        self.set_font(u'SimHei', 'B', 13)
-        self.set_xy(30, 95) # Next cell auto-set to right
-        self.cell(48, 10, txt=u'檢 驗 項 目', align=C)
-        self.cell(50, 10, txt=u'規 格', align=C)
-        self.cell(50, 10, txt=u'檢 驗 結 果', align=C)
-        self.set_xy(30, 210)
-        self.cell(66-lm, 15, txt=u'結果研判:', align=C)
-        self.cell(rm-66, 15, txt=u'符合規格', align=C)
-        self.set_xy(30, 225)
-        self.cell(104-lm, 10, txt=u'製表', align=C)
-        self.cell(rm-104, 10, txt=u'檢驗人員', align=C)
 
     def xycell(self, x, y, *args, **kwargs):
         # Method to both set starting position and write cell in one command.
@@ -164,6 +166,12 @@ def create_qc_pdf(**kwargs):
 
     # Create PDF
     FPDF = myPDF('P','mm','A4')
+    FPDF.set_compression(False)
+    FPDF.set_creator('TM_2014')
+    FPDF.set_title(u'Quality inspection report for lot# {}'.format(kwargs['lot_no']))
+    FPDF.set_author(u'Taimau Chemicals')
+    FPDF.set_subject(kwargs['lot_no'])
+#    FPDF.set_subject(u'{} {}'.format(kwargs['product'], kwargs['lot_no']), isUTF8=True)
     FPDF.alias_nb_pages()
     FPDF.add_page() # Adding a page also creates a page break from last page
 
@@ -205,7 +213,7 @@ def create_qc_pdf(**kwargs):
         title = u'PDF name and location.',
         defaultextension = '.pdf',
         initialdir = os.path.expanduser('~') + '/Desktop/',
-        initialfile = u'QC_report_{}'.format(kwargs['product']),
+        initialfile = u'QC_{}_{}'.format(kwargs['product'], kwargs['lot_no']),
     )
 
     outfile = tkFileDialog.asksaveasfilename(**FILE_OPTS)
