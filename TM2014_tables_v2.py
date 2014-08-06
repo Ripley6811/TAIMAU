@@ -192,7 +192,7 @@ class Order(Base):
             tmp += u"\u273F {rem_qty:>6}{s.totalskus:>5}{um} {pt:<14} @ ${pr} \u214C {um}".format(
                 pt= prodtmp,
                 pr= int(self.price) if float(self.price).is_integer() else self.price,
-                um= self.product.UM if self.product.unitpriced else self.product.SKU,
+                um= self.product.SKU if self.product.SKU != u'槽車' else self.product.UM,
                 rem_qty= u'{}/'.format(self.qty_remaining()),
                 s= self,
                 )
@@ -387,24 +387,24 @@ class Contact(Base):
 #==============================================================================
 # Product class
 #==============================================================================
-def summarize(context):
-    '''Short text of product key values.
-    "product_name (## UM SKU)"
-    e.g. "HCL (20 kg barrel)"
-    '''
-    outname = context.current_parameters['product_label']
-    units = float(context.current_parameters['units'])
-    units = int(units) if int(units)==units else units #Truncate if mantissa is zero
-    UM = context.current_parameters['UM']
-    SKU = context.current_parameters['SKU']
-    if not outname:
-        outname = context.current_parameters['inventory_name']
-    if SKU == u'槽車':
-        return u"{0} (槽車)".format(outname)
-    else:
-        units = int(units) if int(units)==units else units
-        uf = u"{0} ({1} {2} {3})"
-        return uf.format(outname,units,UM,SKU)
+#def summarize(context):
+#    '''Short text of product key values.
+#    "product_name (## UM SKU)"
+#    e.g. "HCL (20 kg barrel)"
+#    '''
+#    outname = context.current_parameters['product_label']
+#    units = float(context.current_parameters['units'])
+#    units = int(units) if int(units)==units else units #Truncate if mantissa is zero
+#    UM = context.current_parameters['UM']
+#    SKU = context.current_parameters['SKU']
+#    if not outname:
+#        outname = context.current_parameters['inventory_name']
+#    if SKU == u'槽車':
+#        return u"{0} (槽車)".format(outname)
+#    else:
+#        units = int(units) if int(units)==units else units
+#        uf = u"{0} ({1} {2} {3})"
+#        return uf.format(outname,units,UM,SKU)
 
 @AddDictRepr
 class Product(Base): # Information for each unique product (including packaging)
@@ -490,6 +490,24 @@ class Product(Base): # Information for each unique product (including packaging)
             return True
         return False
 
+    def summarize(self):
+        '''Short text of product key values.
+        "product_name (## UM SKU)"
+        e.g. "HCL (20 kg barrel)"
+        '''
+        outname = self.product_label
+        units = float(self.units)
+        units = int(units) if int(units)==units else units #Truncate if mantissa is zero
+        UM = self.UM
+        SKU = self.SKU
+        if not outname:
+            outname = self.inventory_name
+        if SKU == u'槽車':
+            return u"{0} (槽車)".format(outname)
+        else:
+            units = int(units) if int(units)==units else units
+            uf = u"{0} ({1} {2} {3})"
+            return uf.format(outname,units,UM,SKU)
 
 
 

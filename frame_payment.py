@@ -325,7 +325,7 @@ def display_invoice_for_edit(info, inv_item=None):
         config = query_config if inv.id == query_id else cell_config
 #        print shipment
 #        print '  ', order
-        pinming = u' {} '.format(inv.order.product.summary)
+        pinming = u' {} '.format(inv.order.product.label())
 #        guige = u' ({} {} / {}) '.format(inv.order.product.units, inv.order.product.UM, inv.order.product.SKU)
 #        jianshu = u'  {} {}  '.format(inv.sku_qty, order.product.UM if order.product.SKU == u'槽車' else order.product.SKU)
         by_unit = inv.order.product.unitpriced

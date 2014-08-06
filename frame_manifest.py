@@ -295,7 +295,7 @@ def create_manifest_frame(frame, info):
 
         for row, (rec, order) in enumerate(so_tuples):
             #TODO: Have button fill in data from last order, i.e. quantity, taxed.
-            bw = Tk.Label(fi_items, text=order.product.summary, bg=u'cyan', font=font, anchor=W)
+            bw = Tk.Label(fi_items, text=order.product.label(), bg=u'cyan', font=font, anchor=W)
             bw.grid(row=row+10, column=0, sticky=W+E)
 
             ew = Tk.Entry(fi_items, textvariable=qty_SV[row], font=font, width=8, justify=Tk.CENTER)
@@ -542,7 +542,7 @@ def display_manifest_for_edit(info, shipment=None):
                 u'Set #s': ase_no_group.get(),
                 u'Expiration': int(exp_m.get()),
             }
-            info.dmv2.session.query(info.dmv2.Product).filter_by(MPN=prod_rec.MPN).update({u'note':new_pnote, u'summary':prod_rec.summary})
+            info.dmv2.session.query(info.dmv2.Product).filter_by(MPN=prod_rec.MPN).update({u'note':new_pnote}) #, u'summary':prod_rec.summary})
             info.dmv2.session.query(info.dmv2.Shipment).filter_by(id=ship_rec.id).update({u'note':json.dumps(ship_xnote)})
             info.dmv2.session.commit()
 

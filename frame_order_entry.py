@@ -238,10 +238,10 @@ def make_order_entry_frame(frame, info):
         # Add new product rows
         for row, product in enumerate(info.order.products):
             #TODO: Have button fill in data from last order, i.e. quantity, taxed.
-            prodtext = product.summary
-            if product.ASE_PN:
-                prodtext = u'{}'.format(prodtext)
-            bw = Tix.Button(fp, text=prodtext, bg='grey', anchor="w")
+#            prodtext = product.summary
+#            if product.ASE_PN:
+#                prodtext = u'{}'.format(prodtext)
+            bw = Tix.Button(fp, text=product.summarize(), bg='grey', anchor="w")
             bw['command'] = lambda i=row: match_qty(i)
             bw.grid(row=row/2, column=row%2 * col2, sticky=W+E)
             info.order.buttons.append(bw)
@@ -495,7 +495,7 @@ def make_order_entry_frame(frame, info):
         b['command'] = lambda tv=orderdate_str: date_picker(tv)
         l.grid(row=0, column=3)
         b.grid(row=0, column=4)
-        orderdate_str.set(datetime.date.today())
+        orderdate_str.set("選日期") #datetime.date.today())
 
         l = Tk.Label(editPOwin, text=u'到期日')
         b = Tk.Button(editPOwin, textvariable=duedate_str, bg='DarkGoldenrod1')
@@ -535,6 +535,12 @@ def make_order_entry_frame(frame, info):
             if delivered == True and not deliveryID.get():
                 delivered = tkMessageBox.askokcancel(u'Manifest Number Warning.',u'Continue without a manifest number?')
 
+            # Assert order date is entered else cancel submission.
+            try:
+                datetime.date(*map(int,orderdate_str.get().split('-')))
+            except UnicodeEncodeError as e:
+                #TODO: Pop-up message about error
+                return
 
             if u'(訂貨日)' in duedate_str.get():
                 duedate_str.set(orderdate_str.get())
@@ -773,7 +779,7 @@ def make_order_entry_frame(frame, info):
                     products.append(product)
 
                     pname.append(Tk.StringVar())
-                    pname[-1].set(product.label())
+                    pname[-1].set(product.summarize())
                     p_qty.append(Tk.StringVar())
                     p_qty[-1].set(info.order.qty[i].get())
                     p_sku.append(Tk.StringVar())
@@ -891,7 +897,7 @@ def make_order_entry_frame(frame, info):
                 order = prodorders[i]
 
                 pname.append(Tk.StringVar())
-                pname[-1].set(order.product.label())
+                pname[-1].set(order.product.summarize())
                 p_qty.append(Tk.StringVar())
                 p_qty[-1].set(order.totalskus)
                 p_sku.append(Tk.StringVar())
@@ -1140,7 +1146,7 @@ def make_order_entry_frame(frame, info):
 
         # Add new product rows
         for rid, rec in enumerate(orders):
-            bw = Tk.Label(fs, text=rec.product.summary, bg=u'cyan')
+            bw = Tk.Label(fs, text=rec.product.label(), bg=u'cyan')
             bw.grid(row=rid+10, column=0, sticky=Tk.W+Tk.E)
 
             ew = Tk.Entry(fs, textvariable=qty_SV[rid], width=8, justify=Tk.CENTER)

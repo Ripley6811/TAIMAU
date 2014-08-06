@@ -151,6 +151,7 @@ def create_qc_pdf(**kwargs):
         print e
         return
 
+    # Set placement and style of values
     tm_branch = dict(x=30, y=25, w=178-30, h=10, align='C')
     product_name = dict(x=31, y=50, w=104-31, h=15, align='L')
     product_ASE_pn = dict(x=105, y=50, w=104-31, h=15, align='L')
