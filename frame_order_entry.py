@@ -1025,6 +1025,10 @@ def make_order_entry_frame(frame, info):
 
         def submit_manifest():
             #TODO: Check if manifest number already used and confirm to attach to previous
+
+            if shipment_date_str.get().startswith(u"("):
+                return
+
             if shipment_number_str.get() in [u'', None, u'None']:
                 okay = tkMessageBox.askokcancel(u'Manifest number warning', u'You did not enter a manifest number (書或編號).\nSubmit anyway?')
                 if not okay:
@@ -1072,7 +1076,8 @@ def make_order_entry_frame(frame, info):
         b.grid(row=110, column=1, columnspan=2)
         b.config(bg='SpringGreen2')
 
-        shipment_date_str.set(datetime.date.today())
+#        shipment_date_str.set(datetime.date.today())
+        shipment_date_str.set(u"(選)")
 
         separator = Tk.Frame(fi, height=6, borderwidth=6, relief=Tk.SUNKEN)
         separator.grid(row=200, column=0, columnspan=10, sticky=Tk.W+Tk.E, padx=5, pady=5)

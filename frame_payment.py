@@ -355,6 +355,7 @@ def display_invoice_for_edit(info, inv_item=None):
         Tk.Label(frame, text=danjia, **config).grid(row=10+row,column=2, sticky=Tk.W+Tk.E)
 #        Tk.Label(frame, bg=u'gray30', fg=u'gray70', text=u'  {}  '.format(order.product.SKUlong)).grid(row=10+row,column=4, sticky=Tk.W+Tk.E)
         Tk.Label(frame, text=jin_e, **config).grid(row=10+row,column=3, sticky=Tk.W+Tk.E)
+        Tk.Label(frame, text=inv.order.orderID, **config).grid(row=10+row,column=4, sticky=Tk.W+Tk.E)
 
     heji = Tk.StringVar()
     Tk.Label(frame, textvariable=heji, **cell_config).grid(row=550,column=3, sticky=Tk.W+Tk.E)

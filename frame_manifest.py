@@ -172,6 +172,8 @@ def create_manifest_frame(frame, info):
 
         def submit_order():
             #TODO: Check if invoice number already used and confirm to attach to previous
+            if invoice_date_str.get().startswith(u"("):
+                return
             if u'[' in seller_str.get():
                 tkMessageBox.showerror(u'Multiple sellers selected.', u'Please select one supplier for this invoice.')
                 return
@@ -310,7 +312,8 @@ def create_manifest_frame(frame, info):
             lw = Tk.Label(fi_items, font=font, text=text, justify=Tk.CENTER)
             lw.grid(row=row+10,column=2)#, sticky=Tk.W)
         fi_items.grid(row=100, column=0, columnspan=10)
-        invoice_date_str.set(datetime.date.today())
+#        invoice_date_str.set(datetime.date.today())
+        invoice_date_str.set(u"(選)")
 
 
 
