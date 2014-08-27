@@ -74,11 +74,12 @@ class TaimauApp(Tix.Tk):
 
 
         _state = Info()
-        _state.debug = False
+        _state.debug = True # For console messages and English GUI
         _state.font = u"NSimSun"
         _state.lang = u"Chinese" if not _state.debug else u"English"
-        _state.loc = localize
-        _state.dbm = dbm
+        _state.loc = localize # Translation to Chinese
+        _state.dbm = dbm # Database API methods
+        _state.curr = Info() # For storage current company, list ID's, etc.
 
         setLang(_state.lang)
 
@@ -89,10 +90,10 @@ class TaimauApp(Tix.Tk):
 
         # FILE MENU OPTIONS: LOAD, SAVE, EXIT...
         filemenu = Tk.Menu(menubar, tearoff=0)
-        filemenu.add_command(label=_state.loc(u"Open"), command=None, state=Tk.DISABLED)
+        filemenu.add_command(label=_state.loc(u"Open", 1), command=setLang)#, state=Tk.DISABLED)
         filemenu.add_separator()
-        filemenu.add_command(label=_state.loc(u"Exit"), command=self.endsession)
-        menubar.add_cascade(label=_state.loc(u"File"), menu=filemenu)
+        filemenu.add_command(label=_state.loc(u"Exit", 1), command=self.endsession)
+        menubar.add_cascade(label=_state.loc(u"File", 1), menu=filemenu)
 
 
         # REPORT MENU OPTIONS
@@ -102,7 +103,7 @@ class TaimauApp(Tix.Tk):
         reportmenu.add_command(label="Save all products to Excel file.", command=save_products_to_excel)
         reportmenu.add_command(label="Report3", command=None, state=Tk.DISABLED)
         reportmenu.add_command(label="Report4", command=None, state=Tk.DISABLED)
-        menubar.add_cascade(label=_state.loc(u"Reports"), menu=reportmenu)
+        menubar.add_cascade(label=_state.loc(u"Reports", 1), menu=reportmenu)
 
 
 #        # FONT MENU OPTIONS
@@ -116,15 +117,15 @@ class TaimauApp(Tix.Tk):
                                  command=setFont, value=u'PMingLiU 13')
         fontmenu.add_radiobutton(label=u'NSimSun 13', variable=fontsize,
                                  command=setFont, value=u'NSimSun 13')
-        menubar.add_cascade(label=_state.loc(u"Font"), menu=fontmenu)
+        menubar.add_cascade(label=_state.loc(u"Font", 1), menu=fontmenu)
 #        fontsize.set(u'NSimSun 13')
 #        setFont()
 
 
         # HELP MENU OPTIONS
         helpmenu = Tk.Menu(menubar, tearoff=0)
-        helpmenu.add_command(label=_state.loc(u"About"), command=about)
-        menubar.add_cascade(label=_state.loc(u"Help"), menu=helpmenu)
+        helpmenu.add_command(label=_state.loc(u"About", 1), command=about)
+        menubar.add_cascade(label=_state.loc(u"Help", 1), menu=helpmenu)
 
 
         # SET AND SHOW MENU

@@ -125,56 +125,55 @@ def create(_):
     def ps_switch(mode):
         print mode
         _.ps_mode = mode
+        for each_butt in cog_butts:
+            if "{}1".format(mode) in each_butt["value"]:
+                each_butt.configure(bg='burlywood')
+            else:
+                each_butt.configure(bg='NavajoWhite4')
+
+
 
     modebox = Tix.Frame(left_pane)
     options = dict(variable="modebuttons", indicatoron=False,
-                   bg="tan", font=(_.font, "15", "bold"),
+                   bg="NavajoWhite4", font=(_.font, "15", "bold"),
                    selectcolor="light sky blue",
                    activebackground="light sky blue")
-    tr = Tix.Radiobutton(modebox, value="p", text=_.loc("Purchases"),
+    tr = Tix.Radiobutton(modebox, value="s", textvariable=_.loc("Purchases"),
                          command=lambda:ps_switch("p"), **options)
     tr.pack(side=Tix.LEFT, expand=True, fill=Tix.X)
-    tr.invoke()
-    tr = Tix.Radiobutton(modebox, value="s", text=_.loc("Sales"),
+#    tr.invoke()
+    tr = Tix.Radiobutton(modebox, value="p", textvariable=_.loc("Sales"),
                          command=lambda:ps_switch("s"), **options)
     tr.pack(side=Tix.RIGHT, expand=True, fill=Tix.X)
     modebox.pack(side=Tix.TOP, fill=Tix.X)
 
-    b = Tix.Button(left_pane, text=_.loc(u"Manage List"))
+    b = Tix.Button(left_pane, textvariable=_.loc(u"Manage List"))
     b['command'] = manage_companies
     b.pack(side=Tix.BOTTOM, fill=Tix.X)
 
-    # Set up company listbox on left side of application.
-#    scrollbar = Tix.Scrollbar(left_pane, orient=Tix.VERTICAL)
-#    info.listbox.companies = Tix.Listbox(left_pane, selectmode=Tix.BROWSE,
-#                         yscrollcommand=scrollbar.set,
-#                         width=10, font=(_.font, "14"),
-#                         exportselection=0)
-##    scrollbar.config(command=_.listbox.companies.yview)
-#
-#    scrollbar.pack(side=Tix.RIGHT, fill=Tix.Y)
-#    info.listbox.companies.pack(side=Tix.LEFT, fill=Tix.Y)
-#    info.listbox.companies.bind("<Double-Button-1>",
-#                        lambda _: company_listbox_dbl_click(info, True))
-#
 
     # Set up company switching buttons
     def select_cogroup(cogroup):
-        print(cogroup)
+        _.curr.cogroup = cogroup
+        if _.debug: print(cogroup)
+
 
     cogroups = _.dbm.cogroups()
 
     colist_frame = Tix.Frame(left_pane)
     options = dict(variable="companybuttons", indicatoron=False,
-                   bg="burlywood", font=(_.font, "12", "bold"),
+                   font=(_.font, "12", "bold"), bg="burlywood",
                    selectcolor="gold",
                    activebackground="gold")
+    cog_butts = []
     for i, cog in enumerate(cogroups):
         print(i, cog.name)
-        tr = Tix.Radiobutton(colist_frame, text=cog.name, value=cog.name,
+        tr = Tix.Radiobutton(colist_frame, text=cog.name, value=u"s{}p{} {}".format(int(cog.is_supplier), int(cog.is_customer), cog.name),
                              command=lambda x=cog:select_cogroup(x),
                              **options)
+        #TODO: color by supplier/client
         tr.grid(row=i/4,column=i%4, sticky=Tix.W+Tix.E)
+        cog_butts.append(tr)
     colist_frame.pack(side=Tix.LEFT, fill=Tix.BOTH)
 
 #    if src == u'Sales':

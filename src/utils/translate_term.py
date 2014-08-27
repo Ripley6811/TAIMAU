@@ -42,6 +42,7 @@ __version__ = '0.1'
 #import glob
 #import random
 #import cv2
+from Tkinter import StringVar
 
 #===============================================================================
 # METHODS
@@ -61,36 +62,68 @@ worddict = {
     u"About" : u"關於",
     u"Help" : u"幫助",
 }
+# Storage of StringVar by the english text as keyword.
+labeldict = {}
 
 
 #===============================================================================
 # MAIN METHOD AND TESTING AREA
 #===============================================================================
-def localize(word):
+def translate_word(word):
     """Translate words to Chinese"""
     if word in worddict:
         return worddict[word] if toChinese else word
     else:
         raise Warning, u'"{}" not found in translation dictionary.'.format(word)
 
-# Alias
-loc = localize
 
-def setLang(word):
+def localize(word, asText=False):
+    '''Return a StringVar object to use in labels.
+
+    Can easily change between English and Chinese by pushing changes to
+    a dictionary of StringVars. If 'asText' is set to True than the translated
+    text is returned instead of a StringVar. StringVar changes are immediate
+    but changes to text will show after restarting the program.
+    '''
+    if asText:
+        return translate_word(word)
+    if word in labeldict:
+        return labeldict[word]
+    else:
+        labeldict[word] = StringVar()
+        labeldict[word].set(translate_word(word))
+        return labeldict[word]
+
+
+def setLang(lang=None):
+    '''Set language to 'lang' or acts as a switch if lang is None.
+
+    Only accepts "Chinese", any other word will set to English.
+    If no parameter than alternates between Chinese and English.
+    '''
     global toChinese
-    if "Chinese" == word.capitalize():
+    # Set 'toChinese' boolean
+    if lang == None:
+        toChinese = not toChinese
+    elif "Chinese" == lang.capitalize():
         toChinese = True
     else:
         toChinese = False
+    # Change all StringVar labels
+    for key in labeldict:
+        labeldict[key].set(translate_word(key))
+
+
+
 
 
 if __name__ == '__main__':
     """TESTING CODE"""
-    print(loc(u"Purchases"))
+    print(translate_word(u"Purchases"))
     toChinese = True
-    print(loc(u"Sales"))
+    print(translate_word(u"Sales"))
     try:
-        print(loc(u"Purcses"))
+        print(translate_word(u"Purcses"))
     except Warning as e:
         print(e)
 
