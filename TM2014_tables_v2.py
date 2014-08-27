@@ -97,6 +97,8 @@ class Order(Base):
     invoices = rel('InvoiceItem', backref='order')
     product = rel('Product')
 
+    #ADD: isOpen = Col(Bool, default=True) # Active or closed PO
+
     def qty_shipped(self):
         '''By number of SKUs'''
         if len(self.shipments) == 0:

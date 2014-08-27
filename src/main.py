@@ -3,7 +3,9 @@
 """
 summary
 
-description
+Improvements over previous version include:
+- "_state" object that maintains and passes session info between all modules.
+- Translation module for registering StringVars and easily switch languages.
 
 :REQUIRES:
     - Database using TM2014_tables_v2.py
@@ -16,7 +18,7 @@ description
 :ORGANIZATION: Taimau Chemicals
 :CONTACT: python@boun.cr
 :SINCE: Sun Mar 02 15:14:32 2014
-:VERSION: 0.2
+:VERSION: 0.3
 """
 #===============================================================================
 # PROGRAM METADATA
@@ -26,7 +28,7 @@ __contact__ = 'python@boun.cr'
 __copyright__ = ''
 __license__ = ''
 __date__ = 'Sun Mar 02 15:14:32 2014'
-__version__ = '0.2'
+__version__ = '0.3'
 
 #===============================================================================
 # IMPORT STATEMENTS
@@ -90,7 +92,7 @@ class TaimauApp(Tix.Tk):
 
         # FILE MENU OPTIONS: LOAD, SAVE, EXIT...
         filemenu = Tk.Menu(menubar, tearoff=0)
-        filemenu.add_command(label=_state.loc(u"Open", 1), command=setLang)#, state=Tk.DISABLED)
+        filemenu.add_command(label=_state.loc(u"Open", 1), command=None, state=Tk.DISABLED)
         filemenu.add_separator()
         filemenu.add_command(label=_state.loc(u"Exit", 1), command=self.endsession)
         menubar.add_cascade(label=_state.loc(u"File", 1), menu=filemenu)
@@ -121,6 +123,13 @@ class TaimauApp(Tix.Tk):
 #        fontsize.set(u'NSimSun 13')
 #        setFont()
 
+        # SETTINGS MENU OPTIONS
+        settingsmenu = Tk.Menu(menubar, tearoff=0)
+        settingsmenu.add_radiobutton(label=u'Chinese', variable='lang_select',
+                                 command=lambda: setLang(u"Chinese"), value=u'Chinese')
+        settingsmenu.add_radiobutton(label=u'English', variable='lang_select',
+                                 command=lambda: setLang(u"English"), value=u'English')
+        menubar.add_cascade(label=_state.loc(u"Settings", 1), menu=settingsmenu)
 
         # HELP MENU OPTIONS
         helpmenu = Tk.Menu(menubar, tearoff=0)
