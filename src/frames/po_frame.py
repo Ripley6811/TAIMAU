@@ -95,6 +95,8 @@ def create(_):
 
 
     cogroups = _.dbm.cogroups()
+    if _.debug:
+        print len(cogroups), "company groups in database loaded."
 
     colist_frame = Tix.Frame(left_pane)
     colist_frame.pack(side=Tix.LEFT, fill=Tix.BOTH)
@@ -104,8 +106,8 @@ def create(_):
                    activebackground="gold")
 
     cog_butts = []
+    i = 0
     for i, cog in enumerate(cogroups):
-        if _.debug: print(i, cog.name)
         tr = Tix.Radiobutton(colist_frame, text=cog.name,
                              value=u"s{}c{} {}".format(int(cog.is_supplier)
                                                       ,int(cog.is_customer)
@@ -276,7 +278,7 @@ def create(_):
                 ew = Tix.Entry(pobox, textvariable=_discountVars[-1], width=7,
                                justify="center", bg=u"moccasin")
                 ew.grid(row=row, column=8)
-                _discountVars[-1].set(0)
+                _discountVars[-1].set(order.discount)
                 _discountVars[-1].trace('w', lambda a,b,c,ew=ew,row=len(_poIDs)-1: highlight_entry(row,ew,100) )
                 lw = Tix.Label(pobox, textvariable=_.loc(u"% discount"), anchor='w')
                 lw.grid(row=row, column=9, sticky='w')

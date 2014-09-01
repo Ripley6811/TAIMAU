@@ -28,7 +28,7 @@ __version__ = '0.1'
 #===============================================================================
 # IMPORT STATEMENTS
 #===============================================================================
-from TM2014_tables_v2 import (get_database, CoGroup, Branch, Product,
+from TM2014_tables_v3 import (get_database, CoGroup, Branch, Product,
                             Vehicle, Contact, Stock, Order, Shipment,
                             Invoice, InvoiceItem)
 import os  # os.walk(basedir) FOR GETTING DIR STRUCTURE
@@ -40,10 +40,18 @@ from sqlalchemy import or_, and_
 #===============================================================================
 # METHODS
 #===============================================================================
-dbname = r'TM2014_v2.db'
-with open('settings.txt', 'r') as rfile:
-    base = rfile.readline().strip()
-    dbname = os.path.join(base, dbname)
+dbname = r'TM2014_v3.db'
+try:
+    with open('settings.txt', 'r') as rfile:
+        base = rfile.readline().strip()
+        dbname = os.path.join(base, dbname)
+    print "DB LOADED:", dbname
+except IOError:
+    with open('..\settings.txt', 'r') as rfile:
+        base = rfile.readline().strip()
+        dbname = os.path.join(base, dbname)
+    print "DB LOADED:", dbname
+
 
 
 #engine, metadata = open_database(dbname, echo=True)

@@ -77,10 +77,10 @@ class Order(Base):
     MPN = Col(Utf, ForeignKey('product.MPN'), nullable=False) # Product code
 
     price = Col(Float) # Price for one SKU or unit on this order
-    discount = Col(Int) # Discount percentage as integer (0-100)
+    discount = Col(Int, nullable=False, default=0) # Discount percentage as integer (0-100)
     #XXX: name change in version 3: totalskus = Col(Int)
-    qty = Col(Int)
-    applytax = Col(Bool) # True = 5%, False = 0%
+    qty = Col(Int, nullable=False)
+    applytax = Col(Bool, nullable=False) # True = 5%, False = 0%
 
     #XXX: Remove in version 3
     #totalunits = Col(Float) # AUTO: unitssku * totalskus
@@ -105,7 +105,7 @@ class Order(Base):
     product = rel('Product')
 
     #XXX: New in version 3
-    is_open = Col(Bool, default=True) # Active or closed PO
+    is_open = Col(Bool, nullable=False, default=True) # Active or closed PO
 
     def qty_shipped(self):
         '''By number of SKUs'''
@@ -115,13 +115,13 @@ class Order(Base):
 
     def qty_remaining(self):
         '''By number of SKUs remaining to be shipped'''
-        return int(self.totalskus - self.qty_shipped())
+        return int(self.qty - self.qty_shipped())
 
     def all_shipped(self):
         '''By number of SKUs'''
         if len(self.shipments) == 0:
             return False
-        return self.totalskus == self.qty_shipped()
+        return self.qty == self.qty_shipped()
 
     def qty_invoiced(self):
         '''By number of SKUs'''
@@ -133,7 +133,7 @@ class Order(Base):
         '''By number of SKUs'''
         if len(self.invoices) == 0:
             return False
-        return self.totalskus == self.qty_invoiced()
+        return self.qty == self.qty_invoiced()
 
     def total_paid(self):
         if len(self.invoices) == 0:
@@ -191,7 +191,7 @@ class Order(Base):
 #            tmp += u'(ERROR: {})'.format(e)
 
         try:
-            tmp += u"\u273F {rem_qty:>6}{s.totalskus:>5}{um} {pt:<14} @ ${pr} \u214C {um}".format(
+            tmp += u"\u273F {rem_qty:>6}{s.qty:>5}{um} {pt:<14} @ ${pr} \u214C {um}".format(
                 pt= prodtmp,
                 pr= int(self.price) if float(self.price).is_integer() else self.price,
                 um= self.product.UM if self.product.unitpriced else self.product.SKU,
