@@ -41,16 +41,16 @@ class Calendar(ttk.Frame):
         fwday = kw.pop('firstweekday', calendar.SUNDAY)
         year = kw.pop('year', self.datetime.today().year)
         month = kw.pop('month', self.datetime.today().month)
-#        day = kw.pop('month', self.datetime.today().day)
+        day = kw.pop('day', self.datetime.today().day)
         locale = kw.pop('locale', None)
-        sel_bg = kw.pop('selectbackground', '#ecffc4')
-        sel_fg = kw.pop('selectforeground', '#05640e')
+        sel_bg = kw.pop('selectbackground', 'black')
+        sel_fg = kw.pop('selectforeground', 'gold')
         # Optional StringVar parameter for returning a date selection.
         self.strvar = kw.pop('textvariable', None)
         self.highlightnow = kw.pop('highlightnow', True)
 
         self._date = self.datetime(year, month, 1)
-        self._selection = None # no date selected
+        self._selection = (day, '', '') if day else None # no date selected
 
         ttk.Frame.__init__(self, master, **kw)
 
@@ -70,6 +70,9 @@ class Calendar(ttk.Frame):
 
         # set the minimal size for the widget
 #        self._calendar.bind('<Map>', self.__minsize)
+
+        if day:
+            self._show_selection(str(day), (0,0,1113,1123))
 
     def __setitem__(self, item, value):
         if item in ('year', 'month'):
@@ -138,7 +141,7 @@ class Calendar(ttk.Frame):
     def __setup_selection(self, sel_bg, sel_fg):
         self._font = tkFont.Font()
         self._canvas = canvas = Tkinter.Canvas(self._calendar,
-            background=sel_bg, borderwidth=0, highlightthickness=0)
+            background=sel_bg, borderwidth=0, highlightthickness=1)
         canvas.text = canvas.create_text(0, 0, fill=sel_fg, anchor='w')
 
         canvas.bind('<ButtonPress-1>', lambda evt: canvas.place_forget())
@@ -154,7 +157,7 @@ class Calendar(ttk.Frame):
         year, month = self._date.year, self._date.month
 
         # update header text (Month, YEAR)
-        header = self._cal.formatmonthname(year, month, 0)
+#        header = self._cal.formatmonthname(year, month, 0)
         self._header['text'] = u'{}年 {}月'.format(year, month)#header.title()
 
         # update calendar shown dates
@@ -169,7 +172,7 @@ class Calendar(ttk.Frame):
 
         x, y, width, height = bbox
 
-        textw = self._font.measure(text)
+        textw = self._font.measure(text)+4
 
         canvas = self._canvas
         canvas.configure(width=width, height=height)
@@ -209,8 +212,8 @@ class Calendar(ttk.Frame):
         # If a StringVar is supplied, then set it and destroy window.
         if isinstance(self.strvar, Tkinter.StringVar):
             self.strvar.set(self.selection)
-            self.destroy()
-            return
+#            self.destroy()
+#            return
 
         self._show_selection(text, bbox)
 

@@ -97,8 +97,8 @@ class Order(Base):
     note = Col(Utf) # Extra note field if needed.
 
     checked = Col(Bool, nullable=False, default=False) # Match against second party records
-    is_sale = Col(Bool, nullable=False, default=False) # Boolean
-    is_purchase = Col(Bool, nullable=False, default=False) # Boolean
+    is_sale = Col(Bool, nullable=False, default=False) # Boolean. Customer
+    is_purchase = Col(Bool, nullable=False, default=False) # Boolean. Supplier
 
     shipments = rel('ShipmentItem', backref='order')
     invoices = rel('InvoiceItem', backref='order')

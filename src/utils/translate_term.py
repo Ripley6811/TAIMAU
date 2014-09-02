@@ -70,6 +70,22 @@ worddict = {
     u"+ PO" : u"+ 訂單",
     u"% discount" : u"% 折扣(美式)",
     u"Settings" : u"設置",
+    u"\u2692 Create Product Order (PO)" : u"\u2692 創建訂單 (PO)",
+    u"\u2692 Update Product Order (PO)" : u"\u2692 編輯訂單 (PO)",
+    u"\u2620 Archive this PO \u2620" : u"\u2620 非活狀態且歸檔 \u2620",
+    u"+ product" : u"+ 產品",
+    u"PO #" : u"訂單編號",
+    u"Date of PO" : u"訂單創建日期",
+    u"Select one product" : u"選一個產品",
+    u"Qty" : u"數量",
+    u"Taimau" : u"台茂",
+    u"Note" : u"備註",
+    u"Price" : u"價格",
+    u"Apply tax?" : u"收稅？",
+    u"\u26D4 Cancel" : u"\u26D4 取消",
+    u"NOTE:" : u"備註:",
+    u"Edit PO" : u"編輯訂單",
+    u"Product" : u"產品",
 }
 # Storage of StringVar by the english text as keyword.
 labeldict = {}

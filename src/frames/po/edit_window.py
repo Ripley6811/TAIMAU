@@ -4,9 +4,9 @@ import Tix
 from utils import date_picker
 
 
-def main(_, refresh):
+def main(_, order, refresh):
     """Description of main()"""
-    print "NEW WINDOW"
+    print "EDIT WINDOW", order.__dict__
 
     #### USE THIS TO INTEGRATE FRAME INTO MAIN WINDOW ####
 #    repack_info = _.po_center.pack_info()
@@ -30,7 +30,7 @@ def main(_, refresh):
         pass
 
     _.extwin = Tix.Toplevel(width=700)
-    _.extwin.title(u"{} {}".format(_.curr.cogroup.name, _.loc(u"+ PO", asText=True)))
+    _.extwin.title(u"{}: {}".format(_.curr.cogroup.name, _.loc(u"Edit PO", asText=True)))
 
     center_pane = Tix.Frame(_.extwin)
     center_pane.pack(side='left', fill='both')
@@ -38,7 +38,7 @@ def main(_, refresh):
 
     #### VARIABLES FOR RECORD ENTRY ####
     ####################################
-    _prodMPN = Tix.StringVar()
+    _pname = Tix.StringVar()
     _ponumber = Tix.StringVar()
     _qty = Tix.StringVar()
     _price = Tix.StringVar()
@@ -50,42 +50,42 @@ def main(_, refresh):
     ##############################################
 
 
-    tl = Tix.Label(center_pane, textvariable=_.loc(u"Select one product"))
-    tl.pack(side='top')
+#    tl = Tix.Label(center_pane, textvariable=_.loc(u"Select one product"))
+#    tl.pack(side='top')
 
-    product_list = _.curr.cogroup.products
-    if _.debug:
-        print len(product_list), "products found for current company group."
-    pobox = Tix.Frame(center_pane)
-    pobox.pack(side='top', fill='x')
-    TRB = lambda _text, _val: Tix.Radiobutton(pobox, text=_text, anchor='w',
-                                        variable=_prodMPN,
-                                        value=_val,
-                                        indicatoron=False,
-                                  bg="PaleTurquoise1",
-                                  activebackground="PaleTurquoise1",
-                                  selectcolor="gold")
-    row = 0
-    cols = 3
-    for row, product in enumerate(product_list):
-        _text = u"{}  ({})".format(product.label(), product.specs())
-        #TODO: Add Product editing, to be discouraged! Warn!
-        #Or just edit names, note and not the numbers related fields
-        tb = TRB(_text, product.MPN)
-        if product.discontinued:
-            tb.config(state="disabled", bg="slate gray", relief="flat")
-#                tb['command'] = pass
-        tb.grid(row=row/cols, column=row%cols, sticky='ew')
+#    product_list = _.curr.cogroup.products
+#    if _.debug:
+#        print len(product_list), "products found for current company group."
+#    pobox = Tix.Frame(center_pane)
+#    pobox.pack(side='top', fill='x')
+#    TRB = lambda _text, _val: Tix.Radiobutton(pobox, text=_text, anchor='w',
+#                                        variable=_prodMPN,
+#                                        value=_val,
+#                                        indicatoron=False,
+#                                  bg="PaleTurquoise1",
+#                                  activebackground="PaleTurquoise1",
+#                                  selectcolor="gold")
+#    row = 0
+#    cols = 3
+#    for row, product in enumerate(product_list):
+#        _text = u"{}  ({})".format(product.label(), product.specs())
+#        #TODO: Add Product editing, to be discouraged! Warn!
+#        #Or just edit names, note and not the numbers related fields
+#        tb = TRB(_text, product.MPN)
+#        if product.discontinued:
+#            tb.config(state="disabled", bg="slate gray", relief="flat")
+##                tb['command'] = pass
+#        tb.grid(row=row/cols, column=row%cols, sticky='ew')
 #        _pBs.append(tb)
 
         #TODO: Product note as popup balloon
     #TODO: Add command for adding a product
-    tb = Tix.Button(pobox, textvariable=_.loc(u"+ product"),
-                    bg="lawn green",
-#                    command=lambda:po.new(_),
-                    activebackground="lime green")
-    row += 1
-    tb.grid(row=row/cols, column=row%cols, sticky='ew')
+#    tb = Tix.Button(pobox, textvariable=_.loc(u"+ product"),
+#                    bg="lawn green",
+##                    command=lambda:po.new(_),
+#                    activebackground="lime green")
+#    row += 1
+#    tb.grid(row=row/cols, column=row%cols, sticky='ew')
 
 
 
@@ -99,16 +99,28 @@ def main(_, refresh):
     # Order date: preselect today
     tl = Tix.Label(pogrid, textvariable=_.loc(u"Date of PO"))
     tl.grid(row=0, column=2, columnspan=2)
-    cal = date_picker.Calendar(pogrid)
+    cal = date_picker.Calendar(pogrid,
+                               month=order.orderdate.month,
+                               year=order.orderdate.year,
+                               day=order.orderdate.day)
     cal.grid(row=1, rowspan=6, column=2, columnspan=2)
 
     # Due date: nothing preselected (omit this?)
 
 
+    ### SHOW PRODUCT ###
+    le = Tix.LabelEntry(pogrid, labelside='left')
+    le.label.configure(textvariable=_.loc(u"Product"), anchor='center')
+    le.entry.configure(textvariable=_pname, width=26)
+    _pname.set(order.product.label())
+    le.entry.configure(state='disabled')
+    le.grid(row=0, rowspan=1, column=0, columnspan=2, sticky='w')
+
     ### PO NUMBER ###
     le = Tix.LabelEntry(pogrid, labelside='left')
     le.label.configure(textvariable=_.loc(u"PO #"), anchor='center')
     le.entry.configure(textvariable=_ponumber, width=26)
+    _ponumber.set(order.orderID)
     le.grid(row=1, rowspan=1, column=0, columnspan=2, sticky='w')
 #    print le
 
@@ -116,6 +128,7 @@ def main(_, refresh):
     le = Tix.LabelEntry(pogrid, labelside='left')
     le.label.configure(textvariable=_.loc(u"Qty"), anchor='center')
     le.entry.configure(textvariable=_qty, width=20)
+    _qty.set(u"\u221E" if order.qty >= 1e9 else order.qty)
     le.grid(row=2, rowspan=1, column=0, columnspan=1, sticky='w')
     tcb = Tix.Button(pogrid, text=u'\u221E', bg='plum')
     tcb['command'] = lambda w=le: _qty.set(u"\u221E")
@@ -125,45 +138,62 @@ def main(_, refresh):
     le = Tix.LabelEntry(pogrid, labelside='left')
     le.label.configure(textvariable=_.loc(u"Price"), anchor='center')
     le.entry.configure(textvariable=_price, width=26)
+    _price.set(order.price)
+    le.entry.configure(state='disabled')
     le.grid(row=3, rowspan=1, column=0, columnspan=2, sticky='w')
 
     ### TAX OPTION ###
     tcb = Tix.Checkbutton(pogrid, textvariable=_.loc(u"Apply tax?"),
                           bg='PaleGreen1', variable=_tax)
-    tcb.invoke()
+    _tax.set(order.applytax)
+    tcb.config(state='disabled')
     tcb.grid(row=4, column=0, columnspan=2)
 
 
     ### Co. branches, buyer/seller ###
+    match_names = [order.seller, order.buyer]
     br = Tix.Select(pogrid, allowzero=False, radio=True, selectedbg=u'gold')
     br.label.config(textvariable=_.loc(u"Branch"))
     for branch in _.curr.cogroup.branches:
         br.add(branch.name.lower(), text=branch.name)
+        print [branch.name] + match_names
+        if branch.name in match_names:
+            br['value'] = branch.name.lower()
     br.grid(row=5, column=0, columnspan=2)
 
     tm = Tix.Select(pogrid, allowzero=False, radio=True, selectedbg=u'gold')
     tm.label.config(textvariable=_.loc(u"Taimau"))
     for branch in _.dbm.get_cogroup(u"台茂").branches:
         tm.add(branch.name.lower(), text=branch.name)
+        if branch.name in match_names:
+            tm['value'] = branch.name.lower()
     tm.grid(row=6, column=0, columnspan=2)
 
     ### PO NOTE ###
     le = Tix.LabelEntry(pogrid, labelside='left')
     le.label.configure(textvariable=_.loc(u"Note"), anchor='center')
     le.entry.configure(textvariable=_note, width=26)
+    _note.set(order.ordernote)
     le.grid(row=50, rowspan=1, column=0, columnspan=10, sticky='ew')
 
 
     sep = Tix.Frame(pogrid, relief='ridge', height=8, bg="gray")
-    sep.grid(row=99, column=0, columnspan=10, sticky='ew')
+    sep.grid(row=90, column=0, columnspan=10, sticky='ew')
 
+
+    # Button for archiving PO
+    tb = Tix.Button(pogrid, textvariable=_.loc(u"\u2620 Archive this PO \u2620"),
+                    bg="orange red",
+                    command=lambda:inactivate_po(),
+                    activebackground="orange red")
+    tb.grid(row=99, column=2, columnspan=2, sticky='ew')
 
     # Button for submitting new PO
-    tb = Tix.Button(pogrid, textvariable=_.loc(u"\u2692 Create Product Order (PO)"),
+    tb = Tix.Button(pogrid, textvariable=_.loc(u"\u2692 Update Product Order (PO)"),
                     bg="lawn green",
                     command=lambda:make_po(),
                     activebackground="lime green")
-    tb.grid(row=100, column=0, columnspan=2, sticky='ew')
+    tb.grid(row=99, rowspan=2, column=0, columnspan=2, sticky='nsew')
 
     # Button for submitting new PO
     tb = Tix.Button(pogrid, textvariable=_.loc(u"\u26D4 Cancel"),
@@ -174,28 +204,23 @@ def main(_, refresh):
 
 
     def make_po():
-        #TODO: Select button values must be lower case, need to work around.
         if check_fields() == False:
             return
-        ins = dict(MPN=_prodMPN.get(),
-                       qty=_qty.get(),
-                       price=_price.get(),
-                       orderID=_ponumber.get(),
-                       orderdate=cal.selection,
-                       ordernote=_note.get(),
-                       applytax=_tax.get())
+        ins = dict(qty=_qty.get(),
+                   orderID=_ponumber.get(),
+                   ordernote=_note.get())
         if _qty.get() == u"\u221E":
             ins['qty'] = 1e10
-        ins['is_sale'] = True if _.sc_mode == 'c' else False
-        ins['is_purchase'] = True if _.sc_mode == 's' else False
-        ins['group'] = _.curr.cogroup.name
-        ins['seller'] = tm['value'] if _.sc_mode == 'c' else br['value'].upper()
-        ins['buyer'] = tm['value'] if _.sc_mode == 's' else br['value'].upper()
+        if tm['value'] != u'' and br['value'] != u'':
+            ins['seller'] = tm['value'] if _.sc_mode == 'c' else br['value'].upper()
+            ins['buyer'] = tm['value'] if _.sc_mode == 's' else br['value'].upper()
+        if cal.selection:
+            ins['orderdate'] = cal.selection
 
         if _.debug:
             print ins
 
-        _.dbm.insert_order(ins)
+        _.dbm.update_order(order.id, ins)
 
         exit_win()
 
@@ -210,19 +235,15 @@ def main(_, refresh):
         refresh()
 
 
+    def inactivate_po():
+        _.dbm.update_order(order.id, dict(is_open=False))
+
+        exit_win()
+
+
 
     def check_fields():
-        if not _prodMPN.get():
-            return False
         if _qty.get() != u"\u221E" and not _qty.get().isdigit():
-            return False
-        if not _price.get().replace('.','',1).isdigit():
-            return False
-        if not cal.selection:
-            return False
-        if not tm['value']:
-            return False
-        if not br['value']:
             return False
         return True
 
