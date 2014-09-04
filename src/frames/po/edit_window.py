@@ -139,14 +139,14 @@ def main(_, order, refresh):
     le.label.configure(textvariable=_.loc(u"Price"), anchor='center')
     le.entry.configure(textvariable=_price, width=26)
     _price.set(order.price)
-    le.entry.configure(state='disabled')
+#    le.entry.configure(state='disabled')
     le.grid(row=3, rowspan=1, column=0, columnspan=2, sticky='w')
 
     ### TAX OPTION ###
     tcb = Tix.Checkbutton(pogrid, textvariable=_.loc(u"Apply tax?"),
                           bg='PaleGreen1', variable=_tax)
     _tax.set(order.applytax)
-    tcb.config(state='disabled')
+#    tcb.config(state='disabled')
     tcb.grid(row=4, column=0, columnspan=2)
 
 
@@ -207,8 +207,10 @@ def main(_, order, refresh):
         if check_fields() == False:
             return
         ins = dict(qty=_qty.get(),
+                   price=_price.get(),
                    orderID=_ponumber.get(),
-                   ordernote=_note.get())
+                   ordernote=_note.get(),
+                   applytax=_tax.get())
         if _qty.get() == u"\u221E":
             ins['qty'] = 1e10
         if tm['value'] != u'' and br['value'] != u'':
@@ -243,7 +245,13 @@ def main(_, order, refresh):
 
 
     def check_fields():
+        if not _price.get().replace('.','',1).isdigit():
+            return False
         if _qty.get() != u"\u221E" and not _qty.get().isdigit():
+            return False
+        if not tm['value']:
+            return False
+        if not br['value']:
             return False
         return True
 

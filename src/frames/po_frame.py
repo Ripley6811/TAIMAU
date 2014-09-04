@@ -29,6 +29,7 @@ __version__ = '0.1'
 # IMPORT STATEMENTS
 #===============================================================================
 import Tix
+import tkMessageBox
 import po #package
 
 #===============================================================================
@@ -133,14 +134,53 @@ def create(_):
 
 
 
+
+
     #### Set up right pane containing company info and POs ####
     ###########################################################
     top_pane = Tix.Frame(_.po_frame)
-    top_pane.pack(side=Tix.TOP, fill=Tix.X, padx=2, pady=3)
+    top_pane.pack(side='top', fill='x', padx=4, pady=5)
 
     # Add branch selection buttons across top
     branchbox = Tix.Frame(top_pane)
-    branchbox.pack(side=Tix.TOP, fill=Tix.X)
+    branchbox.pack(side='top', fill=Tix.X)
+
+    #### PAGE BUTTONS: PO, MANIFEST, INVOICE, ALL PO ####
+    #####################################################
+    page_buttons = Tix.Frame(top_pane)
+    page_buttons.pack(side='top', fill='x', expand=True)
+
+    options = dict(variable="pagebuttons", indicatoron=False,
+                   font=(_.font, "14", "bold"), bg="medium purple",
+                   selectcolor="plum", padx=40,
+                   activebackground="plum")
+    tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'Active POs'),
+                    command=lambda x='po new':change_view(x),
+                    value='po new', **options)
+    tr.pack(side='left', fill='x')
+    tr.select()
+    _.view_mode = 'po new'
+    tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'All POs'),
+                    command=lambda x='po all':change_view(x),
+                    value='po all', **options)
+    tr.pack(side='left', fill='x')
+    tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'Manifests & Invoices'),
+                    command=lambda x='shipped':change_view(x),
+                    value='shipped', **options)
+    tr.pack(side='left', fill='x')
+
+    def change_view(mode):
+        if _.view_mode == mode:
+            return
+        print 'view:', mode
+
+        _.view_mode = mode
+
+        if mode == 'po new':
+            _.po_center.pack(side=Tix.LEFT, fill=Tix.BOTH)
+        else:
+            _.po_center.pack_forget()
+
 
     # Add center pane for PO listing
     center_pane = _.po_center = Tix.Frame(_.po_frame)
@@ -208,8 +248,10 @@ def create(_):
             if order.is_open:
                 _poIDs.append(order.id)
                 _prod = order.product
+                print type(_prod)
+                assert isinstance(_prod, _.dbm.Product), u"Product not attached to order."
                 _id = order.orderID if order.orderID else _.loc(u"(NA)", 1)
-                _text = u"PO {} : {}".format(_id, _prod.inventory_name)
+                _text = u"PO {} : {}".format(_id, _prod.label())
                 #TODO: Button opens PO editing, like price, date, applytax and total qty.
                 tb = TB(_text)
                 tb['command'] = lambda o=order: po.edit(_,o,load_company)
@@ -254,10 +296,10 @@ def create(_):
                         _poBs[row].config(bg=u'PaleTurquoise1')
                         if _int.is_integer():
                             _int = int(_int)
-                        _unitsVars[row].set(u"({}".format(_int))
+                        _unitsVars[row].set(u"{}".format(_int))
                     else:
                         _poBs[row].config(bg=u'moccasin')
-                        _unitsVars[row].set(u"({}".format(0))
+                        _unitsVars[row].set(u"{}".format(0))
                 _qtyVars.append(Tix.StringVar())
                 ew = Tix.Entry(pobox, textvariable=_qtyVars[-1], width=7,
                                justify="center", bg=u"moccasin")
@@ -265,7 +307,7 @@ def create(_):
                 _qtyVars[-1].trace('w', lambda a,b,c,ew=ew,capamt=amt,row=len(_poIDs)-1: highlight_entry(row,ew,capamt) )
 
                 # SKU
-                _text = u'{}'.format(_prod.SKU)
+                _text = u'{}:'.format(_prod.SKU)
                 lw = Tix.Label(pobox, text=_text, anchor='w')
                 lw.grid(row=row*2, column=4, sticky='w')
 
@@ -274,8 +316,8 @@ def create(_):
                 _multiplier.append(_prod.units)
                 lw = Tix.Label(pobox, textvariable=_unitsVars[-1], anchor='w')
                 lw.grid(row=row*2, column=5, sticky='w')
-                _unitsVars[-1].set("(0")
-                _text = u' {})'.format(
+                _unitsVars[-1].set("0")
+                _text = u' {}'.format(
                     _prod.UM #if _prod.unitpriced else _prod.SKU
                 )
                 lw = Tix.Label(pobox, text=_text, anchor='w')
@@ -283,7 +325,7 @@ def create(_):
 
                 # Price per sku/unit
                 _text = u' ${} per {} '.format(
-                    int(_prod.curr_price) if _prod.curr_price.is_integer() else _prod.curr_price,
+                    int(order.price) if order.price.is_integer() else order.price,
                     _prod.UM if _prod.unitpriced else _prod.SKU
                 )
                 lw = Tix.Label(pobox, text=_text)
@@ -313,6 +355,7 @@ def create(_):
                         command=lambda:po.new(_, load_company),
                         activebackground="lime green")
         tb.grid(row=row*2+2, column=0, sticky='ew')
+
         # Button for submitting new manifest. Goto date selection, etc.
         #TODO: Add command
         if _poIDs:
@@ -323,10 +366,16 @@ def create(_):
             tb.grid(row=row*2+2, column=3, columnspan=6, sticky='ew')
 
         def make_manifest():
-            #TODO: Limit to 5 items on manifest
-            for _id, qtyV, discV in zip(_poIDs, _qtyVars, _discountVars):
-                print _id, qtyV.get(), discV.get()
+            manifest_list = [(a, b, c) for a,b,c in
+                             zip(_poIDs, _qtyVars, _unitsVars) if b.get()]
+            if _.debug:
+                print manifest_list
+            if len(manifest_list) > 5:
+                tkMessageBox.showwarning(_.loc(u"Maximum exceeded",True),
+                        _.loc(u"Only a maximum of five items allowed.",True))
+                return
 
+            po.manifest(_, manifest_list)
 
 
 if __name__ == '__main__':
