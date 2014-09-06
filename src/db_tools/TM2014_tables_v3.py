@@ -252,8 +252,10 @@ class ShipmentItem(Base):
 
     qty = Col(Int, nullable=False) # Deduct from total SKUs due
 
+    lot = Col(Utf)
     lot_start = Col(Int)
     lot_end = Col(Int)
+    rt_no = Col(Utf)
 
     invoiceitem = rel('InvoiceItem', backref='shipmentitem')
 

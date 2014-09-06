@@ -29,7 +29,8 @@ __version__ = '0.1'
 # IMPORT STATEMENTS
 #===============================================================================
 from TM2014_tables_v3 import (get_database, CoGroup, Branch, Product,
-                            Vehicle, Contact, Stock, Order, Shipment,
+                            Vehicle, Contact, Stock, Order,
+                            Shipment, ShipmentItem,
                             Invoice, InvoiceItem)
 import os  # os.walk(basedir) FOR GETTING DIR STRUCTURE
 #import dict_from_excel as excel
@@ -187,6 +188,9 @@ def orders(is_sale, group=None, limit=1000):
 
 def get_order(id):
     return session.query(Order).get(id)
+
+def get_manifest(id):
+    return session.query(Shipment).get(id)
 
 def _orders(is_sale):
     '''Function maker for 'sales' and 'purchases' functions.

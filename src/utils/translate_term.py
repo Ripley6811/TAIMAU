@@ -91,6 +91,10 @@ worddict = {
     u'Manifests & Invoices' : u'出貨單 & 發票',
     u"Maximum exceeded" : u"最大突破",
     u"Only a maximum of five items allowed." : u"最多只有5個項目.",
+    u"\u2713 Submit" : u"\u2713 提交",
+    u'Driver:' : u'司機:',
+    u'Truck:' : u'車牌:',
+    u'Note:' : u'備註:',
 }
 # Storage of StringVar by the english text as keyword.
 labeldict = {}
