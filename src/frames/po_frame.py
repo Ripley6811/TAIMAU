@@ -169,6 +169,9 @@ def create(_):
                     value='shipped', **options)
     tr.pack(side='left', fill='x')
 
+    po.all_frame(_)
+    po.mi_frame(_)
+
     def change_view(mode):
         if _.view_mode == mode:
             return
@@ -177,9 +180,20 @@ def create(_):
         _.view_mode = mode
 
         if mode == 'po new':
-            _.po_center.pack(side=Tix.LEFT, fill=Tix.BOTH)
+            _.po_center.pack(side='left', fill='both', expand=1)
         else:
             _.po_center.pack_forget()
+        if mode == 'po all':
+            _.all_frame.pack(side='left', fill='both', expand=1)
+            _.all_frame_refresh()
+        else:
+            _.all_frame.pack_forget()
+        if mode == 'shipped':
+            _.mi_frame.pack(side='left', fill='both', expand=1)
+            _.mi_frame_refresh()
+        else:
+            _.mi_frame.pack_forget()
+
 
 
     # Add center pane for PO listing
@@ -200,19 +214,27 @@ def create(_):
         branchbox_inner = Tix.Frame(branchbox)
         branchbox_inner.pack(side=Tix.TOP, fill=Tix.X)
 
-        options = dict(variable="branchbuttons", indicatoron=False,
+        _.curr.branch = Tix.StringVar()
+        options = dict(variable=_.curr.branch, indicatoron=False,
                        font=(_.font, "20", "bold"), bg="burlywood",
                        selectcolor="gold",
                        activebackground="gold")
         Tix.Label(branchbox_inner, textvariable=_.loc(u"Branch")).pack(side="left")
+        branch_info = Tix.StringVar()
+        def set_branch_info():
+            branch = _.dbm.get_branch(_.curr.branch.get())
+            text = u'\u260E {}\n\u213B {}\n\u2709 {}'.format(branch.phone, branch.fax, branch.email)
+            branch_info.set(text)
+        _.curr.branch.trace('w', lambda a,b,c,: set_branch_info())
         for i, branch in enumerate(cogroup.branches):
             tr = Tix.Radiobutton(branchbox_inner, text=branch.name,
-                             value=branch.name,
-#                             command=pass,
-                             **options)
+                                 value=branch.name, **options)
             tr.pack(side="left")
             if i==0:
                 tr.invoke()
+        Tix.Label(branchbox_inner, textvariable=branch_info, justify='left')\
+            .pack(side='left')
+
 
         #TODO: Load entry fields with company info for viewing/editing
         #TODO: Buttons for switching supplier/customer booleans
@@ -253,7 +275,7 @@ def create(_):
                 print type(_prod)
                 assert isinstance(_prod, _.dbm.Product), u"Product not attached to order."
                 _id = order.orderID if order.orderID else _.loc(u"(NA)", 1)
-                _text = u"PO {} : {}".format(_id, _prod.label())
+                _text = u"PO {} : {} ({})".format(_id, _prod.label(), _prod.specs)
                 #TODO: Button opens PO editing, like price, date, applytax and total qty.
                 tb = TB(_text)
                 tb['command'] = lambda o=order: po.edit(_,o,load_company)
@@ -272,7 +294,7 @@ def create(_):
                 tb = Tix.Button(pobox, text=u'\u26DF \u26DF',
                                 font=(_.font, 11), bg="lawn green",
                                 activebackground="lime green")
-                tb['command'] = lambda o=order: po.add_many(_,o)
+                tb['command'] = lambda o=order: po.add_many(_,o,load_company)
                 tb.grid(row=row*2, column=1, sticky='nsew')
 
                 # PO remaining QTY
@@ -387,10 +409,17 @@ def create(_):
                 tkMessageBox.showwarning(_.loc(u"Maximum exceeded",True),
                         _.loc(u"Only a maximum of five items allowed.",True))
                 return
+            if len(manifest_list) < 1:
+                return
 
             po.manifest(_, orders=[a for a,b,c in manifest_list],
                            qtyVars=[b for a,b,c in manifest_list],
-                           unitVars=[c for a,b,c in manifest_list])
+                           unitVars=[c for a,b,c in manifest_list],
+                            refresh=load_company)
+
+        # Load PO HList 'All POs'
+        _.all_frame_refresh()
+        _.mi_frame_refresh()
 
 
 if __name__ == '__main__':

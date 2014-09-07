@@ -7,7 +7,7 @@ from utils import date_picker
 from datetime import date
 
 
-def main(_, order):
+def main(_, order, refresh):
     """Displays a window for entering multiple shipments of one item.
 
     For getting 'caught-up' on processing manifests."""
@@ -132,7 +132,7 @@ def main(_, order):
         _.dbm.session.commit()
 
         exit_win()
-
+        refresh()
         tkMessageBox.showinfo("Entries saved", "Entries saved to the database.")
 
 

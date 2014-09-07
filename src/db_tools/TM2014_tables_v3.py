@@ -107,6 +107,19 @@ class Order(Base):
     #XXX: New in version 3
     is_open = Col(Bool, nullable=False, default=True) # Active or closed PO
 
+    @property
+    def units(self):
+        return self.qty * self.product.units
+
+    def shipped_value(self):
+        '''Return the value of total shipped items.'''
+        value = self.qty_shipped() * self.price
+        if self.product.unitpriced:
+            value = value * self.product.units
+        if self.applytax:
+            value = value * 1.05
+        return value
+
     def qty_shipped(self):
         '''By number of SKUs'''
         if len(self.shipments) == 0:
@@ -131,9 +144,9 @@ class Order(Base):
 
     def all_invoiced(self):
         '''By number of SKUs'''
-        if len(self.invoices) == 0:
-            return False
-        return self.qty == self.qty_invoiced()
+#        if len(self.invoices) == 0:
+#            return False
+        return self.qty_shipped() == self.qty_invoiced()
 
     def total_paid(self):
         if len(self.invoices) == 0:
@@ -151,57 +164,57 @@ class Order(Base):
             subtotal *= self.product.units
         return int(round(subtotal))
 
-    def listbox_summary(self):
-        """
-        Single line unicode text summary of order intended for use in a listbox.
-
-        Only displays number of attached shipments and invoices.
-        """
-
-        prodtmp = self.product.product_label, self.product.inventory_name
-        if prodtmp[0] and prodtmp[0] != prodtmp[1]:
-            prodtmp = u'{} (台茂:{})'.format(*prodtmp)
-        else:
-            prodtmp = prodtmp[1]
-
-        #Start with checkbox to show that order is completed (delivered and paid)
-        tmp = u'\u2611' if self.all_paid() and self.all_invoiced() and self.all_shipped() else u'\u2610'
-
-        #PO number if available
-        po_no_txt = self.orderID.strip() if self.orderID else '({})'.format(self.id)
-        tmp += u"{0:<14}".format(po_no_txt)
-
-        #Shipping icon and number of shipments
-        tmp += u'\u26DF' if len(self.shipments)>0 else u'\u25C7'
-        tmp += u'*{:<3}'.format(len(self.shipments)) if self.shipments else u'    '
-
-        #Invoice sent icon and number of invoices
-        tmp += u'\u2696' if len(self.invoices)>0 else u'\u25C7'
-        tmp += u'*{:<3}'.format(len(self.invoices)) if self.invoices else u'    '
-
-
-        try:
-            tmp += u"訂單日:{0.month:>2}月{0.day:>2}日".format(self.orderdate)
-        except:
-            tmp += u'(Order date not entered)'
-
+#    def listbox_summary(self):
+#        """
+#        Single line unicode text summary of order intended for use in a listbox.
+#
+#        Only displays number of attached shipments and invoices.
+#        """
+#
+#        prodtmp = self.product.product_label, self.product.inventory_name
+#        if prodtmp[0] and prodtmp[0] != prodtmp[1]:
+#            prodtmp = u'{} (台茂:{})'.format(*prodtmp)
+#        else:
+#            prodtmp = prodtmp[1]
+#
+#        #Start with checkbox to show that order is completed (delivered and paid)
+#        tmp = u'\u2611' if self.all_paid() and self.all_invoiced() and self.all_shipped() else u'\u2610'
+#
+#        #PO number if available
+#        po_no_txt = self.orderID.strip() if self.orderID else '({})'.format(self.id)
+#        tmp += u"{0:<14}".format(po_no_txt)
+#
+#        #Shipping icon and number of shipments
+#        tmp += u'\u26DF' if len(self.shipments)>0 else u'\u25C7'
+#        tmp += u'*{:<3}'.format(len(self.shipments)) if self.shipments else u'    '
+#
+#        #Invoice sent icon and number of invoices
+#        tmp += u'\u2696' if len(self.invoices)>0 else u'\u25C7'
+#        tmp += u'*{:<3}'.format(len(self.invoices)) if self.invoices else u'    '
+#
+#
 #        try:
-#            tmp += u" \u273F {s.seller}\u2794{s.buyer} ".format(s=self)
+#            tmp += u"訂單日:{0.month:>2}月{0.day:>2}日".format(self.orderdate)
+#        except:
+#            tmp += u'(Order date not entered)'
+#
+##        try:
+##            tmp += u" \u273F {s.seller}\u2794{s.buyer} ".format(s=self)
+##        except Exception as e:
+##            tmp += u'(ERROR: {})'.format(e)
+#
+#        try:
+#            tmp += u"\u273F {rem_qty:>6}{s.qty:>5}{um} {pt:<14} @ ${pr} \u214C {um}".format(
+#                pt= prodtmp,
+#                pr= int(self.price) if float(self.price).is_integer() else self.price,
+#                um= self.product.UM if self.product.unitpriced else self.product.SKU,
+#                rem_qty= u'{}/'.format(self.qty_remaining()),
+#                s= self,
+#                )
 #        except Exception as e:
 #            tmp += u'(ERROR: {})'.format(e)
-
-        try:
-            tmp += u"\u273F {rem_qty:>6}{s.qty:>5}{um} {pt:<14} @ ${pr} \u214C {um}".format(
-                pt= prodtmp,
-                pr= int(self.price) if float(self.price).is_integer() else self.price,
-                um= self.product.UM if self.product.unitpriced else self.product.SKU,
-                rem_qty= u'{}/'.format(self.qty_remaining()),
-                s= self,
-                )
-        except Exception as e:
-            tmp += u'(ERROR: {})'.format(e)
-
-        return tmp
+#
+#        return tmp
 
 
 #==============================================================================
@@ -233,14 +246,14 @@ class Shipment(Base): # Keep track of shipments/SKUs for one order
     #XXX: New in version 3
     items = rel('ShipmentItem', backref='shipment')
 
-    # METHODS
-    def listbox_summary(self):
-        """
-        Return a single line unicode summary intended for a listbox.
-        """
-        txt = u'{date:<10}   編號: {s.shipment_no:<10}   QTY: {s.items[0].qty:>5} {s.order.product.SKU:<6}   品名: {s.order.product.inventory_name}'
-        txt = txt.format(s=self, date=str(self.shipmentdate))
-        return txt
+#    # METHODS
+#    def listbox_summary(self):
+#        """
+#        Return a single line unicode summary intended for a listbox.
+#        """
+#        txt = u'{date:<10}   編號: {s.shipment_no:<10}   QTY: {s.items[0].qty:>5} {s.order.product.SKU:<6}   品名: {s.order.product.inventory_name}'
+#        txt = txt.format(s=self, date=str(self.shipmentdate))
+#        return txt
 
 @AddDictRepr
 class ShipmentItem(Base):
@@ -322,15 +335,21 @@ class InvoiceItem(Base): # Keep track of invoices/payments for one order
         subtotal = self.order.price * self.qty
         if self.order.product.unitpriced:
             subtotal *= self.order.product.units
-        return int(round(subtotal))
+        return int(round(subtotal,0))
 
-    def listbox_summary(self):
-        """
-        Return a single line unicode summary intended for a listbox.
-        """
-        txt = u'{date:<10}   編號: {s.invoice_no:<10}   QTY: {s.qty:>5} {s.order.product.SKU:<6}   Subtotal: ${total:<6}   品名: {s.order.product.inventory_name}'
-        txt = txt.format(s=self, date=str(self.invoice.invoicedate), total=self.subtotal())
-        return txt
+    def total(self):
+        subtotal = self.subtotal()
+        if self.order.applytax:
+            subtotal *= 1.05
+        return int(round(subtotal,0))
+
+#    def listbox_summary(self):
+#        """
+#        Return a single line unicode summary intended for a listbox.
+#        """
+#        txt = u'{date:<10}   編號: {s.invoice_no:<10}   QTY: {s.qty:>5} {s.order.product.SKU:<6}   Subtotal: ${total:<6}   品名: {s.order.product.inventory_name}'
+#        txt = txt.format(s=self, date=str(self.invoice.invoicedate), total=self.subtotal())
+#        return txt
 
 
 
@@ -407,25 +426,6 @@ class Contact(Base):
 #==============================================================================
 # Product class
 #==============================================================================
-#def summarize(context):
-#    '''Short text of product key values.
-#    "product_name (## UM SKU)"
-#    e.g. "HCL (20 kg barrel)"
-#    '''
-#    outname = context.current_parameters['product_label']
-#    units = float(context.current_parameters['units'])
-#    units = int(units) if int(units)==units else units #Truncate if mantissa is zero
-#    UM = context.current_parameters['UM']
-#    SKU = context.current_parameters['SKU']
-#    if not outname:
-#        outname = context.current_parameters['inventory_name']
-#    if SKU == u'槽車':
-#        return u"{0} (槽車)".format(outname)
-#    else:
-#        units = int(units) if int(units)==units else units
-#        uf = u"{0} ({1} {2} {3})"
-#        return uf.format(outname,units,UM,SKU)
-
 @AddDictRepr
 class Product(Base): # Information for each unique product (including packaging)
     __tablename__ = 'product'
@@ -476,7 +476,7 @@ class Product(Base): # Information for each unique product (including packaging)
         return available
 
     def label(self):
-        '''Returns product_label, which is the client supplied name.
+        '''Returns product_label, which is the client desired name.
         If a product_label does not exist, then return our inventory_name
         for the product.
         '''
@@ -485,6 +485,7 @@ class Product(Base): # Information for each unique product (including packaging)
         else:
             return self.inventory_name
 
+    @property
     def specs(self):
         '''Short text of product key values.
         "## UM SKU"

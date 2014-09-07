@@ -95,6 +95,8 @@ worddict = {
     u'Driver:' : u'司機:',
     u'Truck:' : u'車牌:',
     u'Note:' : u'備註:',
+    u'Number of records to show:' : u'顯示數量:',
+    u'PO Closed?' : u'用完了?',
 }
 # Storage of StringVar by the english text as keyword.
 labeldict = {}

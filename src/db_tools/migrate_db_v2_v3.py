@@ -93,8 +93,11 @@ for i, rec in enumerate(DM.session.query(DM.Vehicle)):
 notmatched = 0
 for i, rec in enumerate(DM.session.query(DM.Order)):
     # Ref to shipments and invoices for processing later
-    Shipments = rec.shipments
-    InvoiceItems = rec.invoices
+    Shipments = sorted(rec.shipments, key=lambda x:x.shipmentdate, reverse=True)
+    try:
+        InvoiceItems = sorted(rec.invoices, key=lambda x:x.invoice.invoicedate, reverse=True)
+    except:
+        InvoiceItems = rec.invoices
 
     shipped = rec.all_shipped()
     invoiced = rec.all_invoiced()
@@ -144,7 +147,10 @@ for i, rec in enumerate(DM.session.query(DM.Order)):
         # Don't add multiple Shipment manifests
         if nInvMatch < len(InvoiceItems):
             for recinvitem in InvoiceItems:
-                recinv = recinvitem.invoice.__dict__
+                try:
+                    recinv = recinvitem.invoice.__dict__
+                except:
+                    continue
                 recinvitem = recinvitem.__dict__
 
                 if 'qty' in recinvitem.keys():

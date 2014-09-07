@@ -5,8 +5,7 @@ from utils import date_picker
 
 
 def main(_, refresh):
-    """Description of main()"""
-    print "NEW WINDOW"
+    """Window for adding a new purchase order (PO)."""
 
     #### USE THIS TO INTEGRATE FRAME INTO MAIN WINDOW ####
 #    repack_info = _.po_center.pack_info()
@@ -31,6 +30,7 @@ def main(_, refresh):
 
     _.extwin = Tix.Toplevel(width=700)
     _.extwin.title(u"{} {}".format(_.curr.cogroup.name, _.loc(u"+ PO", asText=True)))
+    _.extwin.focus_set()
 
     center_pane = Tix.Frame(_.extwin)
     center_pane.pack(side='left', fill='both')
@@ -44,6 +44,7 @@ def main(_, refresh):
     _price = Tix.StringVar()
     _note = Tix.StringVar()
     _tax = Tix.BooleanVar()
+    _prodMPN.trace('w', lambda a,b,c: _price.set(_.dbm.get_product_price(_prodMPN.get(), True)))
 
 
     #### Display products that can be ordered ####
@@ -68,7 +69,7 @@ def main(_, refresh):
     row = 0
     cols = 3
     for row, product in enumerate(product_list):
-        _text = u"{}  ({})".format(product.label(), product.specs())
+        _text = u"{}  ({})".format(product.label(), product.specs)
         #TODO: Add Product editing, to be discouraged! Warn!
         #Or just edit names, note and not the numbers related fields
         tb = TRB(_text, product.MPN)

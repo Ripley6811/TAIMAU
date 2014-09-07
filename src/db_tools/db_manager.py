@@ -260,7 +260,7 @@ def get_product_price(mpn, update=False):
     if len(records) == 0:
         return 0.0
 #    print 'from order lookup:', records[-1]
-    session.query(Product).filter(Product.MPN==mpn).update(dict(summary=product.summary,curr_price=records[-1][1]))
+    session.query(Product).filter(Product.MPN==mpn).update(dict(curr_price=records[-1][1]))
     session.commit()
 
     return records[-1][1]

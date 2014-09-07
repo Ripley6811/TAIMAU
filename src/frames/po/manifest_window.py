@@ -5,7 +5,7 @@ from utils import date_picker
 
 
 
-def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None):
+def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
     """Displays a window in the appearance of a Taimau shipping manifest.
 
     "orders" parameter is a list of orders for creating a new manifest.
@@ -31,6 +31,7 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None):
 
     _.extwin = Tix.Toplevel(width=700)
     _.extwin.title(u"{} {}".format(_.curr.cogroup.name, _.loc(u"\u26DF Create Manifest", asText=True)))
+    _.extwin.focus_set()
 
     main_frame = Tix.Frame(_.extwin)
     main_frame.pack(side='left', fill='both')
@@ -269,6 +270,9 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None):
             _.dbm.session.add(item)
         _.dbm.session.commit()
 
+        exit_win()
+        if refresh:
+            refresh()
 
 
 
