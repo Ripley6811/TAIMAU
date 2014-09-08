@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import Tix
+import tkMessageBox
+from make_invoice import main as make_invoice
+from pdf_tools import activity_report
 
 
 def main(_):
@@ -30,6 +33,7 @@ def main(_):
         u'價格' : (8, 8),
         u'規格' : (9, 8),
         u'總價' : (10, 10),
+        u'已付' : (11, 5),
     }
 
     tree_box = Tix.Frame(frame)
@@ -40,13 +44,126 @@ def main(_):
     rb_box = Tix.Frame(frame)
     rb_box.pack(side='bottom', fill='x')
 
-    Tix.Label(rb_box, textvariable=_.loc(u'Number of records to show:'))\
-        .pack(side='left')
+    def view_totals():
+        '''Total up the columns of selected rows.'''
+        totaldict = {}
+        for shipment_id in tree.hlist.info_selection():
+            sm = _.dbm.session.query(_.dbm.ShipmentItem).get(shipment_id)
+            name = u'[{}] {}'.format(sm.order.product.specs, sm.order.product.label())
+            if totaldict.get(name) == None:
+                totaldict[name] = [
+                    sm.qty,
+                    sm.order.product.SKU,
+                    sm.invoiceitem[0].qty if sm.invoiceitem else 0,
+                    sm.invoiceitem[0].total() if sm.invoiceitem else 0
+                ]
+            else:
+                totaldict[name][0] += sm.qty
+                totaldict[name][2] += sm.invoiceitem[0].qty if sm.invoiceitem else 0
+                totaldict[name][3] += sm.invoiceitem[0].total() if sm.invoiceitem else 0
+
+        tkMessageBox.showinfo(
+            u'Summary of totals',
+            '\n'.join(
+                [u'{0}  \u26DF:{1[0]} {1[1]}  \U0001F4B0:{1[2]} {1[1]}  ${1[3]}'.format(
+                    key, vals) for key, vals in totaldict.iteritems()]
+            )
+        )
+
+
+    def create_invoice():
+        '''Check if invoiceitem exists already. Currently limited to one.'''
+        for shipment_id in tree.hlist.info_selection():
+            if len(_.dbm.session.query(_.dbm.ShipmentItem).get(shipment_id).invoiceitem) > 0:
+                return
+        make_invoice(_, tree.hlist.info_selection())
+
+    def create_report():
+        '''Organized shipping history report that can be printed.
+
+        Use selected rows to make a shipping history list.
+        Like items are totaled and displayed at the bottom.'''
+        activity_report.main(_)
+
+    def mark_paid():
+        '''Mark an invoice as paid.
+
+        Auto-select rows from same invoice if not already selected.'''
+        try:
+            if _.extwin.state() == 'normal':
+                if _.curr.cogroup.name in _.extwin.title():
+                    # Focus existing frame and return
+                    _.extwin.focus_set()
+                    return
+                else:
+                    # Destroy existing frame and make new one
+                    _.extwin.destroy()
+        except:
+            # Continue with frame creation
+            pass
+
+        _.extwin = Tix.Toplevel(width=700)
+        _.extwin.title(u"{} {}".format(_.curr.cogroup.name, _.loc(u"\u26DF Create Manifest", asText=True)))
+        _.extwin.focus_set()
+
+        _check_no = Tix.StringVar()
+        tl=Tix.Label(_.extwin, text=u'Check #:')
+        tl.grid(row=0,column=0, columnspan=2, sticky='nsew')
+        te = Tix.Entry(_.extwin, textvariable=_check_no)
+        te.grid(row=0,column=2, columnspan=2, sticky='nsew')
+
+        # SUBMIT BUTTON
+        tb = Tix.Button(_.extwin, textvariable=_.loc(u"\u2713 Submit"),
+                        bg="lawn green",
+                        command=lambda:submit(),
+                        activebackground="lime green")
+        tb.grid(row=100, column=0, columnspan=2, sticky='ew')
+        # CANCEL BUTTON
+        tb = Tix.Button(_.extwin, textvariable=_.loc(u"\u26D4 Cancel"),
+                        bg="tomato",
+                        command=lambda:_.extwin.destroy(),
+                        activebackground="tomato")
+        tb.grid(row=100, column=2, columnspan=2, sticky='ew')
+
+        def submit():
+            for sid in tree.hlist.info_selection():
+                sm = _.dbm.session.query(_.dbm.ShipmentItem).get(sid)
+                sm.invoiceitem[0].invoice.paid = True
+                sm.invoiceitem[0].invoice.check_no = _check_no.get()
+            _.dbm.session.commit()
+
+            _.extwin.destroy()
+            try:
+                _.refresh()
+            except:
+                pass
+
+
+    Tix.Button(
+        rb_box, text=u'\U0001F440', bg=u'lawn green',
+        command=view_totals, font=(_.font, 18, 'bold'),
+    ).pack(side='left', fill='x')
+    Tix.Button(
+        rb_box, textvariable=_.loc(u'Create Invoice'), bg=u'lawn green',
+        command=create_invoice, font=(_.font, 18, 'bold'),
+    ).pack(side='left', fill='x')
+    Tix.Button(
+        rb_box, textvariable=_.loc(u'Activity Report'), bg=u'lawn green',
+        command=create_report, font=(_.font, 18, 'bold'),
+    ).pack(side=u'left', fill='x')
+    Tix.Button(
+        rb_box, textvariable=_.loc(u'Mark as Paid'), bg=u'lawn green',
+        command=mark_paid, font=(_.font, 18, 'bold'),
+    ).pack(side=u'left', fill='x')
+
+
     rb_vals = (20, 50, 100, 1000)
     options = dict(variable=nRecords, indicatoron=False)
-    for val in rb_vals:
+    for val in rb_vals[::-1]:
         Tix.Radiobutton(rb_box, text=val, value=val, **options)\
-            .pack(side='left')
+            .pack(side='right')
+    Tix.Label(rb_box, textvariable=_.loc(u'Number of records to show:'))\
+        .pack(side='right')
 
     totalvalue = Tix.StringVar()
     Tix.Label(rb_box, textvariable=totalvalue)
@@ -68,7 +185,7 @@ def main(_):
     tree['command'] = lambda *args: apply_selection()
 
     def apply_selection():
-        #TODO: Add button to create activity report from selection!
+        '''Show hlist selection code. Which is also the shipment record id.'''
         print tree.hlist.info_selection()
 
     tds = lambda anchor, bg: Tix.DisplayStyle(
@@ -82,6 +199,10 @@ def main(_):
     po_color = u'PeachPuff2'
     inv_color = u'gold'
     def refresh():
+        try:
+            _.curr.cogroup
+        except AttributeError:
+            return
         # SQL query for shipments (items)
         query = _.dbm.session.query(_.dbm.ShipmentItem)
         query = query.join(_.dbm.Shipment)
@@ -113,9 +234,13 @@ def main(_):
                 tree.hlist.item_create(hid, col=H[u'價格'][0], text=invi.order.price, itemtype=Tix.TEXT, style=tds('e', inv_color))
                 tree.hlist.item_create(hid, col=H[u'規格'][0], text=invi.order.product.units if invi.order.product.unitpriced else u'', itemtype=Tix.TEXT, style=tds('e', inv_color))
                 tree.hlist.item_create(hid, col=H[u'總價'][0], text=invi.total(), itemtype=Tix.TEXT, style=tds('e',inv_color))
+                tree.hlist.item_create(hid, col=H[u'已付'][0], text=u'\u2713' if invi.invoice.paid else u'\u203C', itemtype=Tix.TEXT, style=tds('w',inv_color if invi.invoice.paid else 'tomato'))
 
             if len(rec.invoiceitem) > 1:
                 tree.setmode(hid, 'open')
+
+
+
 
     _.mi_frame = frame
     _.mi_frame_refresh = refresh

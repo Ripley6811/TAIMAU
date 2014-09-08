@@ -37,27 +37,29 @@ import os  # os.walk(basedir) FOR GETTING DIR STRUCTURE
 import datetime
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import or_, and_
+import tkFileDialog
+import os
 
 #===============================================================================
 # METHODS
 #===============================================================================
-dbname = r'TM2014_v3.db'
-try:
-    with open('settings.txt', 'r') as rfile:
-        base = rfile.readline().strip()
-        dbname = os.path.join(base, dbname)
-    print "DB LOADED:", dbname
-except IOError:
-    with open('..\settings.txt', 'r') as rfile:
-        base = rfile.readline().strip()
-        dbname = os.path.join(base, dbname)
-    print "DB LOADED:", dbname
+#dbname = r'TM2014_v3.db'
+#try:
+#    with open('settings.txt', 'r') as rfile:
+#        base = rfile.readline().strip()
+#        dbname = os.path.join(base, dbname)
+#    print "DB LOADED:", dbname
+#except IOError:
+#    with open('..\settings.txt', 'r') as rfile:
+#        base = rfile.readline().strip()
+#        dbname = os.path.join(base, dbname)
+#    print "DB LOADED:", dbname
 
 
 
 #engine, metadata = open_database(dbname, echo=True)
-engine = get_database( dbname, False )
-session = sessionmaker(bind=engine)()
+#engine = get_database( dbname, False )
+#session = sessionmaker(bind=engine)()
 
 
 #conn = engine.connect()
@@ -65,6 +67,96 @@ session = sessionmaker(bind=engine)()
 #sales = sales
 #companydb = metadata.tables['company']
 ##warehouse = warehouse
+class db_manager:
+    Order = Order
+    Product = Product
+    Shipment = Shipment
+    ShipmentItem = ShipmentItem
+    Invoice = Invoice
+    InvoiceItem = InvoiceItem
+
+    def __init__(self):
+        try:
+            with open('settings.txt', 'r') as rfile:
+                line = rfile.readline().strip()
+                print line
+                self.dbpath = line
+
+            engine = get_database( self.dbpath, False )
+            self.session = sessionmaker(bind=engine)()
+            print "DB PATH:", self.dbpath
+        except IOError:
+            self.change_db()
+
+    def change_db(self):
+        try:
+            self.session.close()
+        except AttributeError:
+            pass
+
+        FILE_OPTS = dict(
+            title = u'Select Database',
+            defaultextension = '.db',
+        )
+        self.dbpath = tkFileDialog.askopenfilename(**FILE_OPTS)
+
+        engine = get_database( self.dbpath, False )
+        self.session = sessionmaker(bind=engine)()
+        print "DB PATH:", self.dbpath
+
+        # Save db location for auto-loading next time.
+        with open('settings.txt', 'w') as wfile:
+            wfile.write(self.dbpath)
+            wfile.close()
+
+
+    #==============================================================================
+    # Order table methods
+    #==============================================================================
+    def insert_order(self, ins_dict, is_sale=None):
+        if isinstance(is_sale, bool):
+            ins_dict['is_sale'] = is_sale
+        if  ins_dict.get('is_sale') == None:
+            raise Warning, "is_sale (boolean) must be provided."
+        self.session.add(Order(**ins_dict))
+        self.session.commit()
+        return True
+
+    #==============================================================================
+    # CoGroup table methods
+    #==============================================================================
+    def cogroups(self):
+        return self.session.query(CoGroup).all()
+
+    def get_cogroup(self, name):
+        return self.session.query(CoGroup).get(name)
+
+    #==============================================================================
+    # Branch table methods
+    #==============================================================================
+    def get_branch(self, name):
+        return self.session.query(Branch).get(name)
+
+    #==============================================================================
+    # Product table methods
+    #==============================================================================
+    def get_product_price(self, mpn, update=False):
+        '''Returns current price in the product record or updates the record from
+        recent orders. Force a price update with the keyword.
+        '''
+        product = self.session.query(Product).filter(Product.MPN==mpn).one()
+        if product.curr_price != 0.0 and update == False:
+    #        print 'from product record:', product.curr_price
+            return product.curr_price
+        # Else update current price from order records.
+        records = sorted([(o.duedate, o.price) for o in product.orders])
+        if len(records) == 0:
+            return 0.0
+    #    print 'from order lookup:', records[-1]
+        self.session.query(Product).filter(Product.MPN==mpn).update(dict(curr_price=records[-1][1]))
+        self.session.commit()
+
+        return records[-1][1]
 
 
 def insert_purchase(ins_dict):

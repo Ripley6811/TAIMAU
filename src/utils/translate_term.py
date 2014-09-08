@@ -97,6 +97,12 @@ worddict = {
     u'Note:' : u'備註:',
     u'Number of records to show:' : u'顯示數量:',
     u'PO Closed?' : u'用完了?',
+    u'Create Invoice' : u'創建發票',
+    u'Activity Report' : u'記錄報告',
+    u'Mark as Paid' : u'標記為已付款',
+    u'Start date' : u'開始日期',
+    u'End date' : u'結束日期',
+    u'Change Database' : u'還資料庫',
 }
 # Storage of StringVar by the english text as keyword.
 labeldict = {}

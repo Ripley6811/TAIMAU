@@ -76,6 +76,10 @@ def main(_):
     po_color = u'PeachPuff2'
     def refresh():
         print nRecords.get(), 'nRecords'
+        try:
+            _.curr.cogroup
+        except AttributeError:
+            return
         query = _.dbm.session.query(_.dbm.Order)
         if _.sc_mode == u's':
             query = query.filter_by(is_purchase=True)

@@ -5,8 +5,7 @@ from utils import date_picker
 
 
 def main(_, order, refresh):
-    """Description of main()"""
-    print "EDIT WINDOW", order.__dict__
+    """PO editing window"""
 
     #### USE THIS TO INTEGRATE FRAME INTO MAIN WINDOW ####
 #    repack_info = _.po_center.pack_info()
@@ -46,47 +45,6 @@ def main(_, order, refresh):
     _note = Tix.StringVar()
     _tax = Tix.BooleanVar()
 
-
-    #### Display products that can be ordered ####
-    ##############################################
-
-
-#    tl = Tix.Label(center_pane, textvariable=_.loc(u"Select one product"))
-#    tl.pack(side='top')
-
-#    product_list = _.curr.cogroup.products
-#    if _.debug:
-#        print len(product_list), "products found for current company group."
-#    pobox = Tix.Frame(center_pane)
-#    pobox.pack(side='top', fill='x')
-#    TRB = lambda _text, _val: Tix.Radiobutton(pobox, text=_text, anchor='w',
-#                                        variable=_prodMPN,
-#                                        value=_val,
-#                                        indicatoron=False,
-#                                  bg="PaleTurquoise1",
-#                                  activebackground="PaleTurquoise1",
-#                                  selectcolor="gold")
-#    row = 0
-#    cols = 3
-#    for row, product in enumerate(product_list):
-#        _text = u"{}  ({})".format(product.label(), product.specs())
-#        #TODO: Add Product editing, to be discouraged! Warn!
-#        #Or just edit names, note and not the numbers related fields
-#        tb = TRB(_text, product.MPN)
-#        if product.discontinued:
-#            tb.config(state="disabled", bg="slate gray", relief="flat")
-##                tb['command'] = pass
-#        tb.grid(row=row/cols, column=row%cols, sticky='ew')
-#        _pBs.append(tb)
-
-        #TODO: Product note as popup balloon
-    #TODO: Add command for adding a product
-#    tb = Tix.Button(pobox, textvariable=_.loc(u"+ product"),
-#                    bg="lawn green",
-##                    command=lambda:po.new(_),
-#                    activebackground="lime green")
-#    row += 1
-#    tb.grid(row=row/cols, column=row%cols, sticky='ew')
 
 
 
@@ -196,7 +154,7 @@ def main(_, order, refresh):
                     activebackground="lime green")
     tb.grid(row=99, rowspan=2, column=0, columnspan=2, sticky='nsew')
 
-    # Button for submitting new PO
+    # Button for cancelling
     tb = Tix.Button(pogrid, textvariable=_.loc(u"\u26D4 Cancel"),
                     bg="tomato",
                     command=lambda:exit_win(),

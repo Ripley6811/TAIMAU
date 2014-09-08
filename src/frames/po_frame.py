@@ -160,13 +160,13 @@ def create(_):
     tr.pack(side='left', fill='x')
     tr.select()
     _.view_mode = 'po new'
-    tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'All POs'),
-                    command=lambda x='po all':change_view(x),
-                    value='po all', **options)
-    tr.pack(side='left', fill='x')
     tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'Manifests & Invoices'),
                     command=lambda x='shipped':change_view(x),
                     value='shipped', **options)
+    tr.pack(side='left', fill='x')
+    tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'All POs'),
+                    command=lambda x='po all':change_view(x),
+                    value='po all', **options)
     tr.pack(side='left', fill='x')
 
     po.all_frame(_)
@@ -421,6 +421,7 @@ def create(_):
         _.all_frame_refresh()
         _.mi_frame_refresh()
 
+    _.refresh = load_company
 
 if __name__ == '__main__':
     pass
