@@ -184,9 +184,71 @@ def main(_):
     tree.hlist['font'] = _.font
     tree['command'] = lambda *args: apply_selection()
 
+    orderPopMenu = Tix.Menu(tree_box, tearoff=0)
+
+    def orderoptions(event):
+        orderPopMenu.post(event.x_root, event.y_root)
+    tree.hlist.bind("<Double-Button-1>", orderoptions)
+
     def apply_selection():
         '''Show hlist selection code. Which is also the shipment record id.'''
         print tree.hlist.info_selection()
+
+    def edit_shipment():
+        pass
+    def edit_invoice():
+        pass
+    def delete_shipment():
+        sid = tree.hlist.info_selection()[0]
+        smi = _.dbm.session.query(_.dbm.ShipmentItem).get(sid)
+        confirmation = tkMessageBox.askyesno(u'Delete Shipment Item',
+            u'Confirm deletion:\n{0.shipment.shipmentdate} {0.order.product.name}'.format(smi))
+        if confirmation:
+            if len(smi.invoiceitem) >= 1:
+                delete_invoice()
+
+            nItems = len(smi.shipment.items)
+            if nItems == 1:
+                sm_id = smi.shipment.id
+                _.dbm.session.query(_.dbm.Shipment).filter(_.dbm.Shipment.id == sm_id).delete()
+            _.dbm.session.query(_.dbm.ShipmentItem).filter(_.dbm.ShipmentItem.id == sid).delete()
+            _.dbm.session.commit()
+
+            try:
+                _.refresh()
+            except:
+                pass
+
+    def delete_invoice():
+        sid = tree.hlist.info_selection()[0]
+        smi = _.dbm.session.query(_.dbm.ShipmentItem).get(sid)
+        try:
+            invi = smi.invoiceitem[0]
+            if invi:
+                confirmation = tkMessageBox.askyesno(u'Delete Invoice Item',
+                    u'Confirm deletion:\n{0.invoice.invoicedate} {0.order.product.name}'.format(invi))
+
+                if confirmation:
+                    nItems = len(invi.invoice.items)
+                    if nItems == 1:
+                        invi_id = invi.invoice.id
+                        _.dbm.session.query(_.dbm.Invoice).filter(_.dbm.Invoice.id == invi_id).delete()
+                    _.dbm.session.query(_.dbm.InvoiceItem).filter(_.dbm.InvoiceItem.id == invi.id).delete()
+                    _.dbm.session.commit()
+
+                    try:
+                        _.refresh()
+                    except:
+                        pass
+
+        except IndexError:
+            pass
+
+    orderPopMenu.add_command(label=u'編輯出貨單', command=lambda: edit_shipment())
+    orderPopMenu.add_command(label=u'編輯發票', command=lambda: edit_invoice())
+    orderPopMenu.add_separator()
+    orderPopMenu.add_command(label=u'刪除出貨單', command=lambda: delete_shipment())
+    orderPopMenu.add_command(label=u'刪除發票', command=lambda: delete_invoice())
 
     tds = lambda anchor, bg: Tix.DisplayStyle(
         anchor=anchor,
@@ -238,6 +300,7 @@ def main(_):
 
             if len(rec.invoiceitem) > 1:
                 tree.setmode(hid, 'open')
+
 
 
 

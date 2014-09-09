@@ -486,6 +486,18 @@ class Product(Base): # Information for each unique product (including packaging)
             return self.inventory_name
 
     @property
+    def name(self):
+        '''Returns product_label, which is the client desired name.
+        If a product_label does not exist, then return our inventory_name
+        for the product.
+        '''
+        if self.product_label != u'':
+            return self.product_label
+        else:
+            return self.inventory_name
+
+
+    @property
     def specs(self):
         '''Short text of product key values.
         "## UM SKU"
