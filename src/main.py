@@ -6,6 +6,7 @@ summary
 Improvements over previous version include:
 - "_state" object that maintains and passes session info between all modules.
 - Translation module for registering StringVars and easily switch languages.
+- "settings" that are saved and loaded from file using the json package.
 
 :REQUIRES:
     - Database using TM2014_tables_v2.py
@@ -39,16 +40,12 @@ import Tkinter as Tk
 import tkMessageBox
 import ttk
 import tkFont
-#import frame_company_editor
-#import frame_payment
-#import frame_order_entry, frame_overview
-#import frame_manifest
-#import frame_pending
 import xlwt
 import Tix
 #import analytics
 
 import db_tools.db_manager as dbm
+from pdf_tools import activity_report
 import frames.po_frame
 from utils.translate_term import localize, setLang
 print os.getcwd()
@@ -78,15 +75,11 @@ class TaimauApp(Tix.Tk):
         _state = Info()
         _state.debug = True # For console messages and English GUI
         _state.font = u"NSimSun"
-        _state.lang = u"Chinese" if not _state.debug else u"English"
         _state.loc = localize # Translation to Chinese
         _state.dbm = dbm.db_manager() # Database API methods
         _state.curr = Info() # For storage current company, list ID's, etc.
-
         self._ = _state
 
-        setLang(_state.lang)
-        self.wm_title(_state.dbm.dbpath)
 
         #
         # SET UP MENU BAR
@@ -95,19 +88,27 @@ class TaimauApp(Tix.Tk):
 
         # FILE MENU OPTIONS: LOAD, SAVE, EXIT...
         filemenu = Tk.Menu(menubar, tearoff=0)
+        filemenu.add_command(label=_state.dbm.dbpath, state='disabled')
+        filemenu.add_separator()
         filemenu.add_command(label=_state.loc(u"Change Database", 1), command=self.change_db)
         filemenu.add_separator()
         filemenu.add_command(label=_state.loc(u"Exit", 1), command=self.endsession)
         menubar.add_cascade(label=_state.loc(u"File", 1), menu=filemenu)
-
+        filemenu.entryconfig(0, background=u'pale goldenrod', foreground=u'black')
+        self.filemenu = filemenu
 
         # REPORT MENU OPTIONS
         reportmenu = Tk.Menu(menubar, tearoff=0)
-        reportmenu.add_command(label="Save client shipments to Excel (6 months).", command=sales_shipments_to_excel)
-        reportmenu.add_command(label="Save incoming shipments to Excel (6 months).", command=purchases_shipments_to_excel)
-        reportmenu.add_command(label="Save all products to Excel file.", command=save_products_to_excel)
-        reportmenu.add_command(label="Report3", command=None, state=Tk.DISABLED)
-        reportmenu.add_command(label="Report4", command=None, state=Tk.DISABLED)
+        reportmenu.add_command(label="Activity Report (PDF)",
+                               command=lambda:activity_report.main(_state))
+        reportmenu.add_command(label="Save client shipments to Excel (6 months).",
+                               command=sales_shipments_to_excel)
+        reportmenu.add_command(label="Save incoming shipments to Excel (6 months).",
+                               command=purchases_shipments_to_excel)
+        reportmenu.add_command(label="Save all products to Excel file.",
+                               command=save_products_to_excel)
+#        reportmenu.add_command(label="Report3", command=None, state=Tk.DISABLED)
+#        reportmenu.add_command(label="Report4", command=None, state=Tk.DISABLED)
         menubar.add_cascade(label=_state.loc(u"Reports", 1), menu=reportmenu)
 
 
@@ -129,9 +130,9 @@ class TaimauApp(Tix.Tk):
         # SETTINGS MENU OPTIONS
         settingsmenu = Tk.Menu(menubar, tearoff=0)
         settingsmenu.add_radiobutton(label=u'Chinese', variable='lang_select',
-                                 command=lambda: setLang(u"Chinese"), value=u'Chinese')
+            command=lambda: setLang(u"Chinese"), value=u'Chinese')
         settingsmenu.add_radiobutton(label=u'English', variable='lang_select',
-                                 command=lambda: setLang(u"English"), value=u'English')
+            command=lambda: setLang(u"English"), value=u'English')
         menubar.add_cascade(label=_state.loc(u"Settings", 1), menu=settingsmenu)
 
         # HELP MENU OPTIONS
@@ -184,6 +185,8 @@ class TaimauApp(Tix.Tk):
             self._refresh()
         except:
             print("'refresh()' method not found in state object.")
+
+        self.filemenu.entryconfig(0, label=self._.dbm.dbpath)
 
 
 def sales_shipments_to_excel():

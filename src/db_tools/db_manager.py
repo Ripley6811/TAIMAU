@@ -28,45 +28,19 @@ __version__ = '0.1'
 #===============================================================================
 # IMPORT STATEMENTS
 #===============================================================================
+import datetime
+from sqlalchemy.orm import sessionmaker
+#from sqlalchemy import or_, and_
+import tkFileDialog
+
+from utils import settings
 from TM2014_tables_v3 import (get_database, CoGroup, Branch, Product,
                             Vehicle, Contact, Stock, Order,
                             Shipment, ShipmentItem,
                             Invoice, InvoiceItem)
-import os  # os.walk(basedir) FOR GETTING DIR STRUCTURE
-#import dict_from_excel as excel
-import datetime
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import or_, and_
-import tkFileDialog
-import os
-
-#===============================================================================
-# METHODS
-#===============================================================================
-#dbname = r'TM2014_v3.db'
-#try:
-#    with open('settings.txt', 'r') as rfile:
-#        base = rfile.readline().strip()
-#        dbname = os.path.join(base, dbname)
-#    print "DB LOADED:", dbname
-#except IOError:
-#    with open('..\settings.txt', 'r') as rfile:
-#        base = rfile.readline().strip()
-#        dbname = os.path.join(base, dbname)
-#    print "DB LOADED:", dbname
 
 
 
-#engine, metadata = open_database(dbname, echo=True)
-#engine = get_database( dbname, False )
-#session = sessionmaker(bind=engine)()
-
-
-#conn = engine.connect()
-#purchases = purchases
-#sales = sales
-#companydb = metadata.tables['company']
-##warehouse = warehouse
 class db_manager:
     Order = Order
     Product = Product
@@ -76,16 +50,14 @@ class db_manager:
     InvoiceItem = InvoiceItem
 
     def __init__(self):
-        try:
-            with open('settings.txt', 'r') as rfile:
-                line = rfile.readline().strip()
-                print line
-                self.dbpath = line
+        js = settings.load()
+        if js.get('dbpath'):
+            self.dbpath = js['dbpath']
 
             engine = get_database( self.dbpath, False )
             self.session = sessionmaker(bind=engine)()
             print "DB PATH:", self.dbpath
-        except IOError:
+        else:
             self.change_db()
 
     def change_db(self):
@@ -105,9 +77,10 @@ class db_manager:
         print "DB PATH:", self.dbpath
 
         # Save db location for auto-loading next time.
-        with open('settings.txt', 'w') as wfile:
-            wfile.write(self.dbpath)
-            wfile.close()
+        settings.update(dbpath=self.dbpath)
+
+
+
 
 
     #==============================================================================
@@ -149,7 +122,7 @@ class db_manager:
     #        print 'from product record:', product.curr_price
             return product.curr_price
         # Else update current price from order records.
-        records = sorted([(o.duedate, o.price) for o in product.orders])
+        records = sorted([(o.orderdate, o.price) for o in product.orders])
         if len(records) == 0:
             return 0.0
     #    print 'from order lookup:', records[-1]

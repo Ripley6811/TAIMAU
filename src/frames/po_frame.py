@@ -30,7 +30,9 @@ __version__ = '0.1'
 #===============================================================================
 import Tix
 import tkMessageBox
+
 import po #package
+from utils import settings
 
 #===============================================================================
 # METHODS
@@ -59,8 +61,8 @@ def create(_):
 
     # Set up mode switching buttons: Purchases, Sales
     def sc_switch(mode):
-        print mode
         _.sc_mode = mode
+        settings.update(sc_mode=mode)
         for each_butt in cog_butts:
             if "{}1".format(mode) in each_butt["value"]:
                 each_butt.configure(bg='burlywood')
@@ -77,17 +79,18 @@ def create(_):
                    bg="NavajoWhite4", font=(_.font, "15", "bold"),
                    selectcolor="light sky blue",
                    activebackground="light sky blue")
-    srb = Tix.Radiobutton(modebox, value="s", textvariable=_.loc("Supplier"),
+    smodeRB = Tix.Radiobutton(modebox, value="s", textvariable=_.loc("Supplier"),
                          command=lambda:sc_switch("s"), **options)
-    srb.pack(side=Tix.LEFT, expand=True, fill=Tix.X)
-    tr = Tix.Radiobutton(modebox, value="c", textvariable=_.loc("Customer"),
+    smodeRB.pack(side=Tix.LEFT, expand=True, fill=Tix.X)
+    cmodeRB = Tix.Radiobutton(modebox, value="c", textvariable=_.loc("Customer"),
                          command=lambda:sc_switch("c"), **options)
-    tr.pack(side=Tix.RIGHT, expand=True, fill=Tix.X)
+    cmodeRB.pack(side=Tix.RIGHT, expand=True, fill=Tix.X)
 
 
     # Set up company switching buttons
     def select_cogroup(cogroup):
         _.curr.cogroup = cogroup
+        settings.update(cogroup=cogroup.name)
         if _.debug: print(cogroup)
         load_company()
 
@@ -129,8 +132,6 @@ def create(_):
                     activebackground="lime green")
     tr.grid(row=i/4,column=i%4, sticky='ew')
 
-    # Set "Supplier" button as active
-    srb.invoke()
 
 
 
@@ -422,6 +423,35 @@ def create(_):
         _.mi_frame_refresh()
 
     _.refresh = load_company
+
+    # Load cogroup and mode from previous session.
+    js = settings.load()
+    if js.get('sc_mode'):
+        try:
+            _.curr.cogroup = _.dbm.get_cogroup(js.get('cogroup'))
+            for key, val in colist_frame.children.iteritems():
+                try:
+                    if _.curr.cogroup.name in val['value']:
+                        print _.curr.cogroup, val['value']
+                        print colist_frame.children[key]
+                        colist_frame.children[key].select()
+                except:
+                    pass
+        except TypeError:
+            pass
+
+        if js['sc_mode'] == 'c':
+            cmodeRB.select()
+            cmodeRB.invoke()
+        else:
+            smodeRB.select()
+            smodeRB.invoke()
+    else:
+        # Set "Supplier" button as active
+        smodeRB.select()
+        smodeRB.invoke()
+    del js
+
 
 if __name__ == '__main__':
     pass
