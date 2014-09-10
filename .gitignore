@@ -225,3 +225,10 @@ extra/
 *.xls
 database_management.py
 TM2014_tables.py
+untitled6.py
+spreadsheet_database.py
+google_spreadsheet_create_production_record.py
+google_spreadsheet.py
+TM_excel_to_tsv.py
+TM_excel_filter_converter.py
+*.aia

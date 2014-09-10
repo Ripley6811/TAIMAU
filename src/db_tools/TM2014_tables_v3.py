@@ -1,15 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+
+"""
+Version 3 splits Order into Order and OrderItem,
+Shipment into Shipment and ShipmentItem.
+Just as Invoice was split from version 1 to 2.
+InvoiceItem and ShipmentItem now reference each other.
+Invoice number is removed as primary key and placed with integer.
+
+NOTE: Class functions can be changed and added without migration.
+
+"""
+
 import sqlalchemy as sqla
 from sqlalchemy.orm import relationship as rel
 from sqlalchemy.orm import backref, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import datetime
-import json
 
 Int = sqla.Integer
-Str = sqla.String  #TODO: Can probably delete this line
+#Str = sqla.String  #TODO: Can probably delete this line
 Utf = sqla.Unicode
 Float = sqla.Float
 Col = sqla.Column
@@ -51,14 +62,6 @@ def AddDictRepr(aClass):
 #==============================================================================
 # Order class
 #==============================================================================
-def updatetotal(context):
-    subtotal = context.current_parameters['subtotal']
-    taxed = context.current_parameters['applytax']
-    if taxed:
-        return int(round(subtotal * 1.05))
-    else:
-        return int(round(subtotal))
-
 @AddDictRepr
 class Order(Base):
     __tablename__ = 'order'
@@ -74,15 +77,18 @@ class Order(Base):
     MPN = Col(Utf, ForeignKey('product.MPN'), nullable=False) # Product code
 
     price = Col(Float) # Price for one SKU or unit on this order
-    discount = Col(Int) # Discount percentage as integer (0-100)
-    totalskus = Col(Int)
-    totalunits = Col(Float) # AUTO: unitssku * totalskus
-    subtotal = Col(Float) #TODO: Remove and leave final totals in attached invoice.
-    applytax = Col(Bool) # True = 5%, False = 0%
-    totalcharge = Col(Int, default=updatetotal, onupdate=updatetotal) #TODO: Remove
+    discount = Col(Int, nullable=False, default=0) # Discount percentage as integer (0-100)
+    #XXX: name change in version 3: totalskus = Col(Int)
+    qty = Col(Int, nullable=False)
+    applytax = Col(Bool, nullable=False) # True = 5%, False = 0%
 
-    orderdate = Col(Date)  # Use as "expected" delivery date. (Originally was order placement date)
-    duedate = Col(Date, nullable=False)  # Expected delivery date
+    #XXX: Remove in version 3
+    #totalunits = Col(Float) # AUTO: unitssku * totalskus
+    #subtotal = Col(Float) #TODO: Remove and leave final totals in attached invoice.
+    #totalcharge = Col(Int) #TODO: Remove
+
+    orderdate = Col(Date, nullable=False)  # Order placement date
+    duedate = Col(Date)  # Expected delivery date
     date = Col(Date) # Extra date field if needed
 
     orderID = Col(Utf)  # PO Number
@@ -91,46 +97,61 @@ class Order(Base):
     note = Col(Utf) # Extra note field if needed.
 
     checked = Col(Bool, nullable=False, default=False) # Match against second party records
-    is_sale = Col(Bool, nullable=False) # Boolean for purchase vs. sale. Also check against buyer/seller name.
+    is_sale = Col(Bool, nullable=False, default=False) # Boolean. Customer
+    is_purchase = Col(Bool, nullable=False, default=False) # Boolean. Supplier
 
-    shipments = rel('Shipment', backref='order')
+    shipments = rel('ShipmentItem', backref='order')
     invoices = rel('InvoiceItem', backref='order')
     product = rel('Product')
 
-    #ADD: isOpen = Col(Bool, default=True) # Active or closed PO
+    #XXX: New in version 3
+    is_open = Col(Bool, nullable=False, default=True) # Active or closed PO
+
+    @property
+    def units(self):
+        return self.qty * self.product.units
+
+    def shipped_value(self):
+        '''Return the value of total shipped items.'''
+        value = self.qty_shipped() * self.price
+        if self.product.unitpriced:
+            value = value * self.product.units
+        if self.applytax:
+            value = value * 1.05
+        return value
 
     def qty_shipped(self):
         '''By number of SKUs'''
         if len(self.shipments) == 0:
             return 0
-        return sum([srec.sku_qty if isinstance(srec.sku_qty,int) else 0 for srec in self.shipments])
+        return sum([srec.qty if isinstance(srec.qty,int) else 0 for srec in self.shipments])
 
     def qty_remaining(self):
         '''By number of SKUs remaining to be shipped'''
-        return int(self.totalskus - self.qty_shipped())
+        return int(self.qty - self.qty_shipped())
 
     def all_shipped(self):
         '''By number of SKUs'''
         if len(self.shipments) == 0:
             return False
-        return self.totalskus == self.qty_shipped()
+        return self.qty == self.qty_shipped()
 
     def qty_invoiced(self):
         '''By number of SKUs'''
         if len(self.invoices) == 0:
             return 0
-        return sum([prec.sku_qty if isinstance(prec.sku_qty,int) else 0 for prec in self.invoices])
+        return sum([prec.qty if isinstance(prec.qty,int) else 0 for prec in self.invoices])
 
     def all_invoiced(self):
         '''By number of SKUs'''
-        if len(self.invoices) == 0:
-            return False
-        return self.totalskus == self.qty_invoiced()
+#        if len(self.invoices) == 0:
+#            return False
+        return self.qty_shipped() == self.qty_invoiced()
 
     def total_paid(self):
         if len(self.invoices) == 0:
             return 0
-        return sum([prec.sku_qty if prec.invoice.paid else 0 for prec in self.invoices])
+        return sum([prec.qty if prec.paid else 0 for prec in self.invoices])
 
     def all_paid(self):
         if len(self.invoices) == 0:
@@ -138,70 +159,62 @@ class Order(Base):
         return not (False in [prec.invoice.paid for prec in self.invoices])
 
     def qty_quote(self, qty):
-        '''Subtotal of total order.'''
         subtotal = self.price * qty
         if self.product.unitpriced:
             subtotal *= self.product.units
         return int(round(subtotal))
 
-#    def formatted(self):
-#        txt =  u'PO# {s.orderID:<16}  {s.seller:>8} >> {s.buyer:<8}'
-#        txt += u'  {s.totalskus:>5} {s.product.product_label} '
+#    def listbox_summary(self):
+#        """
+#        Single line unicode text summary of order intended for use in a listbox.
 #
-#        return txt.format(s=self)
-
-
-    def listbox_summary(self):
-        """
-        Single line unicode text summary of order intended for use in a listbox.
-
-        Only displays number of attached shipments and invoices.
-        """
-
-        prodtmp = self.product.product_label, self.product.inventory_name
-        if prodtmp[0] and prodtmp[0] != prodtmp[1]:
-            prodtmp = u'{} (台茂:{})'.format(*prodtmp)
-        else:
-            prodtmp = prodtmp[1]
-
-        #Start with checkbox to show that order is completed (delivered and paid)
-        tmp = u'\u2611' if self.all_paid() and self.all_invoiced() and self.all_shipped() else u'\u2610'
-
-        #PO number if available
-        po_no_txt = self.orderID.strip() if self.orderID else '({})'.format(self.id)
-        tmp += u"{0:<14}".format(po_no_txt)
-
-        #Shipping icon and number of shipments
-        tmp += u'\u26DF' if len(self.shipments)>0 else u'\u25C7'
-        tmp += u'*{:<3}'.format(len(self.shipments)) if self.shipments else u'    '
-
-        #Invoice sent icon and number of invoices
-        tmp += u'\u2696' if len(self.invoices)>0 else u'\u25C7'
-        tmp += u'*{:<3}'.format(len(self.invoices)) if self.invoices else u'    '
-
-
-        try:
-            tmp += u"{0:%y}年{0.month:>2}月{0.day:>2}日".format(self.orderdate)
-        except:
-            tmp += u'(Order date not entered)'
-
+#        Only displays number of attached shipments and invoices.
+#        """
+#
+#        prodtmp = self.product.product_label, self.product.inventory_name
+#        if prodtmp[0] and prodtmp[0] != prodtmp[1]:
+#            prodtmp = u'{} (台茂:{})'.format(*prodtmp)
+#        else:
+#            prodtmp = prodtmp[1]
+#
+#        #Start with checkbox to show that order is completed (delivered and paid)
+#        tmp = u'\u2611' if self.all_paid() and self.all_invoiced() and self.all_shipped() else u'\u2610'
+#
+#        #PO number if available
+#        po_no_txt = self.orderID.strip() if self.orderID else '({})'.format(self.id)
+#        tmp += u"{0:<14}".format(po_no_txt)
+#
+#        #Shipping icon and number of shipments
+#        tmp += u'\u26DF' if len(self.shipments)>0 else u'\u25C7'
+#        tmp += u'*{:<3}'.format(len(self.shipments)) if self.shipments else u'    '
+#
+#        #Invoice sent icon and number of invoices
+#        tmp += u'\u2696' if len(self.invoices)>0 else u'\u25C7'
+#        tmp += u'*{:<3}'.format(len(self.invoices)) if self.invoices else u'    '
+#
+#
 #        try:
-#            tmp += u" \u273F {s.seller}\u2794{s.buyer} ".format(s=self)
+#            tmp += u"訂單日:{0.month:>2}月{0.day:>2}日".format(self.orderdate)
+#        except:
+#            tmp += u'(Order date not entered)'
+#
+##        try:
+##            tmp += u" \u273F {s.seller}\u2794{s.buyer} ".format(s=self)
+##        except Exception as e:
+##            tmp += u'(ERROR: {})'.format(e)
+#
+#        try:
+#            tmp += u"\u273F {rem_qty:>6}{s.qty:>5}{um} {pt:<14} @ ${pr} \u214C {um}".format(
+#                pt= prodtmp,
+#                pr= int(self.price) if float(self.price).is_integer() else self.price,
+#                um= self.product.UM if self.product.unitpriced else self.product.SKU,
+#                rem_qty= u'{}/'.format(self.qty_remaining()),
+#                s= self,
+#                )
 #        except Exception as e:
 #            tmp += u'(ERROR: {})'.format(e)
-
-        try:
-            tmp += u"\u273F {rem_qty:>6}{s.totalskus:>5}{um} {pt:<14} @ ${pr} \u214C {um}".format(
-                pt= prodtmp,
-                pr= int(self.price) if float(self.price).is_integer() else self.price,
-                um= self.product.SKU if self.product.SKU != u'槽車' else self.product.UM,
-                rem_qty= u'{}/'.format(self.qty_remaining()),
-                s= self,
-                )
-        except Exception as e:
-            tmp += u'(ERROR: {})'.format(e)
-
-        return tmp
+#
+#        return tmp
 
 
 #==============================================================================
@@ -215,30 +228,49 @@ class Shipment(Base): # Keep track of shipments/SKUs for one order
     '''
     __tablename__ = 'shipment'
     id = Col(Int, primary_key=True)
-    order_id = Col(Int, ForeignKey('order.id'), nullable=False)
-
-    sku_qty = Col(Int, nullable=False) # Deduct from total SKUs due
+    #XXX: Removed in version 3
+    #order_id = Col(Int, ForeignKey('order.id'), nullable=False)
+    #qty = Col(Int, nullable=False) # Deduct from total SKUs due
 
     shipmentdate = Col(Date, nullable=False)
-    shipmentID = Col(Utf, default=u'') # i.e., Manifest number
+    shipment_no = Col(Utf, default=u'') # i.e., Manifest number
     shipmentnote = Col(Utf, default=u'') # Information concerning the delivery
-    #XXX: shipmentdest = Col(Utf, default=u'')
+    #XXX: New in version 3
+    shipmentdest = Col(Utf, default=u'')
 
-    #TODO: Add destination or add to note (maybe JSON)
     driver = Col(Utf) # Track vehicle driver (optional)
     truck = Col(Utf) # Track vehicle by license (optional)
     note = Col(Utf) # Extra note field if needed
     checked = Col(Bool, nullable=False, default=False) # Extra boolean for matching/verifying
 
-    # METHODS
-    def listbox_summary(self):
-        """
-        Return a single line unicode summary intended for a listbox.
-        """
-        txt = u'{date:<10}   編號: {s.shipmentID:<10}   QTY: {s.sku_qty:>5} {s.order.product.SKU:<6}   品名: {s.order.product.inventory_name}'
-        txt = txt.format(s=self, date=str(self.shipmentdate))
-        return txt
+    #XXX: New in version 3
+    items = rel('ShipmentItem', backref='shipment')
 
+#    # METHODS
+#    def listbox_summary(self):
+#        """
+#        Return a single line unicode summary intended for a listbox.
+#        """
+#        txt = u'{date:<10}   編號: {s.shipment_no:<10}   QTY: {s.items[0].qty:>5} {s.order.product.SKU:<6}   品名: {s.order.product.inventory_name}'
+#        txt = txt.format(s=self, date=str(self.shipmentdate))
+#        return txt
+
+@AddDictRepr
+class ShipmentItem(Base):
+    __tablename__ = 'shipmentitem'
+    id = Col(Int, primary_key=True)
+
+    order_id = Col(Int, ForeignKey('order.id'), nullable=False)
+    shipment_id = Col(Int, ForeignKey('shipment.id'), nullable=False)
+
+    qty = Col(Int, nullable=False) # Deduct from total SKUs due
+
+    lot = Col(Utf)
+    lot_start = Col(Int)
+    lot_end = Col(Int)
+    rt_no = Col(Utf)
+
+    invoiceitem = rel('InvoiceItem', backref='shipmentitem')
 
 #==============================================================================
 # Invoice class (track multiple invoices for one order)
@@ -246,8 +278,10 @@ class Shipment(Base): # Keep track of shipments/SKUs for one order
 @AddDictRepr
 class Invoice(Base): # Keep track of invoices/payments for one order
     __tablename__ = 'invoice'
-    invoice_no = Col(Utf, primary_key=True) # i.e., Invoice number
-    #id = Col(Int, primary_key=True)
+    #XXX: New in version 3, primary key change
+    id = Col(Int, primary_key=True)
+
+    invoice_no = Col(Utf, default=u'') # i.e., Invoice number
 
     seller = Col(Utf, ForeignKey('branch.name'), nullable=False) # For billing/receipts
     buyer = Col(Utf, ForeignKey('branch.name'), nullable=False) # For billing/receipts
@@ -284,32 +318,38 @@ class InvoiceItem(Base): # Keep track of invoices/payments for one order
     '''
     order : backref to Order
     invoice : backref to Invoice
-
-    #TODO: Add ref from InvoiceItem to ShipmentItem, one-to-one
+    shipmentitem : backref to ShipmentItem
     '''
     __tablename__ = 'invoiceitem'
     id = Col(Int, primary_key=True)
 
-    invoice_no = Col(Utf, ForeignKey('invoice.invoice_no'), nullable=False)
+    invoice_id = Col(Utf, ForeignKey('invoice.id'), nullable=False)
+    shipmentitem_id = Col(Utf, ForeignKey('shipmentitem.id'), nullable=False)
 
     order_id = Col(Int, ForeignKey('order.id'), nullable=False)
 
-    sku_qty = Col(Int, nullable=False)
+    qty = Col(Int, nullable=False)
 
 
     def subtotal(self):
-        subtotal = self.order.price * self.sku_qty
+        subtotal = self.order.price * self.qty
         if self.order.product.unitpriced:
             subtotal *= self.order.product.units
-        return int(round(subtotal))
+        return int(round(subtotal,0))
 
-    def listbox_summary(self):
-        """
-        Return a single line unicode summary intended for a listbox.
-        """
-        txt = u'{date:<10}   編號: {s.invoice_no:<10}   QTY: {s.sku_qty:>5} {s.order.product.SKU:<6}   Subtotal: ${total:<6}   品名: {s.order.product.inventory_name}'
-        txt = txt.format(s=self, date=str(self.invoice.invoicedate), total=self.subtotal())
-        return txt
+    def total(self):
+        subtotal = self.subtotal()
+        if self.order.applytax:
+            subtotal *= 1.05
+        return int(round(subtotal,0))
+
+#    def listbox_summary(self):
+#        """
+#        Return a single line unicode summary intended for a listbox.
+#        """
+#        txt = u'{date:<10}   編號: {s.invoice_no:<10}   QTY: {s.qty:>5} {s.order.product.SKU:<6}   Subtotal: ${total:<6}   品名: {s.order.product.inventory_name}'
+#        txt = txt.format(s=self, date=str(self.invoice.invoicedate), total=self.subtotal())
+#        return txt
 
 
 
@@ -318,15 +358,13 @@ class InvoiceItem(Base): # Keep track of invoices/payments for one order
 #==============================================================================
 @AddDictRepr
 class CoGroup(Base):
-    # Primary key is abbreviated "name" of group.
-    #
     __tablename__ = 'cogroup'
     name = Col(Utf, primary_key=True, nullable=False) # Abbreviated name of company (2 to 4 chars)
     is_active = Col(Bool, nullable=False, default=True) # Boolean for listing the company. Continuing business.
     is_supplier = Col(Bool, nullable=False, default=True) # Maybe use in later versions
     is_customer = Col(Bool, nullable=False, default=True) # Maybe use in later versions
 
-    branches = rel('Branch', lazy='joined')
+    branches = rel('Branch', lazy='joined') # lazy -> Attaches on retrieving a cogroup
     orders = rel('Order')
     products = rel('Product')
     contacts = rel('Contact')
@@ -342,8 +380,6 @@ class CoGroup(Base):
 #==============================================================================
 @AddDictRepr
 class Branch(Base):
-    # Primary key is abbreviated "name" of branch company.
-    #
     __tablename__ = 'branch'
     name = Col(Utf, primary_key=True, nullable=False) # Abbreviated name of company (2 to 4 chars)
     group= Col(Utf, ForeignKey('cogroup.name'), nullable=False) # Name of main company representing all branches
@@ -390,25 +426,6 @@ class Contact(Base):
 #==============================================================================
 # Product class
 #==============================================================================
-#def summarize(context):
-#    '''Short text of product key values.
-#    "product_name (## UM SKU)"
-#    e.g. "HCL (20 kg barrel)"
-#    '''
-#    outname = context.current_parameters['product_label']
-#    units = float(context.current_parameters['units'])
-#    units = int(units) if int(units)==units else units #Truncate if mantissa is zero
-#    UM = context.current_parameters['UM']
-#    SKU = context.current_parameters['SKU']
-#    if not outname:
-#        outname = context.current_parameters['inventory_name']
-#    if SKU == u'槽車':
-#        return u"{0} (槽車)".format(outname)
-#    else:
-#        units = int(units) if int(units)==units else units
-#        uf = u"{0} ({1} {2} {3})"
-#        return uf.format(outname,units,UM,SKU)
-
 @AddDictRepr
 class Product(Base): # Information for each unique product (including packaging)
     __tablename__ = 'product'
@@ -424,7 +441,9 @@ class Product(Base): # Information for each unique product (including packaging)
     SKU = Col(Utf, nullable=False)  #Stock keeping unit (sold unit)
     SKUlong = Col(Utf, default=u'')
     unitpriced = Col(Bool, nullable=False)
-    ASE_PN = Col(Utf)
+    ASE_PN = Col(Utf) # ASE product number
+    ASE_RT = Col(Utf) # ASE department routing number
+    ASE_END = Col(Int) # Last used SKU index number for current lot
     note = Col(Utf) # {JSON} contains extra data, i.e. current ASE and RT numbers
                     # {JSON} must be appended to the end after any notes. Last char == '}'
     is_supply = Col(Bool, nullable=False)
@@ -432,7 +451,7 @@ class Product(Base): # Information for each unique product (including packaging)
 
     curr_price = Col(Float, default=0.0)
 
-    summary = Col(Utf)
+    #summary = Col(Utf, default=summarize, onupdate=summarize)
 
     stock = rel('Stock', backref='product')
     orders = rel('Order', primaryjoin="Product.MPN==Order.MPN")
@@ -457,7 +476,7 @@ class Product(Base): # Information for each unique product (including packaging)
         return available
 
     def label(self):
-        '''Returns product_label, which is the client supplied name.
+        '''Returns product_label, which is the client desired name.
         If a product_label does not exist, then return our inventory_name
         for the product.
         '''
@@ -466,51 +485,31 @@ class Product(Base): # Information for each unique product (including packaging)
         else:
             return self.inventory_name
 
-    def SKUlabel(self):
-        if self.unitpriced or self.SKU == u'槽車':
-            return self.UM
-        else:
-            return self.SKU
-
-    def json(self, new_dic=None):
-        '''Saves 'new_dic' as a json string and overwrites previous json.
-        Returns contents of json string as a dictionary object.
-        Note: Commit session after making changes.'''
-        if new_dic == None:
-            if self.note.find(u'}') != -1:
-                return json.loads(self.note[self.note.index(u'{'):])
-            else:
-                return None
-        else:
-            old_dic = dict()
-            # Delete existing json string
-            if self.note.find(u'}') != -1:
-                old_dic = self.json()
-                self.note = self.note.split(u'{')[0]
-            # Merge and overwrite old with new.
-            new_dic = dict(old_dic.items() + new_dic.items())
-            self.note += json.dumps(new_dic)
-            return True
-        return False
-
-    def summarize(self):
-        '''Short text of product key values.
-        "product_name (## UM SKU)"
-        e.g. "HCL (20 kg barrel)"
+    @property
+    def name(self):
+        '''Returns product_label, which is the client desired name.
+        If a product_label does not exist, then return our inventory_name
+        for the product.
         '''
-        outname = self.product_label
-        units = float(self.units)
-        units = int(units) if int(units)==units else units #Truncate if mantissa is zero
-        UM = self.UM
-        SKU = self.SKU
-        if not outname:
-            outname = self.inventory_name
-        if SKU == u'槽車':
-            return u"{0} (槽車)".format(outname)
+        if self.product_label != u'':
+            return self.product_label
         else:
-            units = int(units) if int(units)==units else units
-            uf = u"{0} ({1} {2} {3})"
-            return uf.format(outname,units,UM,SKU)
+            return self.inventory_name
+
+
+    @property
+    def specs(self):
+        '''Short text of product key values.
+        "## UM SKU"
+        e.g. "20 kg barrel"
+        '''
+        u = self.units
+        units = int(u) if int(u)==u else u #Truncate if mantissa is zero
+        if self.SKU == u'槽車':
+            return u'槽車-{}'.format(self.UM)
+        else:
+            txt = u"{0} {1} {2}"
+            return txt.format(units,self.UM,self.SKU)
 
 
 
@@ -570,7 +569,7 @@ if __name__ == '__main__':
     order = Order(orderID=u'ZV1234', seller=u'Oscorp', buyer=u'Marvel', group=u'DC comics',
                   is_sale=True, MPN=666, subtotal=1000, duedate=datetime.date.today(), totalskus=24)
     product = Product(MPN=666, group=u'DC comics', units=12, UM=u'ounce', SKU=u'vial', unitpriced=False, is_supply=False, product_label=u'Muscle Juice', inventory_name=u'serim 234')
-    shipment = Shipment(shipmentID=u'003568', sku_qty=10, order=order, shipmentdate=datetime.date.today())
+    shipment = Shipment(shipment_no=u'003568', qty=10, order=order, shipmentdate=datetime.date.today())
     session.add(product)
     session.add(order)
     order = session.query(Order).first()

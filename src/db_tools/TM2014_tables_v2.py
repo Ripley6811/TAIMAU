@@ -97,8 +97,6 @@ class Order(Base):
     invoices = rel('InvoiceItem', backref='order')
     product = rel('Product')
 
-    #ADD: isOpen = Col(Bool, default=True) # Active or closed PO
-
     def qty_shipped(self):
         '''By number of SKUs'''
         if len(self.shipments) == 0:
@@ -222,7 +220,6 @@ class Shipment(Base): # Keep track of shipments/SKUs for one order
     shipmentdate = Col(Date, nullable=False)
     shipmentID = Col(Utf, default=u'') # i.e., Manifest number
     shipmentnote = Col(Utf, default=u'') # Information concerning the delivery
-    #XXX: shipmentdest = Col(Utf, default=u'')
 
     #TODO: Add destination or add to note (maybe JSON)
     driver = Col(Utf) # Track vehicle driver (optional)
