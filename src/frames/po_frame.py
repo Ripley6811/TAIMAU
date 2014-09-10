@@ -176,7 +176,8 @@ def create(_):
     def change_view(mode):
         if _.view_mode == mode:
             return
-        print 'view:', mode
+        if _.debug:
+            print 'VIEW MODE:', mode
 
         _.view_mode = mode
 
@@ -273,7 +274,8 @@ def create(_):
                 activeOrders.append(order)
                 _poIDs.append(order.id)
                 _prod = order.product
-                print type(_prod)
+                if _.debug:
+                    print 'PRODUCT TYPE:', type(_prod)
                 assert isinstance(_prod, _.dbm.Product), u"Product not attached to order."
                 _id = order.orderID if order.orderID else _.loc(u"(NA)", 1)
                 _text = u"PO {} : {} ({})".format(_id, _prod.label(), _prod.specs)
@@ -432,8 +434,9 @@ def create(_):
             for key, val in colist_frame.children.iteritems():
                 try:
                     if _.curr.cogroup.name in val['value']:
-                        print _.curr.cogroup, val['value']
-                        print colist_frame.children[key]
+                        if _.debug:
+                            print _.curr.cogroup, val['value']
+                            print colist_frame.children[key]
                         colist_frame.children[key].select()
                 except:
                     pass

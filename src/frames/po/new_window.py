@@ -111,7 +111,6 @@ def main(_, refresh):
     le.label.configure(textvariable=_.loc(u"PO #"), anchor='center')
     le.entry.configure(textvariable=_ponumber, width=26)
     le.grid(row=1, rowspan=1, column=0, columnspan=2, sticky='w')
-#    print le
 
     ### PO QTY ###
     le = Tix.LabelEntry(pogrid, labelside='left')

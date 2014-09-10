@@ -14,6 +14,8 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
     Alternatively, a manifest number can be given.
     "manifest_no" parameter is the id of an existing manifest for viewing/editing."""
 
+    if _.debug:
+        print 'In "main" of manifest_window.py.'
 
     #### NEW POPUP WINDOW: LIMIT TO ONE ####
     try:
@@ -40,10 +42,10 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
     #### VARIABLES FOR RECORD ENTRY ####
     ####################################
     # ShipmentItem
-    _order_id = []
-    _qty = []
-    _lot_start = []
-    _lot_end = []
+#    _order_id = []
+#    _qty = []
+#    _lot_start = []
+#    _lot_end = []
 
     # Shipment
     _shipment_no = Tix.StringVar()
@@ -55,7 +57,7 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
 
     #####################################
 #    qtys = []
-    units = []
+#    units = []
 #    orders = []
     order = orders[0]
 #    if items:
@@ -97,6 +99,8 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
     tl.grid(row=1, column=0, columnspan=4, sticky='nsew')
 
     try:
+        if _.debug:
+            print 'In header creation "try" section.'
         branch = ([br for br in order.parent.branches
                     if br.name == buyer_name][0])
 
@@ -129,6 +133,8 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
         tl=Tix.Label(main_frame, text=fapiao, **cell_config)
         tl.grid(row=2,column=4, columnspan=4, sticky='nsew')
     except Exception:
+        if _.debug:
+            print 'In header creation "except" section.'
         sellertxt = u'{} ({})'.format(seller_name, order.parent.name)
         tl=Tix.Label(main_frame, text=sellertxt, **cell_config)
         tl.grid(row=0, column=0, columnspan=12, sticky='nsew')
@@ -147,6 +153,8 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
     te = Tix.Entry(main_frame, textvariable=_shipment_no, font=(_.font, 20, 'bold'))
     te.grid(row=3,column=10, columnspan=2, sticky='nsew')
 
+    if _.debug:
+        print 'Out of header creation section.'
 
     cell_config = dict(
         font= (_.font, 15),
@@ -157,6 +165,8 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
         tl=Tix.Label(main_frame, text=each, **cell_config)
         tl.grid(row=9,column=i*2, columnspan=2, sticky='ew')
 
+    if _.debug:
+        print 'Finished table labels'
 
     cell_config = dict(
         relief= 'sunken',
@@ -171,7 +181,7 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
 
     for row, (order, qSV, uSV) in enumerate(zip(orders, qtyVars, unitVars)):
         if _.debug:
-            print row, order
+            print row, order.id
 #        order = shipment.order
         product = order.product
 #        config = query_config if shipment.id == highlight_id else cell_config
@@ -217,8 +227,6 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
     tl.grid(row=52, column=0, columnspan=2, sticky='nsew')
     te = Tix.Entry(main_frame, textvariable=_note, font=(_.font, 20, 'bold'))
     te.grid(row=52, column=2, columnspan=20, sticky='nsew')
-
-
 
 
 

@@ -81,7 +81,6 @@ def main(_, order, refresh):
     le.entry.configure(textvariable=_ponumber, width=26)
     _ponumber.set(order.orderID)
     le.grid(row=1, rowspan=1, column=0, columnspan=2, sticky='w')
-#    print le
 
     ### PO QTY ###
     le = Tix.LabelEntry(pogrid, labelside='left')
@@ -115,7 +114,6 @@ def main(_, order, refresh):
     br.label.config(textvariable=_.loc(u"Branch"))
     for branch in _.curr.cogroup.branches:
         br.add(branch.name.lower(), text=branch.name)
-        print [branch.name] + match_names
         if branch.name in match_names:
             br['value'] = branch.name.lower()
     br.grid(row=5, column=0, columnspan=2)

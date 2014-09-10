@@ -1,19 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import Tix
-from utils import date_picker
+from utils import date_picker, settings
 import fpdf
 import tkFileDialog, tkMessageBox
 import os
+import subprocess
 
 def main(_, records=[]):
     pdfwin = Tix.Toplevel(width=700)
     pdfwin.title(u"New Purchase Order (PO) Form")
     pdfwin.focus_set()
 
-
-#    startdate = Tix.StringVar()
-#    enddate = Tix.StringVar()
 
     tl = Tix.Label(pdfwin, textvariable=_.loc(u"Start date"))
     tl.grid(row=0, column=0, columnspan=2)
@@ -32,7 +30,6 @@ def main(_, records=[]):
     tb.grid(row=10, column=0, columnspan=4, sticky='ew')
 
     def submit(separate_products=False):
-        #TODO: Add option to order by product and date and give totals.
         #TODO: Add client branch column
 
         # Retrieve shipment data within date range
@@ -84,16 +81,27 @@ def main(_, records=[]):
         align = ['C','C','L','R','L','C','R','R']
         class myPDF(fpdf.FPDF):
             def header(self):
-                self.image(u'images/TaimauChemicals.png', 25, 5)
-                self.add_font(u'SimHei', 'B', font, uni=True) # Only .ttf and not .ttc
-                self.set_font(u'SimHei', 'B', 16)
-                self.set_xy(25, 25)
-                self.cell(40, 10, u'台茂化工儀器原料行', align='L')
+                if _.sc_mode == u'c':
+                    self.image(u'images/TaimauChemicals.png', 25, 5)
+                    self.add_font(u'SimHei', 'B', font, uni=True) # Only .ttf and not .ttc
+                    self.set_font(u'SimHei', 'B', 16)
+                    self.set_xy(25, 25)
+                    self.cell(40, 10, u'台茂化工儀器原料行', align='L')
 
-                # Client name
-                self.set_font(u'SimHei', 'B', 12)
-                self.set_xy(100, 14)
-                self.cell(40, 8, u'客戶: {}'.format(_.curr.cogroup.name))
+                    # Client name
+                    self.set_font(u'SimHei', 'B', 12)
+                    self.set_xy(100, 14)
+                    self.cell(40, 8, u'客戶: {}'.format(_.curr.cogroup.name))
+                else:
+                    self.add_font(u'SimHei', 'B', font, uni=True) # Only .ttf and not .ttc
+                    self.set_font(u'SimHei', 'B', 16)
+                    self.set_xy(25, 25)
+                    self.cell(40, 10, u'確認表: {}'.format(_.curr.cogroup.name), align='L')
+
+                    # Client name
+                    self.set_font(u'SimHei', 'B', 12)
+                    self.set_xy(100, 14)
+                    self.cell(40, 8, u'客戶: {}'.format(u'台茂化工儀器原料行'))
 
                 # Time period
                 self.set_xy(100, 20)
@@ -202,14 +210,34 @@ def main(_, records=[]):
             title = u'PDF name and location.',
             defaultextension = '.pdf',
             initialdir = os.path.expanduser('~') + '/Desktop/',
-            initialfile = u'{}_Summary_{}_{}'.format(_.curr.cogroup.name,
-                                                     str(startdate.selection),
-                                                     str(enddate.selection)),
+            initialfile = u'{}_{}_{}_{}'.format(_.curr.cogroup.name,
+                                             u'Sales' if _.sc_mode == u'c' else u'Purchases',
+                                             str(startdate.selection),
+                                             str(enddate.selection)),
         )
+        if settings.load().get(u'pdfpath'):
+            FILE_OPTS['initialdir'] = settings.load()[u'pdfpath']
+
         pdfwin.destroy()
 
         outfile = tkFileDialog.asksaveasfilename(**FILE_OPTS)
+        print outfile
+
+        if os.path.exists(outfile):
+            os.remove(outfile)
         if outfile and not os.path.exists(outfile):
             FPDF.output(name=outfile)
+
+            if _.debug:
+                print u'start {0}'.format(outfile.replace("/","\\"))
+                print u'start {0}'.format(os.path.normpath(outfile))
+            try:
+                subprocess.call(['start', os.path.normpath(outfile)],
+                                 shell=True)
+            except:
+                print u'Trying alternate subprocess command.'
+                subprocess.call(['start', '/D'] +
+                                list(os.path.split(outfile.replace("/","\\"))),
+                                shell=True)
         else:
             tkMessageBox.showinfo(u'',u'Canceled PDF creation.')

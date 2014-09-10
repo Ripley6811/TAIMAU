@@ -95,6 +95,11 @@ class db_manager:
         self.session.commit()
         return True
 
+    def update_order(self, id, ins_dict):
+        self.session.query(Order).filter(Order.id == id).update(ins_dict)
+        self.session.commit()
+        return True
+
     #==============================================================================
     # CoGroup table methods
     #==============================================================================
@@ -119,13 +124,11 @@ class db_manager:
         '''
         product = self.session.query(Product).filter(Product.MPN==mpn).one()
         if product.curr_price != 0.0 and update == False:
-    #        print 'from product record:', product.curr_price
             return product.curr_price
         # Else update current price from order records.
         records = sorted([(o.orderdate, o.price) for o in product.orders])
         if len(records) == 0:
             return 0.0
-    #    print 'from order lookup:', records[-1]
         self.session.query(Product).filter(Product.MPN==mpn).update(dict(curr_price=records[-1][1]))
         self.session.commit()
 
@@ -174,7 +177,6 @@ def append_invoice(inv_dict):
 
 def append_invoice_item(inv_dict, item):
     record = session.query(Invoice).get(inv_dict['invoice_no'])
-    print 'get', repr(record)
     if not record:
         append_invoice(inv_dict)
     session.add(InvoiceItem(**item))
@@ -248,7 +250,6 @@ def orders(is_sale, group=None, limit=1000):
         raise ValueError, 'is_sale (bool) must be True to retrieve sales records or False for purchases.'
     if group:
         return session.query(Order).filter(and_(Order.group==group, Order.is_sale==is_sale)).order_by('duedate').all()[-limit:]
-    print "--->>>Returning all {} orders.<<<---".format("sale" if is_sale else "purchase")
     return session.query(Order).filter(Order.is_sale==is_sale).order_by('duedate').all()
 
 def get_order(id):
@@ -318,13 +319,11 @@ def get_product_price(mpn, update=False):
     '''
     product = session.query(Product).filter(Product.MPN==mpn).one()
     if product.curr_price != 0.0 and update == False:
-#        print 'from product record:', product.curr_price
         return product.curr_price
     # Else update current price from order records.
     records = sorted([(o.duedate, o.price) for o in product.orders])
     if len(records) == 0:
         return 0.0
-#    print 'from order lookup:', records[-1]
     session.query(Product).filter(Product.MPN==mpn).update(dict(curr_price=records[-1][1]))
     session.commit()
 

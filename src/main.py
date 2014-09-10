@@ -38,6 +38,7 @@ import os  # os.walk(basedir) FOR GETTING DIR STRUCTURE
 import datetime
 import Tkinter as Tk
 import tkMessageBox
+import tkFileDialog
 import ttk
 import tkFont
 import xlwt
@@ -48,7 +49,8 @@ import db_tools.db_manager as dbm
 from pdf_tools import activity_report
 import frames.po_frame
 from utils.translate_term import localize, setLang
-print os.getcwd()
+from utils import settings
+print 'CWD:', os.getcwd()
 #===============================================================================
 # METHODS
 #===============================================================================
@@ -57,13 +59,20 @@ print os.getcwd()
 # Separate into current record, product
 Info = type('struct', (), {})
 
+Info = type('adict', (dict,), {'__getattr__': dict.__getitem__, '__setattr__': dict.__setitem__})
+
+
+class adict(dict):
+    __getattr__ = dict.__getitem__
+    __setattr__ = dict.__setitem__
+
 
 class TaimauApp(Tix.Tk):
     '''Main application.
     '''
     run_location = os.getcwd()
 
-    def __init__(self, parent):
+    def __init__(self, parent, debug=False):
 
         Tix.Tk.__init__(self, parent)
 
@@ -73,7 +82,7 @@ class TaimauApp(Tix.Tk):
 
 
         _state = Info()
-        _state.debug = True # For console messages and English GUI
+        _state.debug = debug # For console messages and English GUI
         _state.font = u"NSimSun"
         _state.loc = localize # Translation to Chinese
         _state.dbm = dbm.db_manager() # Database API methods
@@ -99,6 +108,8 @@ class TaimauApp(Tix.Tk):
 
         # REPORT MENU OPTIONS
         reportmenu = Tk.Menu(menubar, tearoff=0)
+        reportmenu.add_command(label="Change location for saving reports",
+                               command=set_report_location)
         reportmenu.add_command(label="Activity Report (PDF)",
                                command=lambda:activity_report.main(_state))
         reportmenu.add_command(label="Save client shipments to Excel (6 months).",
@@ -112,7 +123,7 @@ class TaimauApp(Tix.Tk):
         menubar.add_cascade(label=_state.loc(u"Reports", 1), menu=reportmenu)
 
 
-#        # FONT MENU OPTIONS
+        # FONT MENU OPTIONS
         def setFont():
             self.option_add("*Font", fontsize.get())
         fontmenu = Tk.Menu(menubar, tearoff=0)
@@ -182,18 +193,35 @@ class TaimauApp(Tix.Tk):
     def change_db(self):
         self._.dbm.change_db()
         try:
-            self._refresh()
+            self._.refresh()
         except:
             print("'refresh()' method not found in state object.")
 
         self.filemenu.entryconfig(0, label=self._.dbm.dbpath)
 
 
+
+def set_report_location():
+    FILE_OPTS = dict(
+        title = u'PDF save location.',
+        initialdir = os.path.expanduser('~') + '/Desktop/',
+        mustexist = True
+    )
+    if settings.load().get(u'pdfpath'):
+        FILE_OPTS['initialdir'] = settings.load()[u'pdfpath']
+
+    outdir = tkFileDialog.askdirectory(**FILE_OPTS)
+
+    settings.update(pdfpath=outdir)
+
+
 def sales_shipments_to_excel():
     save_shipments_to_excel(is_sale=True)
 
+
 def purchases_shipments_to_excel():
     save_shipments_to_excel(is_sale=False)
+
 
 def save_shipments_to_excel(is_sale=None):
     '''Save all activity in the last half-year to Excel.
@@ -314,226 +342,7 @@ def save_co_text():
         co_lb.insert(0, u'{0.name} ({1})'.format(co, u', '.join(br_list)))
 
 
-def get_purchases_frame(frame):
-    get_orders_frame(frame, u'Purchases')
 
-def get_sales_frame(frame):
-    get_orders_frame(frame, u'Sales')
-
-def get_orders_frame(frame, src):
-    # Create info container to manage all Order data
-    info = Info()
-    info.src = src
-    info.curr_company = None
-    info.edit_ID = None
-    info.listbox = Info()
-    info.button = Info()
-    info.method = Info()
-    info.settings = Info()
-    info.settings.font = "NSimSun"#"PMingLiU"
-#    info.dm = dm
-    info.dmv2 = dmv2
-    info.method.reload_orders = reload_orders
-    info.method.refresh_listboxes = refresh_listboxes
-
-    #-------
-    frame1 = ttk.Frame(frame)
-    def manage_companies():
-        try:
-            if info.co_select.state() == 'normal':
-                info.co_select.focus_set()
-            return
-        except:
-            pass
-
-        info.co_select = Tix.Toplevel(width=1200, height=600)
-        info.co_select.title(u"公司清單管理")
-
-        grouplist = info.dmv2.cogroups()
-        ROWperCOL = 25
-        wlist = {}
-        for i, group in enumerate(grouplist):
-            # Show company group name and additional branches.
-            branchlist = [br.name for br in group.branches]
-            try:
-                branchlist.remove(group.name)
-            except ValueError as e:
-                print e
-            text = u'          {}'.format(group.name)
-            if len(branchlist):
-                text += u' ({})'.format(u', '.join(branchlist))
-            tl = Tix.Label(info.co_select, text=text)
-            tl.grid(row=i%ROWperCOL, column=2*(i/ROWperCOL))
-
-            # 'Supplier' and 'Customer' switches.
-            # Not using 'Select' label option in order to keep things aligned.
-            selectParams = dict(
-                radio=False,
-                allowzero=True,
-                selectedbg=u'cyan',
-            )
-            tsel = Tix.Select(info.co_select, **selectParams)
-            tsel.add(u's', text=u'Supplier')
-            tsel.add(u'c', text=u'Customer')
-            tsel.grid(row=i%ROWperCOL, column=2*(i/ROWperCOL)+1)
-
-            # Activate buttons according to database records.
-            if group.is_supplier:
-                tsel.invoke(u's')
-            if group.is_customer:
-                tsel.invoke(u'c')
-
-            # Add 'Select' widget to widget list
-            wlist[group.name] = tsel
-            print group.is_supplier,  group.is_customer
-
-        tb = Tix.Button(info.co_select, text=u'提交改變', bg=u'light salmon')
-        def submit():
-            session = info.dmv2.session
-            CG = info.dmv2.CoGroup
-            for coname, tsel in wlist.iteritems():
-                updates = dict(
-                    is_supplier= u's' in tsel['value'],
-                    is_customer= u'c' in tsel['value'],
-                )
-                print updates
-                session.query(CG).filter_by(name=coname).update(updates)
-                session.commit()
-            info.co_select.destroy()
-        tb['command'] = submit
-        tb.grid(row=100, columnspan=20)
-
-
-
-    b = Tk.Button(frame1, text=u"公司清單管理")
-    b['command'] = manage_companies
-    b.pack(side=Tk.BOTTOM, fill=Tk.X)
-
-    # Set up company listbox on left side of application.
-    scrollbar = Tk.Scrollbar(frame1, orient=Tk.VERTICAL)
-    info.listbox.companies = Tk.Listbox(frame1, selectmode=Tk.BROWSE,
-                         yscrollcommand=scrollbar.set,
-                         width=10, font=(info.settings.font, "14"),
-                         exportselection=0)
-    scrollbar.config(command=info.listbox.companies.yview)
-
-    scrollbar.pack(side=Tk.RIGHT, fill=Tk.Y)
-    info.listbox.companies.pack(side=Tk.LEFT, fill=Tk.Y)
-    info.listbox.companies.bind("<Double-Button-1>",
-                        lambda _: company_listbox_dbl_click(info, True))
-
-    cogroups = dmv2.cogroups()
-    if src == u'Sales':
-        companies = [cg.name for cg in cogroups if cg.is_customer]
-    else:
-        companies = [cg.name for cg in cogroups if cg.is_supplier]
-    for i, each in enumerate(companies):
-        info.listbox.companies.insert(i, each)
-        info.listbox.companies.itemconfig(i, bg=u'seashell2',
-                                          selectbackground=u'maroon4')
-
-    frame1.pack(side=Tk.LEFT, fill=Tk.Y, padx=2, pady=3)
-
-    #==========================================================================
-    # SET UP TABBED SECTIONS
-    #==========================================================================
-    info.record = {}
-    nb = ttk.Notebook(frame)
-    #--------------- Overview of database ---------------------
-    frame = Tix.Frame(nb)
-    frame_overview.create_frame(frame, info)
-    nb.add(frame, text=u'概貌', padding=2)
-    #--------------- Order entry tab -----------------------
-    frame = ttk.Frame(nb)
-    frame_order_entry.make_order_entry_frame(frame, info)
-    nb.add(frame, text=u'訂單 (造出貨單)', padding=2)
-
-    #------------------ Manifest tab ----------------------------
-    frame = ttk.Frame(nb)
-    frame_manifest.create_manifest_frame(frame, info)
-    nb.add(frame, text=u'出貨單 (造發票)', padding=2)
-    #------------------ Invoice tab -----------------------------
-    frame = ttk.Frame(nb)
-    frame_payment.set_invoice_frame(frame, info)
-    nb.add(frame, text=u'發票 (已支付?)', padding=2)
-    #------------------ Pack notebook ----------------------------
-    nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
-
-
-
-    # Run ASE purchase order analysis
-    try:
-        #TODO: Find out why it started failing halfway through recently.
-        analytics.ASE_analysis(info)
-    except AssertionError as e:
-        print "Analysis interrupted!", e
-
-
-
-def company_listbox_dbl_click(info, grab_index=False):
-    '''This function runs when the order list is opened for the first time
-    or when it needs to be reloaded to show updates.
-    #TODO: Split into two functions: company_listbox_dbl_click() and refreshlists()
-
-    Use info.src for origin of call.
-
-    grab_index = True updates the info.curr_company to list selection.
-    grab_index = False (default) uses the company already stored in databook.
-    '''
-    print 'company_listbox_dbl_click'
-    if grab_index:
-        info.curr_company = info.listbox.companies.get(Tk.ACTIVE)
-    elif not info.curr_company:
-        info.curr_company = info.listbox.companies.get(Tk.ACTIVE)
-
-    # Reload orders preloads all records for a selected company into info.order_records
-    reload_orders(info)
-    refresh_listboxes(info)
-    info.method.refresh_po_tree()
-    info.method.reload_products_frame()
-    info.method.refresh_manifest_listbox()
-    info.method.refresh_invoice_listbox()
-#    info.method.reload_invoice_frame()
-
-
-
-def reload_orders(info):
-    '''Create a link to records and corresponding ID's and store in "info".
-    '''
-    if info.src == u"Sales":
-        info.order_records = dmv2.sales(group=info.curr_company)[::-1]
-        info.order_rec_IDs = [rec.id for rec in info.order_records]
-    else:
-        info.order_records = dmv2.purchases(group=info.curr_company)[::-1]
-        info.order_rec_IDs = [rec.id for rec in info.order_records]
-
-
-def refresh_listboxes(info):
-    '''Refresh the record lists for each frame.
-    #TODO: Split up and put in their respective modules.
-    '''
-    # Add previous orders to order listbox
-    info.listbox.rec_orders.delete(0, Tk.END)
-#    info.listbox.rec_manifest.delete(0, Tk.END)
-#    info.listbox.rec_invoices.delete(0, Tk.END)
-
-    # List of order summaries
-    tmp = [rec.listbox_summary() for rec in info.order_records]
-
-    #TODO: Different colors for different products. Not necessary...
-    for i, each in enumerate(tmp):
-        info.listbox.rec_orders.insert(i, each)
-        info.listbox.rec_orders.itemconfig(i, bg=u'lavender',
-                                           selectbackground=u'dark orchid')
-
-
-
-
-
-def hello():
-    '''Filler function.'''
-    print("It works")
-    tkMessageBox.showinfo('About', 'This is about nothing')
 
 def about():
     '''Display program author and date.'''
@@ -543,7 +352,7 @@ def about():
 
 
 if __name__ == '__main__':
-    app = TaimauApp(None)
+    app = TaimauApp(None, debug=True)
     app.title('Taimau')
     app.mainloop()
 

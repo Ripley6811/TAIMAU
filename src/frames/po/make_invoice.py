@@ -136,7 +136,8 @@ def main(_, shipment_ids):
                 sm.order.product.UM if sm.order.product.unitpriced else sm.order.product.SKU,
                 sm.order.price,
                 sm.order.product.units if sm.order.product.unitpriced else 1,
-                sm.order.orderID
+                sm.order.orderID,
+                sm.order.product.unitpriced
             ]
         else:
             totaldict[name][0] += sm.qty * sm.order.product.units if sm.order.product.unitpriced else sm.qty
@@ -144,12 +145,18 @@ def main(_, shipment_ids):
     totals = []
     r = lambda x: int(x) if x.is_integer() else x
     for row, (key, vals) in enumerate(totaldict.iteritems()):
-        vals[0] = r(vals[0])
-        vals[2] = r(vals[2])
+        try:
+            vals[0] = r(vals[0])
+        except AttributeError as e:
+            print "ATTRIBUTE ERROR CAUGHT:", e
+        try:
+            vals[2] = r(vals[2])
+        except AttributeError as e:
+            print "ATTRIBUTE ERROR CAUGHT:", e
         Tix.Label(main_frame, text=u' {} '.format(key), **cell_config).grid(row=row+1,column=0, columnspan=2, sticky='nsew')
         Tix.Label(main_frame, text=u' {0} {1} '.format(*vals), **cell_config).grid(row=row+1,column=2, columnspan=2, sticky='nsew')
         Tix.Label(main_frame, text=u' $ {2} '.format(*vals), **cell_config).grid(row=row+1,column=4, columnspan=2, sticky='nsew')
-        totals.append( vals[0] * vals[2] * vals[3] )
+        totals.append( vals[0] * vals[2] )
         Tix.Label(main_frame, text=u' $ {} '.format(totals[-1]), **cell_config).grid(row=row+1,column=6, columnspan=2, sticky='nsew')
         Tix.Label(main_frame, text=u' PO:{4} '.format(*vals), **cell_config).grid(row=row+1,column=8, columnspan=2, sticky='nsew')
     total = int(round(sum(totals), 0))

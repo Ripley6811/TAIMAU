@@ -85,8 +85,9 @@ def main(_, order, refresh):
         Tix.Entry(x, textvariable=note[i], **cc).grid(row=i+1, column=6, sticky='nsew')
 
     def update_units(a, b, i):
-        print a, b, i
-        print type(i), i
+        if _.debug:
+            print a, b, i
+            print type(i), i
         units[i].set(int(qty[i].get())*order.product.units)
 
 

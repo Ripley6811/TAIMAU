@@ -75,7 +75,6 @@ def main(_):
 
     po_color = u'PeachPuff2'
     def refresh():
-        print nRecords.get(), 'nRecords'
         try:
             _.curr.cogroup
         except AttributeError:
@@ -116,7 +115,8 @@ def main(_):
 #        print("AttributeError: CoGroup not defined")
 
     def opendir(tree, path):
-        print path
+        if _.debug:
+            print 'HList path:', path
         entries = tree.hlist.info_children(path)
         if entries: # Show previously loaded entries
             for entry in entries:

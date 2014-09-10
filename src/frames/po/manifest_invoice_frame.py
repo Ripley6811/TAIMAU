@@ -182,7 +182,7 @@ def main(_):
     tree.hlist['indent'] = 14 # Adjust indentation of children
     tree.hlist['wideselect'] = 1 # Color selection from end to end
     tree.hlist['font'] = _.font
-    tree['command'] = lambda *args: apply_selection()
+#    tree['command'] = lambda *args: apply_selection()
 
     orderPopMenu = Tix.Menu(tree_box, tearoff=0)
 
@@ -190,9 +190,9 @@ def main(_):
         orderPopMenu.post(event.x_root, event.y_root)
     tree.hlist.bind("<Double-Button-1>", orderoptions)
 
-    def apply_selection():
-        '''Show hlist selection code. Which is also the shipment record id.'''
-        print tree.hlist.info_selection()
+#    def apply_selection():
+#        '''Show hlist selection code. Which is also the shipment record id.'''
+#        print tree.hlist.info_selection()
 
     def edit_shipment():
         pass

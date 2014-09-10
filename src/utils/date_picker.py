@@ -122,12 +122,10 @@ class Calendar(ttk.Frame):
 
     def __config_calendar(self):
         cols = self._cal.formatweekheader(3).split()
-        #print cols
         try:
             cols = [unicode(c.encode('utf8')) for c in cols]
         except UnicodeDecodeError:
             cols = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-        #print cols
         self._calendar['columns'] = cols
         self._calendar.tag_configure('header', background='grey90')
         self._calendar.insert('', 'end', values=cols, tag='header')
