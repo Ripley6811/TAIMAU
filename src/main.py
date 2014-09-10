@@ -190,6 +190,8 @@ class TaimauApp(Tix.Tk):
         self.quit()
 
     def change_db(self):
+        self._.curr.cogroup = None
+
         self._.dbm.change_db()
         try:
             self._.refresh()

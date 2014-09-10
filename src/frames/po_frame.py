@@ -88,7 +88,8 @@ def create(_):
 
 
     # Set up company switching buttons
-    def select_cogroup(cogroup):
+    def select_cogroup(cog_name):
+        cogroup = _.dbm.get_cogroup(cog_name)
         _.curr.cogroup = cogroup
         settings.update(cogroup=cogroup.name)
         if _.debug: print(cogroup)
@@ -118,7 +119,7 @@ def create(_):
                              value=u"s{}c{} {}".format(int(cog.is_supplier)
                                                       ,int(cog.is_customer)
                                                       ,cog.name),
-                             command=lambda x=cog:select_cogroup(x),
+                             command=lambda x=cog.name:select_cogroup(x),
                              **options)
         #TODO: color by supplier/client
         tr.grid(row=i/4,column=i%4, sticky=Tix.W+Tix.E)
