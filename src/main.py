@@ -56,12 +56,11 @@ print 'CWD:', os.getcwd()
 #===============================================================================
 
 # Container for passing state parameters
-# Separate into current record, product
 Info = type('struct', (), {})
-
 Info = type('adict', (dict,), {'__getattr__': dict.__getitem__, '__setattr__': dict.__setitem__})
+#NOTE: Create another internal Info type like this: var = Info(); var.x = type(var)()
 
-
+# Alternatively can be created this way
 class adict(dict):
     __getattr__ = dict.__getitem__
     __setattr__ = dict.__setitem__
