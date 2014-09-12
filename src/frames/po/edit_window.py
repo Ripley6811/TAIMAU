@@ -30,6 +30,7 @@ def main(_, order, refresh):
 
     _.extwin = Tix.Toplevel(width=700)
     _.extwin.title(u"{}: {}".format(_.curr.cogroup.name, _.loc(u"Edit PO", asText=True)))
+    _.extwin.geometry(u'+{}+{}'.format(_.parent.winfo_rootx()+100, _.parent.winfo_rooty()))
     _.extwin.focus_set()
 
     center_pane = Tix.Frame(_.extwin)

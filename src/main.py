@@ -81,6 +81,7 @@ class TaimauApp(Tix.Tk):
 
 
         _state = Info()
+        _state.parent = self
         _state.debug = debug # For console messages and English GUI
         _state.font = u"NSimSun"
         _state.loc = localize # Translation to Chinese
@@ -153,7 +154,10 @@ class TaimauApp(Tix.Tk):
 
         # SET AND SHOW MENU
         self.config(menu=menubar)
-        self.geometry('1200x740')
+        try:
+            self.geometry(settings.load()['geometry'])
+        except KeyError:
+            self.geometry('1200x740')
 
 
         # SET MAIN NOTEBOOK
@@ -187,10 +191,11 @@ class TaimauApp(Tix.Tk):
 
 
     def endsession(self):
+        settings.update(geometry=self.geometry())
         self.quit()
 
     def change_db(self):
-        self._.curr.cogroup = None
+        #self._.curr.cogroup = None
 
         self._.dbm.change_db()
         try:
@@ -211,7 +216,7 @@ def set_report_location():
     if settings.load().get(u'pdfpath'):
         FILE_OPTS['initialdir'] = settings.load()[u'pdfpath']
 
-    outdir = tkFileDialog.askdirectory(**FILE_OPTS)
+    outdir = os.path.normpath(tkFileDialog.askdirectory(**FILE_OPTS))
 
     settings.update(pdfpath=outdir)
 
@@ -353,7 +358,7 @@ def about():
 
 
 if __name__ == '__main__':
-    app = TaimauApp(None, debug=True)
+    app = TaimauApp(None, debug=False)
     app.title('Taimau')
     app.mainloop()
 

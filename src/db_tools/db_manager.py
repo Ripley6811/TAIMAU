@@ -28,6 +28,7 @@ __version__ = '0.1'
 #===============================================================================
 # IMPORT STATEMENTS
 #===============================================================================
+from os.path import normpath
 import datetime
 from sqlalchemy.orm import sessionmaker
 #from sqlalchemy import or_, and_
@@ -70,7 +71,7 @@ class db_manager:
             title = u'Select Database',
             defaultextension = '.db',
         )
-        self.dbpath = tkFileDialog.askopenfilename(**FILE_OPTS)
+        self.dbpath = normpath(tkFileDialog.askopenfilename(**FILE_OPTS))
 
         engine = get_database( self.dbpath, False )
         self.session = sessionmaker(bind=engine)()
@@ -101,13 +102,43 @@ class db_manager:
         return True
 
     #==============================================================================
+    # Shipment table methods
+    #==============================================================================
+    def get_shipment(self, _id):
+        return self.session.query(Shipment).get(_id)
+
+    def shipment_no(self, no):
+        query = self.session.query(Shipment).filter_by(shipment_no=no)
+        c = query.count()
+        if c:
+            if c > 1:
+                print u"Multiple manifest records with the same number found."
+                print u">> Manifest number {} has {} records.".format(no, c)
+            return query.first()
+        else:
+            return None
+
+    #==============================================================================
+    # Invoice table methods
+    #==============================================================================
+    def get_invoice(self, _id):
+        return self.session.query(Invoice).get(_id)
+
+    #==============================================================================
     # CoGroup table methods
     #==============================================================================
     def cogroups(self):
-        return self.session.query(CoGroup).all()
+        return self.session.query(CoGroup).filter(CoGroup.name != u'台茂').all()
 
     def get_cogroup(self, name):
         return self.session.query(CoGroup).get(name)
+
+    def active_POs(self, name):
+        query = self.session.query(Order)
+        query = query.filter_by(group=name, is_open=True)
+        purchase_POs = query.filter_by(is_purchase=True).count()
+        sale_POs = query.filter_by(is_sale=True).count()
+        return purchase_POs, sale_POs
 
     #==============================================================================
     # Branch table methods

@@ -1,18 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import Tix
+import tkMessageBox
 from utils import date_picker
 
 
 
-def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
+
+def main(_, orders=[], qtyVars=[], unitVars=[], manifest=None, refresh=None):
     """Displays a window in the appearance of a Taimau shipping manifest.
 
     "orders" parameter is a list of orders for creating a new manifest.
     "qtyVars" list of Tix.StringVar objects holding the quantities.
     "unitVars" list of Tix.StringVar objects for the discounting.
     Alternatively, a manifest number can be given.
-    "manifest_no" parameter is the id of an existing manifest for viewing/editing."""
+    "manifest" parameter is an existing manifest for viewing/editing."""
 
     if _.debug:
         print 'In "main" of manifest_window.py.'
@@ -31,8 +33,9 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
         # Continue with frame creation
         pass
 
-    _.extwin = Tix.Toplevel(width=700)
+    _.extwin = Tix.Toplevel(_.parent, width=700)
     _.extwin.title(u"{} {}".format(_.curr.cogroup.name, _.loc(u"\u26DF Create Manifest", asText=True)))
+    _.extwin.geometry(u'+{}+{}'.format(_.parent.winfo_rootx()+100, _.parent.winfo_rooty()))
     _.extwin.focus_set()
 
     main_frame = Tix.Frame(_.extwin)
@@ -52,36 +55,26 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
     _destination = Tix.StringVar()
     _driver = Tix.StringVar()
     _truck = Tix.StringVar()
+    _truck.trace('w', lambda *args: _truck.set(_truck.get().upper().replace('-','')[:8]))
     _note = Tix.StringVar()
 
 
     #####################################
-#    qtys = []
-#    units = []
-#    orders = []
-    order = orders[0]
-#    if items:
-#        poIDs = []
-#        qtys = []
-#        [poIDs.append(a) for a,b,c in items]
-#        [qtys.append(b) for a,b,c in items]
-#        [units.append(c) for a,b,c in items]
-#        orders = [_.dbm.get_order(poid) for poid in poIDs]
-#        order = orders[0]
-    if manifest_no:
-        manifest = _.dbm.get_manifest(manifest_no)
-        qtyVars = [Tix.StringVar() for sitem in manifest.items]
-        [qtyVars.set(sitem.qty) for sitem in manifest.items]
-        orders = [item.order for item in manifest.items]
-        order = orders[0]
-#    else:
-#        _.extwin.destroy()
-#        return
-#    print 'items', items, [b for a,b,c in items]
 
-#    for i in range(len(qtys)):
-#        print i, qtys
-#        _qty.append(qtys[i])
+
+    if manifest:
+        qtyVars = [Tix.StringVar() for sitem in manifest.items]
+        [qtyVars[i].set(sitem.qty) for i, sitem in enumerate(manifest.items)]
+        unitVars = [Tix.StringVar() for sitem in manifest.items]
+        [unitVars[i].set(sitem.qty*sitem.order.product.units) for i, sitem in enumerate(manifest.items)]
+        orders = [item.order for item in manifest.items]
+        _shipment_no.set(manifest.shipment_no)
+#        _destination = Tix.StringVar()
+        _driver.set(manifest.driver)
+        _truck.set(manifest.truck)
+        _note.set(manifest.shipmentnote)
+
+    order = orders[0]
 
 
 
@@ -144,9 +137,7 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
 
     cal = date_picker.Calendar(main_frame)
     cal.grid(row=0, rowspan=3, column=8, columnspan=4, sticky='nsew')
-#    riqi = u'貨單日期: {0.year}年 {0.month}月 {0.day}日'.format(order.shipments[0].shipmentdate)
-#    tl=Tix.Label(main_frame, text=riqi, **cell_config)
-#    tl.grid(row=1,column=4, columnspan=2, sticky='ew')
+
 
     tl=Tix.Label(main_frame, text=u'貨單編號:', **cell_config)
     tl.grid(row=3,column=8, columnspan=2, sticky='ew')
@@ -173,11 +164,6 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
         font= (_.font, 15, u'bold',),
         bg= u'wheat'
     )
-    query_config = dict(
-        relief= 'sunken',
-        font= (_.font, 15, u'bold',),
-        bg= u'yellow'
-    )
 
     for row, (order, qSV, uSV) in enumerate(zip(orders, qtyVars, unitVars)):
         if _.debug:
@@ -199,7 +185,9 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
         this_units = u'{}  '.format(product.UM)
         Tix.Label(main_frame, text=pinming, **config).grid(row=10+row,column=0, columnspan=2, sticky='ew')
         Tix.Label(main_frame, text=guige, **config).grid(row=10+row,column=2, columnspan=2, sticky='ew')
-        Tix.Entry(main_frame, textvariable=qSV, width=8, justify='center', bg=u'PaleTurquoise1', font=(_.font, 15, 'bold')).grid(row=10+row,column=4, columnspan=2, sticky='nsew')
+        Tix.Entry(main_frame, textvariable=qSV, width=8, justify='center',
+                  bg=u'PaleTurquoise1', font=(_.font, 15, 'bold'),
+                  state=u'disabled' if manifest else u'normal').grid(row=10+row,column=4, columnspan=2, sticky='nsew')
         Tix.Label(main_frame, textvariable=uSV, anchor='e', **config).grid(row=10+row,column=6, columnspan=1, sticky='ew')
         Tix.Label(main_frame, text=this_units, anchor='w', **config).grid(row=10+row,column=7, columnspan=1, sticky='ew')
         Tix.Label(main_frame, bg=u'gray30', fg=u'gray70', text=u'  {}  '.format(product.SKUlong)).grid(row=10+row,column=8, columnspan=2, sticky='ew')
@@ -246,7 +234,7 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
     # SUBMIT BUTTON
     tb = Tix.Button(main_frame, textvariable=_.loc(u"\u2713 Submit"),
                     bg="lawn green",
-                    command=lambda:submit(),
+                    command=lambda:submit(manifest),
                     activebackground="lime green")
     tb.grid(row=1000, column=0, columnspan=8, sticky='ew')
 
@@ -260,23 +248,42 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest_no=None, refresh=None):
     def exit_win():
         _.extwin.destroy()
 
-    def submit():
-        manifest = _.dbm.Shipment(
-            shipmentdate = cal.selection,
-            shipment_no = _shipment_no.get(),
-            shipmentnote = _note.get(),
-            driver = _driver.get(),
-            truck = _truck.get(),
-        )
-        for order, qty in zip(orders, qtyVars):
-            item = _.dbm.ShipmentItem(
-                order = order,
-                shipment = manifest,
+    def submit(manifest):
+        if cal.selection in (None, u''):
+            return
+        if manifest == None:
+            manifest = _.dbm.shipment_no(_shipment_no.get())
+            if manifest:
+                confirm = tkMessageBox.askyesno(u'Manifest number exists.',
+                                      u'Add items to existing manifest?')
+                if not confirm:
+                    _.extwin.focus_set()
+                    return
+            if manifest == None:
+                manifest = _.dbm.Shipment(
+                    shipmentdate = cal.selection,
+                    shipment_no = _shipment_no.get().upper(),
+                    shipmentnote = _note.get(),
+                    driver = _driver.get(),
+                    truck = _truck.get().upper().replace('-',''),
+                )
+            for order, qty in zip(orders, qtyVars):
+                item = _.dbm.ShipmentItem(
+                    order = order,
+                    shipment = manifest,
 
-                qty = qty.get(),
-            )
-            _.dbm.session.add(item)
-        _.dbm.session.commit()
+                    qty = qty.get(),
+                )
+                _.dbm.session.add(item)
+            _.dbm.session.commit()
+        else: #if manifest
+            manifest.shipmentdate = cal.selection
+            manifest.shipment_no = _shipment_no.get().upper()
+            manifest.shipmentnote = _note.get()
+            manifest.driver = _driver.get()
+            manifest.truck = _truck.get().upper().replace('-','')
+            _.dbm.session.commit()
+
 
         exit_win()
         if refresh:

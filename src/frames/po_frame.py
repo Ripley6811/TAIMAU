@@ -64,7 +64,7 @@ def create(_):
         _.sc_mode = mode
         settings.update(sc_mode=mode)
         for each_butt in cog_butts:
-            if "{}1".format(mode) in each_butt["value"]:
+            if "{}:0".format(mode) not in each_butt["value"]:
                 each_butt.configure(bg='burlywood')
             else:
                 each_butt.configure(bg='NavajoWhite4')
@@ -114,15 +114,20 @@ def create(_):
 
     cog_butts = []
     i = 0
+    cols = 4
     for i, cog in enumerate(cogroups):
-        tr = Tix.Radiobutton(colist_frame, text=cog.name,
-                             value=u"s{}c{} {}".format(int(cog.is_supplier)
-                                                      ,int(cog.is_customer)
-                                                      ,cog.name),
+        text = cog.name
+        nPOs = _.dbm.active_POs(cog.name) # number of (Purchase, Sale) POs
+        if _.debug:
+            text += u'\n{}'.format(nPOs)
+        tr = Tix.Radiobutton(colist_frame, text=text,
+                             value=u"s:{}c:{} {}".format(nPOs[0],
+                                                       nPOs[1],
+                                                       cog.name),
                              command=lambda x=cog.name:select_cogroup(x),
                              **options)
         #TODO: color by supplier/client
-        tr.grid(row=i/4,column=i%4, sticky=Tix.W+Tix.E)
+        tr.grid(row=i/cols,column=i%cols, sticky=Tix.W+Tix.E)
         cog_butts.append(tr)
     else:
         # Increment one more to add the "+" button.
@@ -131,7 +136,7 @@ def create(_):
                     command=add_cogroup,
                     font=(_.font, "12", "bold"), bg="lawn green",
                     activebackground="lime green")
-    tr.grid(row=i/4,column=i%4, sticky='ew')
+    tr.grid(row=i/cols,column=i%cols, sticky='ew')
 
 
 
@@ -226,17 +231,21 @@ def create(_):
         branch_info = Tix.StringVar()
         def set_branch_info():
             branch = _.dbm.get_branch(_.curr.branch.get())
-            text = u'\u260E {}\n\u213B {}\n\u2709 {}'.format(branch.phone, branch.fax, branch.email)
+            text = u'\u2116 {} : {}'.format(branch.tax_id, branch.fullname)
+            text += u'\n\u260E {}'.format(branch.phone)
+            if branch.fax:
+                text += u'  \u213B {}'.format(branch.fax)
+            text += u'\n\u2709 {}'.format(branch.email)
             branch_info.set(text)
         _.curr.branch.trace('w', lambda a,b,c,: set_branch_info())
         for i, branch in enumerate(cogroup.branches):
             tr = Tix.Radiobutton(branchbox_inner, text=branch.name,
                                  value=branch.name, **options)
-            tr.pack(side="left")
+            tr.pack(side="left", fill='y')
             if i==0:
                 tr.invoke()
-        Tix.Label(branchbox_inner, textvariable=branch_info, justify='left')\
-            .pack(side='left')
+        Tix.Label(branchbox_inner, textvariable=branch_info, justify='left',
+                  font=(_.font, 14, 'bold')).pack(side='left')
 
 
         #TODO: Load entry fields with company info for viewing/editing

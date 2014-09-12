@@ -27,12 +27,14 @@ def main(_, order, refresh):
         # Continue with frame creation
         pass
 
-    _.extwin = Tix.Toplevel(width=700)
+    _.extwin = Tix.Toplevel()
     _.extwin.title(u"{} {} {}".format(
-                    _.curr.cogroup.name,
-                    u"\u26DF \u26DF \u26DF",
-                    order.product.label()
+                        _.curr.cogroup.name,
+                        u"\u26DF \u26DF \u26DF",
+                        order.product.label()
                     ))
+    _.extwin.geometry(u'+{}+{}'.format(_.parent.winfo_rootx()+100,
+                                       _.parent.winfo_rooty()))
     _.extwin.focus_set()
     x = _.extwin
 
@@ -50,7 +52,8 @@ def main(_, order, refresh):
         bg= u'LightSteelBlue1',
         relief='raised',
     )
-    for i, each in enumerate([u'日期',u'出貨編號',u'件數',u'數量',u'司機',u'車牌',u'備註']):
+    for i, each in enumerate([u'日期',u'出貨編號',u'件數',u'數量',
+                              u'司機',u'車牌',u'備註']):
         tl=Tix.Label(x, text=each, **cell_config)
         tl.grid(row=0,column=i, columnspan=1, sticky='nsew')
 

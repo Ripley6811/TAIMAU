@@ -2,21 +2,22 @@
 # -*- coding: utf-8 -*-
 import Tix
 import tkMessageBox
-from make_invoice import main as make_invoice
+from invoice_form import main as invoice
+from manifest_form import main as manifest
 from pdf_tools import activity_report
-
+#print 'invoice', type(frames.po.invoice)
 
 def main(_):
     """Set up the comprehensive view for all records.
 
-    Button to set number of records to load. Default to 10."""
+    Button to set number of records to load. Default to 25."""
 
 
     frame = Tix.Frame(_.po_frame)
 
 
     nRecords = Tix.StringVar()
-    nRecords.set(20)
+    nRecords.set(25)
     nRecords.trace('w', lambda a,b,c: refresh())
 
     # Headers and (column number, col width)
@@ -47,9 +48,13 @@ def main(_):
     def view_totals():
         '''Total up the columns of selected rows.'''
         totaldict = {}
+        totalshipped = 0
+        totalinvoiced = 0
+        totalvalue = 0
         for shipment_id in tree.hlist.info_selection():
             sm = _.dbm.session.query(_.dbm.ShipmentItem).get(shipment_id)
-            name = u'[{}] {}'.format(sm.order.product.specs, sm.order.product.label())
+#            name = u'[{}] {}'.format(sm.order.product.specs, sm.order.product.label())
+            name = u'{}'.format(sm.order.product.specs, sm.order.product.label())
             if totaldict.get(name) == None:
                 totaldict[name] = [
                     sm.qty,
@@ -61,13 +66,20 @@ def main(_):
                 totaldict[name][0] += sm.qty
                 totaldict[name][2] += sm.invoiceitem[0].qty if sm.invoiceitem else 0
                 totaldict[name][3] += sm.invoiceitem[0].total() if sm.invoiceitem else 0
+            totalshipped += totaldict[name][0]
+            totalinvoiced += totaldict[name][2]
+            totalvalue += totaldict[name][3]
 
         tkMessageBox.showinfo(
             u'Summary of totals',
-            '\n'.join(
-                [u'{0}  \u26DF:{1[0]} {1[1]}  \U0001F4B0:{1[2]} {1[1]}  ${1[3]}'.format(
+            u'\n'.join(
+                [u'{0}  \u26DF:{1[0]} {1[1]}  \U0001F4B0:{1[2]} {1[1]}  ${1[3]:,}'.format(
                     key, vals) for key, vals in totaldict.iteritems()]
             )
+            + u'\n\nTOTAL'
+            + u'\n      Shipped:  {:,}'.format(totalshipped)
+            + u'\n      Invoiced:  {:,}'.format(totalinvoiced)
+            + u'\n      Value:  ${:,}'.format(totalvalue)
         )
 
 
@@ -76,7 +88,7 @@ def main(_):
         for shipment_id in tree.hlist.info_selection():
             if len(_.dbm.session.query(_.dbm.ShipmentItem).get(shipment_id).invoiceitem) > 0:
                 return
-        make_invoice(_, tree.hlist.info_selection())
+        invoice(_, tree.hlist.info_selection())
 
     def create_report():
         '''Organized shipping history report that can be printed.
@@ -157,7 +169,7 @@ def main(_):
     ).pack(side=u'left', fill='x')
 
 
-    rb_vals = (20, 50, 100, 1000)
+    rb_vals = (25, 50, 100, 1000)
     options = dict(variable=nRecords, indicatoron=False)
     for val in rb_vals[::-1]:
         Tix.Radiobutton(rb_box, text=val, value=val, **options)\
@@ -195,17 +207,24 @@ def main(_):
 #        print tree.hlist.info_selection()
 
     def edit_shipment():
-        pass
+        sid = tree.hlist.info_selection()[0]
+        smi = _.dbm.session.query(_.dbm.ShipmentItem).get(sid)
+        manifest(_, manifest=smi.shipment, refresh=refresh)
+
     def edit_invoice():
-        pass
-    def delete_shipment():
+        sid = tree.hlist.info_selection()[0]
+        smi = _.dbm.session.query(_.dbm.ShipmentItem).get(sid)
+        if len(smi.invoiceitem):
+            invoice(_, invoice=smi.invoiceitem[0].invoice)
+
+    def delete_shipmentitem():
         sid = tree.hlist.info_selection()[0]
         smi = _.dbm.session.query(_.dbm.ShipmentItem).get(sid)
         confirmation = tkMessageBox.askyesno(u'Delete Shipment Item',
             u'Confirm deletion:\n{0.shipment.shipmentdate} {0.order.product.name}'.format(smi))
         if confirmation:
             if len(smi.invoiceitem) >= 1:
-                delete_invoice()
+                delete_invoiceitem()
 
             nItems = len(smi.shipment.items)
             if nItems == 1:
@@ -219,7 +238,7 @@ def main(_):
             except:
                 pass
 
-    def delete_invoice():
+    def delete_invoiceitem():
         sid = tree.hlist.info_selection()[0]
         smi = _.dbm.session.query(_.dbm.ShipmentItem).get(sid)
         try:
@@ -244,11 +263,11 @@ def main(_):
         except IndexError:
             pass
 
-    orderPopMenu.add_command(label=u'編輯出貨單', command=lambda: edit_shipment())
-    orderPopMenu.add_command(label=u'編輯發票', command=lambda: edit_invoice())
+    orderPopMenu.add_command(label=_.loc(u'View/edit manifest',1), command=lambda: edit_shipment())
+    orderPopMenu.add_command(label=_.loc(u'View/edit invoice',1), command=lambda: edit_invoice())
     orderPopMenu.add_separator()
-    orderPopMenu.add_command(label=u'刪除出貨單', command=lambda: delete_shipment())
-    orderPopMenu.add_command(label=u'刪除發票', command=lambda: delete_invoice())
+    orderPopMenu.add_command(label=_.loc(u'Delete manifest item',1), command=lambda: delete_shipmentitem())
+    orderPopMenu.add_command(label=_.loc(u'Delete invoice item',1), command=lambda: delete_invoiceitem())
 
     tds = lambda anchor, bg: Tix.DisplayStyle(
         anchor=anchor,
@@ -295,7 +314,7 @@ def main(_):
                 tree.hlist.item_create(hid, col=H[u'發票數量'][0], text=invi.qty, itemtype=Tix.TEXT, style=tds('e',inv_color if rec.qty == invi.qty else u'tomato'))
                 tree.hlist.item_create(hid, col=H[u'價格'][0], text=invi.order.price, itemtype=Tix.TEXT, style=tds('e', inv_color))
                 tree.hlist.item_create(hid, col=H[u'規格'][0], text=invi.order.product.units if invi.order.product.unitpriced else u'', itemtype=Tix.TEXT, style=tds('e', inv_color))
-                tree.hlist.item_create(hid, col=H[u'總價'][0], text=invi.total(), itemtype=Tix.TEXT, style=tds('e',inv_color))
+                tree.hlist.item_create(hid, col=H[u'總價'][0], text=u'{:,}'.format(invi.total()), itemtype=Tix.TEXT, style=tds('e',inv_color))
                 tree.hlist.item_create(hid, col=H[u'已付'][0], text=u'\u2713' if invi.invoice.paid else u'\u203C', itemtype=Tix.TEXT, style=tds('w',inv_color if invi.invoice.paid else 'tomato'))
 
             if len(rec.invoiceitem) > 1:

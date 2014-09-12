@@ -7,7 +7,12 @@ import datetime
 import Tix
 
 
-def main(_, shipment_ids):
+def main(_, shipment_ids=None, invoice=None):
+    '''Create a new invoice from a list of shipped items or review and edit
+    an existing invoice.
+
+    shipment_ids: List of shipment items to include in new invoice.
+    invoice: Existing invoice for editing. If None, then create new invoice.'''
 
     #### NEW POPUP WINDOW: LIMIT TO ONE ####
     try:
@@ -23,8 +28,9 @@ def main(_, shipment_ids):
         # Continue with frame creation
         pass
 
-    _.extwin = Tix.Toplevel(width=700)
+    _.extwin = Tix.Toplevel(_.parent)
     _.extwin.title(u"{} {}".format(_.curr.cogroup.name, _.loc(u"+ PO", asText=True)))
+    _.extwin.geometry(u'+{}+{}'.format(_.parent.winfo_rootx()+100, _.parent.winfo_rooty()))
     _.extwin.focus_set()
 
     head_frame = Tix.Frame(_.extwin)
@@ -36,7 +42,13 @@ def main(_, shipment_ids):
 
     #### VARIABLES FOR RECORD ENTRY ####
     ####################################
-    shipments = [_.dbm.session.query(_.dbm.ShipmentItem).get(_id) for _id in shipment_ids]
+    if shipment_ids:
+        shipments = [_.dbm.session.query(_.dbm.ShipmentItem).get(_id) for _id in shipment_ids]
+    elif invoice:
+        shipments = [item.shipmentitem for item in invoice.items]
+    else:
+        tkMessageBox.showerror(u'Invoice view error',
+                               u'Empty shipment id list and no invoice id.')
     # InvoiceItem
     _order_id = []
     _shipment_id = []
@@ -44,10 +56,16 @@ def main(_, shipment_ids):
 
     # Invoice
     _invoice_no = Tix.StringVar()
+    _invoice_no.trace('w', lambda *args: _invoice_no.set(_invoice_no.get().upper()[:10]))
     _seller = Tix.StringVar()
     _buyer = Tix.StringVar()
     _note = Tix.StringVar()
     _company_no = Tix.StringVar()
+
+
+    if invoice:
+        _invoice_no.set(invoice.invoice_no)
+        _note.set(invoice.invoicenote)
 
 
 
@@ -101,7 +119,10 @@ def main(_, shipment_ids):
     buyer.trace('w', lambda a,b,c:
                 _company_no.set(_.dbm.get_branch(buyer.get()).tax_id)
     )
-    buyer.set(shipments[0].order.buyer)
+    if invoice:
+        buyer.set(invoice.buyer)
+    else:
+        buyer.set(shipments[0].order.buyer)
 
 
 
@@ -184,18 +205,22 @@ def main(_, shipment_ids):
             tr.pack(side='left', fill='both', expand=1)
     seller_box.grid(row=51, rowspan=2, column=8, columnspan=2, sticky='nsew')
     seller.trace('w', lambda a,b,c: seller.get() ) # Forces an update (!?)
-    seller.set(shipments[0].order.seller)
+    if invoice:
+        seller.set(invoice.seller)
+    else:
+        seller.set(shipments[0].order.seller)
 
 
     # Preset the invoice beginning digits from previous invoice
-    try:
-        query = _.dbm.session.query(_.dbm.Invoice)
-        query = query.filter(_.dbm.Invoice.seller == seller.get())
-        query = query.order_by(_.dbm.Invoice.invoicedate.desc())
-        latest_invi = query.first()
-        _invoice_no.set(latest_invi.invoice_no[:6])
-    except:
-        pass
+    if invoice == None:
+        try:
+            query = _.dbm.session.query(_.dbm.Invoice)
+            query = query.filter(_.dbm.Invoice.seller == seller.get())
+            query = query.order_by(_.dbm.Invoice.invoicedate.desc())
+            latest_invi = query.first()
+            _invoice_no.set(latest_invi.invoice_no[:6])
+        except:
+            pass
 
 
 
@@ -213,7 +238,7 @@ def main(_, shipment_ids):
     # SUBMIT BUTTON
     tb = Tix.Button(main_frame, textvariable=_.loc(u"\u2713 Submit"),
                     bg="lawn green",
-                    command=lambda:submit(),
+                    command=lambda:submit(invoice),
                     activebackground="lime green")
     tb.grid(row=1000, column=0, columnspan=8, sticky='ew')
 
@@ -227,23 +252,47 @@ def main(_, shipment_ids):
     def exit_win():
         _.extwin.destroy()
 
-    def submit():
-        invoice = _.dbm.Invoice(
-            invoicedate = cal.selection,
-            invoice_no = _invoice_no.get(),
-            invoicenote = _note.get(),
-            seller = seller.get(),
-            buyer = buyer.get(),
-        )
-        for sm in shipments:
-            item = _.dbm.InvoiceItem(
-                order = sm.order,
-                shipmentitem = sm,
-                invoice = invoice,
-                qty = sm.qty,
-            )
-            _.dbm.session.add(item)
-        _.dbm.session.commit()
+    def submit(invoice):
+        if cal.selection in (None, u''):
+            return
+        if len(_invoice_no.get()) != 10:
+            ok = tkMessageBox.askokcancel(u'Invoice number validation failure.',
+                       u'Invoice number is not 10 characters\ncontinue anyway?')
+            if not ok:
+                _.extwin.focus_set()
+                return
+        if invoice == None:
+            invoice = _.dbm.invoice_no(_invoice_no.get())
+            if invoice:
+                confirm = tkMessageBox.askyesno(u'Invoice number exists.',
+                                      u'Add items to existing invoice?')
+                if not confirm:
+                    _.extwin.focus_set()
+                    return
+            if invoice == None:
+                invoice = _.dbm.Invoice(
+                    invoicedate = cal.selection,
+                    invoice_no = _invoice_no.get().upper(),
+                    invoicenote = _note.get(),
+                    seller = seller.get(),
+                    buyer = buyer.get(),
+                )
+            for sm in shipments:
+                item = _.dbm.InvoiceItem(
+                    order = sm.order,
+                    shipmentitem = sm,
+                    invoice = invoice,
+                    qty = sm.qty,
+                )
+                _.dbm.session.add(item)
+            _.dbm.session.commit()
+        else: #if invoice
+            invoice.invoicedate = cal.selection
+            invoice.invoice_no = _invoice_no.get().upper()
+            invoice.invoicenote = _note.get()
+            invoice.seller = seller.get()
+            invoice.buyer = buyer.get()
+            _.dbm.session.commit()
 
         exit_win()
 

@@ -8,7 +8,8 @@ import os
 import subprocess
 
 def main(_, records=[]):
-    pdfwin = Tix.Toplevel(width=700)
+    pdfwin = Tix.Toplevel(_.parent)
+    pdfwin.geometry(u'+{}+{}'.format(_.parent.winfo_rootx()+100, _.parent.winfo_rooty()))
     pdfwin.title(u"New Purchase Order (PO) Form")
     pdfwin.focus_set()
 
@@ -220,7 +221,7 @@ def main(_, records=[]):
 
         pdfwin.destroy()
 
-        outfile = tkFileDialog.asksaveasfilename(**FILE_OPTS)
+        outfile = os.path.normpath(tkFileDialog.asksaveasfilename(**FILE_OPTS))
         print outfile
 
         if os.path.exists(outfile):
@@ -229,15 +230,15 @@ def main(_, records=[]):
             FPDF.output(name=outfile)
 
             if _.debug:
-                print u'start {0}'.format(outfile.replace("/","\\"))
-                print u'start {0}'.format(os.path.normpath(outfile))
+                print u'start {0}'.format(outfile)
+                print u'start {0}'.format(outfile)
             try:
-                subprocess.call(['start', os.path.normpath(outfile)],
+                subprocess.call(['start', outfile],
                                  shell=True)
             except:
                 print u'Trying alternate subprocess command.'
                 subprocess.call(['start', '/D'] +
-                                list(os.path.split(outfile.replace("/","\\"))),
+                                list(os.path.split(outfile)),
                                 shell=True)
         else:
             tkMessageBox.showinfo(u'',u'Canceled PDF creation.')
