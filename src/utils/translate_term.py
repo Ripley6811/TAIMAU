@@ -83,6 +83,11 @@ worddict = {
     u'View/edit invoice' : u'編輯發票',
     u'Delete manifest item' : u'刪除出貨單項次',
     u'Delete invoice item' : u'刪除發票項次',
+    u'Products' : u'產品',
+    u'Product Info/Edit' : u'產品資訊/編輯',
+    u'Product Price History' : u'產品價格歷史',
+    u'Supplies We Purchase' : u'我們採購用品',
+    u'Products We Sell' : u'我們銷售產品',
 }
 # Storage of StringVar by the english text as keyword.
 labeldict = {}

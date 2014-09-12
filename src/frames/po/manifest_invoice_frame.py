@@ -282,7 +282,7 @@ def main(_):
     def refresh():
         try:
             _.curr.cogroup
-        except AttributeError:
+        except KeyError:
             return
         # SQL query for shipments (items)
         query = _.dbm.session.query(_.dbm.ShipmentItem)
@@ -325,5 +325,11 @@ def main(_):
 
 
     _.mi_frame = frame
-    _.mi_frame_refresh = refresh
+    _.mi_frame.refresh = refresh
+
+    try:
+        _.refresh.append(refresh)
+    except KeyError:
+        _.refresh = [refresh,]
+
     return frame

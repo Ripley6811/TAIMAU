@@ -149,6 +149,9 @@ class db_manager:
     #==============================================================================
     # Product table methods
     #==============================================================================
+    def get_product(mpn):
+        return self.session.query(Product).get(mpn)
+
     def get_product_price(self, mpn, update=False):
         '''Returns current price in the product record or updates the record from
         recent orders. Force a price update with the keyword.

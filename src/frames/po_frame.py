@@ -55,8 +55,8 @@ def create(_):
 
     #### Set up left pane containing company names ####
     ###################################################
-    left_pane = Tix.Frame(_.po_frame)
-    left_pane.pack(side=Tix.LEFT, fill=Tix.Y, padx=2, pady=3)
+    left_pane = Tix.Frame(_.parent)
+    left_pane.pack(side='left', fill='y', padx=2, pady=3)
 
 
     # Set up mode switching buttons: Purchases, Sales
@@ -92,7 +92,8 @@ def create(_):
         cogroup = _.dbm.get_cogroup(cog_name)
         _.curr.cogroup = cogroup
         settings.update(cogroup=cogroup.name)
-        if _.debug: print(cogroup)
+        if _.debug:
+            print(cogroup)
         load_company()
 
     def add_cogroup():
@@ -154,27 +155,30 @@ def create(_):
 
     #### PAGE BUTTONS: PO, MANIFEST, INVOICE, ALL PO ####
     #####################################################
-    page_buttons = Tix.Frame(top_pane)
+    page_buttons = Tix.Frame(top_pane, bg=u'SteelBlue3', pady=4)
     page_buttons.pack(side='top', fill='x', expand=True)
 
     options = dict(variable="pagebuttons", indicatoron=False,
-                   font=(_.font, "14", "bold"), bg="medium purple",
+                   font=(_.font, "16", "bold"), bg="medium purple",
                    selectcolor="plum", padx=40,
                    activebackground="plum")
     tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'Active POs'),
                     command=lambda x='po new':change_view(x),
                     value='po new', **options)
-    tr.pack(side='left', fill='x')
+    tr.grid(row=0, column=0)
     tr.select()
     _.view_mode = 'po new'
     tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'Manifests & Invoices'),
                     command=lambda x='shipped':change_view(x),
                     value='shipped', **options)
-    tr.pack(side='left', fill='x')
+    tr.grid(row=0, column=1)
     tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'All POs'),
                     command=lambda x='po all':change_view(x),
                     value='po all', **options)
-    tr.pack(side='left', fill='x')
+    tr.grid(row=0, column=2)
+    page_buttons.columnconfigure(0,weight=1)
+    page_buttons.columnconfigure(1,weight=1)
+    page_buttons.columnconfigure(2,weight=1)
 
     po.all_frame(_)
     po.mi_frame(_)
@@ -191,14 +195,16 @@ def create(_):
             _.po_center.pack(side='left', fill='both', expand=1)
         else:
             _.po_center.pack_forget()
+
         if mode == 'po all':
             _.all_frame.pack(side='left', fill='both', expand=1)
-            _.all_frame_refresh()
+            _.all_frame.refresh()
         else:
             _.all_frame.pack_forget()
+
         if mode == 'shipped':
             _.mi_frame.pack(side='left', fill='both', expand=1)
-            _.mi_frame_refresh()
+            _.mi_frame.refresh()
         else:
             _.mi_frame.pack_forget()
 
@@ -206,12 +212,12 @@ def create(_):
 
     # Add center pane for PO listing
     center_pane = _.po_center = Tix.Frame(_.po_frame)
-    center_pane.pack(side=Tix.LEFT, fill=Tix.BOTH)
+    center_pane.pack(side=Tix.LEFT, fill=Tix.BOTH, expand=1)
 
     def load_company():
         try:
             cogroup = _.curr.cogroup
-        except AttributeError:
+        except KeyError:
             return # Group not selected yet
         if cogroup == None or cogroup == u'':
             return
@@ -431,10 +437,9 @@ def create(_):
                             refresh=load_company)
 
         # Load PO HList 'All POs'
-        _.all_frame_refresh()
-        _.mi_frame_refresh()
+        for each_method in _.refresh:
+            each_method()
 
-    _.refresh = load_company
 
     # Load cogroup and mode from previous session.
     js = settings.load()

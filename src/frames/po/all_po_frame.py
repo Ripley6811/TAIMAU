@@ -77,7 +77,7 @@ def main(_):
     def refresh():
         try:
             _.curr.cogroup
-        except AttributeError:
+        except KeyError:
             return
         query = _.dbm.session.query(_.dbm.Order)
         if _.sc_mode == u's':
@@ -167,7 +167,13 @@ def main(_):
 
 
     _.all_frame = frame
-    _.all_frame_refresh = refresh
+    _.all_frame.refresh = refresh
+
+    try:
+        _.refresh.append(refresh)
+    except KeyError:
+        _.refresh = [refresh,]
+
     return frame
 
 

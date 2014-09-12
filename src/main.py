@@ -48,6 +48,7 @@ import Tix
 import db_tools.db_manager as dbm
 from pdf_tools import activity_report
 import frames.po_frame
+import frames.product_frame
 from utils.translate_term import localize, setLang
 from utils import settings
 print 'CWD:', os.getcwd()
@@ -78,6 +79,7 @@ class TaimauApp(Tix.Tk):
         self.parent = parent
         self.option_add("*Font", "PMingLiU 13")
         ttk.Style().configure('.', font=tkFont.Font(family="PMingLiU", size=-12))
+        self.tk_setPalette(background=u'AntiqueWhite1', activeBackground=u'AntiqueWhite1')
 
 
         _state = Info()
@@ -108,16 +110,18 @@ class TaimauApp(Tix.Tk):
 
         # REPORT MENU OPTIONS
         reportmenu = Tk.Menu(menubar, tearoff=0)
-        reportmenu.add_command(label="Change location for saving reports",
+        reportmenu.add_command(label=u"Change location for saving reports",
                                command=set_report_location)
-        reportmenu.add_command(label="Activity Report (PDF)",
+        reportmenu.add_command(label=u"Activity Report (PDF)",
                                command=lambda:activity_report.main(_state))
-        reportmenu.add_command(label="Save client shipments to Excel (6 months).",
-                               command=sales_shipments_to_excel)
-        reportmenu.add_command(label="Save incoming shipments to Excel (6 months).",
-                               command=purchases_shipments_to_excel)
-        reportmenu.add_command(label="Save all products to Excel file.",
-                               command=save_products_to_excel)
+#        reportmenu.add_command(label=u"Product Price History (產品價格歷史)",
+#                               command=lambda:product_prices.main(_state))
+        reportmenu.add_command(label=u"Save client shipments to Excel (6 months).",
+                               command=sales_shipments_to_excel, state='disabled')
+        reportmenu.add_command(label=u"Save incoming shipments to Excel (6 months).",
+                               command=purchases_shipments_to_excel, state='disabled')
+        reportmenu.add_command(label=u"Save all products to Excel file.",
+                               command=save_products_to_excel, state='disabled')
 #        reportmenu.add_command(label="Report3", command=None, state=Tk.DISABLED)
 #        reportmenu.add_command(label="Report4", command=None, state=Tk.DISABLED)
         menubar.add_cascade(label=_state.loc(u"Reports", 1), menu=reportmenu)
@@ -157,7 +161,8 @@ class TaimauApp(Tix.Tk):
         try:
             self.geometry(settings.load()['geometry'])
         except KeyError:
-            self.geometry('1200x740')
+            #Default geometry
+            self.geometry('1240x800')
 
 
         # SET MAIN NOTEBOOK
@@ -166,11 +171,11 @@ class TaimauApp(Tix.Tk):
         #XXX: merging Purchases & Sales frames to PO frame in version 0.3
         _state.po_frame = ttk.Frame(nb)
         frames.po_frame.create(_state)
-        nb.add(_state.po_frame, text='PO', underline=0)
-        #---------- Add Sales frame
-#        frame = ttk.Frame(nb)
-#        get_sales_frame(frame)
-#        nb.add(frame, text='Sales', underline=0)
+        nb.add(_state.po_frame, text='PO')
+        #---------- Add Product frame
+        _state.product_frame = ttk.Frame(nb)
+        frames.product_frame.create(_state)
+        nb.add(_state.product_frame, text=_state.loc(u'Products',1))
         #---------- Add Pending info frame
 #        frame = ttk.Frame(nb)
 #        frame_pending.get_pending_frame(frame, dmv2)
@@ -333,19 +338,19 @@ def save_products_to_excel():
 
 
 
-def save_co_text():
-    '''Saves orders from one company to a text file.'''
-    tmpwin = Tk.Toplevel(width=700)
-    tmpwin.title(u"Pick company group to export")
-
-    cogroups = dmv2.cogroups()
-
-    co_lb = Tk.Listbox(tmpwin, width=30, height=30)
-    co_lb.grid()
-
-    for co in cogroups:
-        br_list = [br.name for br in co.branches]
-        co_lb.insert(0, u'{0.name} ({1})'.format(co, u', '.join(br_list)))
+#def save_co_text():
+#    '''Saves orders from one company to a text file.'''
+#    tmpwin = Tk.Toplevel(width=700)
+#    tmpwin.title(u"Pick company group to export")
+#
+#    cogroups = dmv2.cogroups()
+#
+#    co_lb = Tk.Listbox(tmpwin, width=30, height=30)
+#    co_lb.grid()
+#
+#    for co in cogroups:
+#        br_list = [br.name for br in co.branches]
+#        co_lb.insert(0, u'{0.name} ({1})'.format(co, u', '.join(br_list)))
 
 
 
