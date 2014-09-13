@@ -75,11 +75,14 @@ def create(_):
             p = _.dbm.get_product(MPN)
             _.curr.product = p
             settings.update(product=MPN)
+            _.product_edit.refresh()
+            _.product_price.refresh()
 
-        Tix.Label(top_pane, textvariable=_.loc(u'Supplies We Purchase')).pack(side='top', fill='x')
+        opts = dict(master=top_pane, bg=u'gold4', fg=u'gold', font=(_.font, 14, 'bold'))
+        Tix.Label(textvariable=_.loc(u'Supplies We Purchase'), **opts).pack(side='top', fill='x')
         supply_box = Tix.Frame(top_pane)
         supply_box.pack(side='top', fill='x')
-        Tix.Label(top_pane, textvariable=_.loc(u'Products We Sell')).pack(side='top', fill='x')
+        Tix.Label(textvariable=_.loc(u'Products We Sell'), **opts).pack(side='top', fill='x')
         wesell_box = Tix.Frame(top_pane)
         wesell_box.pack(side='top', fill='x')
 
@@ -97,6 +100,7 @@ def create(_):
                                       bg="wheat",
                                       activebackground="wheat",
                                       selectcolor="gold")
+
         row = -1
         cols = 4
         for row, product in enumerate(supply_list):
@@ -111,17 +115,9 @@ def create(_):
                 tb.config(bg="wheat", relief="flat",
                           activebackground="wheat")
             tb.grid(row=row/cols, column=row%cols, sticky='ew')
-
-            #TODO: Product note as popup balloon
-#        #TODO: Add command for adding a product
-        tb = Tix.Button(supply_box, textvariable=_.loc(u"+ product"),
-                        bg="lawn green",
-    #                    command=lambda:po.new(_),
-                        activebackground="lime green")
-        row += 1
-        tb.grid(row=row/cols, column=row%cols, sticky='ew')
         for i in (0,1,2,3):
             supply_box.columnconfigure(i,weight=1)
+
 
         row = -1
         for row, product in enumerate(wesell_list):
@@ -136,15 +132,6 @@ def create(_):
                 tb.config(bg="wheat", relief="flat",
                           activebackground="wheat")
             tb.grid(row=row/cols, column=row%cols, sticky='ew')
-
-            #TODO: Product note as popup balloon
-#        #TODO: Add command for adding a product
-        tb = Tix.Button(wesell_box, textvariable=_.loc(u"+ product"),
-                        bg="lawn green",
-    #                    command=lambda:po.new(_),
-                        activebackground="lime green")
-        row += 1
-        tb.grid(row=row/cols, column=row%cols, sticky='ew')
         for i in (0,1,2,3):
             wesell_box.columnconfigure(i,weight=1)
 

@@ -363,7 +363,7 @@ def about():
 
 
 if __name__ == '__main__':
-    app = TaimauApp(None, debug=False)
+    app = TaimauApp(None, debug=True)
     app.title('Taimau')
     app.mainloop()
 
