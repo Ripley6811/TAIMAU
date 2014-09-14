@@ -10,6 +10,9 @@ def create(_):
     '''
 
     '''
+    _.curr.product = None # Store the SQL object
+    _.curr.productSV = Tix.StringVar() # Store the SQL object id ('MPN')
+
 
     top_pane = Tix.Frame(_.product_frame)
     top_pane.pack(side='top', fill='x', padx=4, pady=5)
@@ -22,7 +25,7 @@ def create(_):
 
     ##############################
     ### View selection buttons ###
-    _.prodview = 'edit'
+    _.prodview = None
     options = dict(variable="pagebuttons2", indicatoron=False,
                    font=(_.font, "14", "bold"), bg="medium purple",
                    selectcolor="plum", padx=50,
@@ -60,7 +63,6 @@ def create(_):
         else:
             _.product_price.pack_forget()
 
-#    Tix.Grid.columnconfigure(top_pane,0,weight=1)
 
     def refresh():
 
@@ -74,6 +76,7 @@ def create(_):
         def select_product(MPN):
             p = _.dbm.get_product(MPN)
             _.curr.product = p
+            _.curr.productSV.set(MPN)
             settings.update(product=MPN)
             _.product_edit.refresh()
             _.product_price.refresh()
@@ -89,12 +92,12 @@ def create(_):
         product_list = _.curr.cogroup.products
         supply_list = [prod for prod in product_list if prod.is_supply]
         wesell_list = [prod for prod in product_list if not prod.is_supply]
-        _prodMPN = Tix.StringVar()
+
         if _.debug:
             print len(product_list), "products found for current company group."
         TRB = lambda _frame, _text, _val: Tix.Radiobutton(_frame,
                                         text=_text, anchor='w',
-                                        variable=_prodMPN,
+                                        variable=_.curr.productSV,
                                         value=_val,
                                         indicatoron=False,
                                       bg="wheat",
@@ -110,10 +113,7 @@ def create(_):
             tb = TRB(supply_box, _text, product.MPN)
             tb['command'] = lambda x=product.MPN:select_product(x)
             if product.discontinued:
-                tb.config(state="disabled", bg="slate gray", relief="flat")
-            elif product.is_supply:
-                tb.config(bg="wheat", relief="flat",
-                          activebackground="wheat")
+                tb.config(bg="gray40", relief="flat")
             tb.grid(row=row/cols, column=row%cols, sticky='ew')
         for i in (0,1,2,3):
             supply_box.columnconfigure(i,weight=1)
@@ -127,10 +127,7 @@ def create(_):
             tb = TRB(wesell_box, _text, product.MPN)
             tb['command'] = lambda x=product.MPN:select_product(x)
             if product.discontinued:
-                tb.config(state="disabled", bg="slate gray", relief="flat")
-            elif product.is_supply:
-                tb.config(bg="wheat", relief="flat",
-                          activebackground="wheat")
+                tb.config(bg="gray30", relief="flat")
             tb.grid(row=row/cols, column=row%cols, sticky='ew')
         for i in (0,1,2,3):
             wesell_box.columnconfigure(i,weight=1)
@@ -140,6 +137,8 @@ def create(_):
             refresh()
     except KeyError:
         pass
+
+    change_view(u'edit')
 
     try:
         _.refresh.append(refresh)

@@ -45,7 +45,9 @@ from utils import settings
 #===============================================================================
 def create(_):
     """Creates the main purchase and sale window in the supplied frame."""
-    _.curr_company = None
+    _.curr.cogroup = None # Store the current SQL CoGroup object
+    _.curr.cogroupSV = Tix.StringVar() # Store the current CoGroup id ('name')
+    _.curr.branchSV = Tix.StringVar() # Store the current Branch id ('name')
     _.edit_ID = None
     _.listbox = type(_)()
     _.poF = type(_)()
@@ -89,6 +91,7 @@ def create(_):
 
     # Set up company switching buttons
     def select_cogroup(cog_name):
+        _.curr.cogroupSV.set(cog_name)
         cogroup = _.dbm.get_cogroup(cog_name)
         _.curr.cogroup = cogroup
         settings.update(cogroup=cogroup.name)
@@ -228,22 +231,21 @@ def create(_):
         branchbox_inner = Tix.Frame(branchbox)
         branchbox_inner.pack(side=Tix.TOP, fill=Tix.X)
 
-        _.curr.branch = Tix.StringVar()
-        options = dict(variable=_.curr.branch, indicatoron=False,
+        options = dict(variable=_.curr.branchSV, indicatoron=False,
                        font=(_.font, "20", "bold"), bg="burlywood",
                        selectcolor="gold",
                        activebackground="gold")
         Tix.Label(branchbox_inner, textvariable=_.loc(u"Branch")).pack(side="left")
         branch_info = Tix.StringVar()
         def set_branch_info():
-            branch = _.dbm.get_branch(_.curr.branch.get())
+            branch = _.dbm.get_branch(_.curr.branchSV.get())
             text = u'\u2116 {} : {}'.format(branch.tax_id, branch.fullname)
             text += u'\n\u260E {}'.format(branch.phone)
             if branch.fax:
                 text += u'  \u213B {}'.format(branch.fax)
             text += u'\n\u2709 {}'.format(branch.email)
             branch_info.set(text)
-        _.curr.branch.trace('w', lambda a,b,c,: set_branch_info())
+        _.curr.branchSV.trace('w', lambda a,b,c,: set_branch_info())
         for i, branch in enumerate(cogroup.branches):
             tr = Tix.Radiobutton(branchbox_inner, text=branch.name,
                                  value=branch.name, **options)
@@ -446,6 +448,7 @@ def create(_):
     if js.get('sc_mode'):
         try:
             _.curr.cogroup = _.dbm.get_cogroup(js.get('cogroup'))
+            _.curr.cogroupSV.set(_.curr.cogroup.name)
             for key, val in colist_frame.children.iteritems():
                 try:
                     if _.curr.cogroup.name in val['value']:

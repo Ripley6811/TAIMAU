@@ -36,7 +36,6 @@ __version__ = '0.3'
 #===============================================================================
 import os  # os.walk(basedir) FOR GETTING DIR STRUCTURE
 import datetime
-import Tkinter as Tk
 import tkMessageBox
 import tkFileDialog
 import ttk
@@ -79,7 +78,8 @@ class TaimauApp(Tix.Tk):
         self.parent = parent
         self.option_add("*Font", "PMingLiU 13")
         ttk.Style().configure('.', font=tkFont.Font(family="PMingLiU", size=-12))
-        self.tk_setPalette(background=u'AntiqueWhite1', activeBackground=u'AntiqueWhite1')
+        self.tk_setPalette(background=u'AntiqueWhite1', foreground=u'black',
+                           selectColor='white')
 
 
         _state = Info()
@@ -95,21 +95,17 @@ class TaimauApp(Tix.Tk):
         #
         # SET UP MENU BAR
         #
-        menubar = Tk.Menu(self)
+        menubar = Tix.Menu(self)
 
         # FILE MENU OPTIONS: LOAD, SAVE, EXIT...
-        filemenu = Tk.Menu(menubar, tearoff=0)
-        filemenu.add_command(label=_state.dbm.dbpath, state='disabled')
-        filemenu.add_separator()
+        filemenu = Tix.Menu(menubar, tearoff=0)
         filemenu.add_command(label=_state.loc(u"Change Database", 1), command=self.change_db)
         filemenu.add_separator()
         filemenu.add_command(label=_state.loc(u"Exit", 1), command=self.endsession)
         menubar.add_cascade(label=_state.loc(u"File", 1), menu=filemenu)
-        filemenu.entryconfig(0, background=u'pale goldenrod', foreground=u'black')
-        self.filemenu = filemenu
 
         # REPORT MENU OPTIONS
-        reportmenu = Tk.Menu(menubar, tearoff=0)
+        reportmenu = Tix.Menu(menubar, tearoff=0)
         reportmenu.add_command(label=u"Change location for saving reports",
                                command=set_report_location)
         reportmenu.add_command(label=u"Activity Report (PDF)",
@@ -130,8 +126,8 @@ class TaimauApp(Tix.Tk):
         # FONT MENU OPTIONS
         def setFont():
             self.option_add("*Font", fontsize.get())
-        fontmenu = Tk.Menu(menubar, tearoff=0)
-        fontsize = Tk.StringVar()
+        fontmenu = Tix.Menu(menubar, tearoff=0)
+        fontsize = Tix.StringVar()
         fontmenu.add_radiobutton(label=u'Verdana 12', variable=fontsize,
                                  command=setFont, value=u'Verdana 12')
         fontmenu.add_radiobutton(label=u'PMingLiU 13', variable=fontsize,
@@ -143,7 +139,7 @@ class TaimauApp(Tix.Tk):
 #        setFont()
 
         # SETTINGS MENU OPTIONS
-        settingsmenu = Tk.Menu(menubar, tearoff=0)
+        settingsmenu = Tix.Menu(menubar, tearoff=0)
         settingsmenu.add_radiobutton(label=u'Chinese', variable='lang_select',
             command=lambda: setLang(u"Chinese"), value=u'Chinese')
         settingsmenu.add_radiobutton(label=u'English', variable='lang_select',
@@ -151,9 +147,17 @@ class TaimauApp(Tix.Tk):
         menubar.add_cascade(label=_state.loc(u"Settings", 1), menu=settingsmenu)
 
         # HELP MENU OPTIONS
-        helpmenu = Tk.Menu(menubar, tearoff=0)
+        helpmenu = Tix.Menu(menubar, tearoff=0)
         helpmenu.add_command(label=_state.loc(u"About", 1), command=about)
         menubar.add_cascade(label=_state.loc(u"Help", 1), menu=helpmenu)
+
+        #
+        menubar.add_separator()
+        menubar.add_separator()
+        menubar.add_command(label=u'DATABASE={}'.format(_state.dbm.dbpath),
+                            background=u'LightSkyBlue1')
+#        menubar.entryconfig(5, background=u'LightSkyBlue1')
+        self.menubar = menubar
 
 
         # SET AND SHOW MENU
@@ -192,7 +196,7 @@ class TaimauApp(Tix.Tk):
 
 
         #--------- Set arrangement of notebook frames
-        nb.pack(side=Tk.RIGHT, fill=Tk.BOTH, expand=Tk.Y, padx=2, pady=3)
+        nb.pack(side='right', fill='both', expand='y', padx=2, pady=3)
 
 
     def endsession(self):
@@ -208,7 +212,7 @@ class TaimauApp(Tix.Tk):
         except:
             print("'refresh()' method not found in state object.")
 
-        self.filemenu.entryconfig(0, label=self._.dbm.dbpath)
+        self.menubar.entryconfig(6, label=u'DATABASE={}'.format(self._.dbm.dbpath))
 
 
 
