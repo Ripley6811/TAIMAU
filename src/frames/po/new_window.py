@@ -30,6 +30,7 @@ def main(_, refresh):
 
     _.extwin = Tix.Toplevel(width=700)
     _.extwin.title(u"{} {}".format(_.curr.cogroup.name, _.loc(u"+ PO", asText=True)))
+    _.extwin.geometry(u'+{}+{}'.format(_.parent.winfo_rootx()+100, _.parent.winfo_rooty()))
     _.extwin.focus_set()
 
     center_pane = Tix.Frame(_.extwin)
@@ -81,12 +82,12 @@ def main(_, refresh):
 
         #TODO: Product note as popup balloon
     #TODO: Add command for adding a product
-    tb = Tix.Button(pobox, textvariable=_.loc(u"+ product"),
-                    bg="lawn green",
-#                    command=lambda:po.new(_),
-                    activebackground="lime green")
-    row += 1
-    tb.grid(row=row/cols, column=row%cols, sticky='ew')
+#    tb = Tix.Button(pobox, textvariable=_.loc(u"+ product"),
+#                    bg="lawn green",
+##                    command=lambda:po.new(_),
+#                    activebackground="lime green")
+#    row += 1
+#    tb.grid(row=row/cols, column=row%cols, sticky='ew')
 
 
 

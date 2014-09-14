@@ -366,7 +366,7 @@ class CoGroup(Base):
 
     branches = rel('Branch', lazy='joined') # lazy -> Attaches on retrieving a cogroup
     orders = rel('Order')
-    products = rel('Product')
+    products = rel('Product', backref='cogroup')
     contacts = rel('Contact')
 
     purchases = rel('Order', primaryjoin="and_(CoGroup.name==Order.group, Order.is_sale==False)") #Purchases FROM this company
