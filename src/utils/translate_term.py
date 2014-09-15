@@ -107,7 +107,8 @@ worddict = {
     u'Discontinue?:' : u'停止買賣？:',
     u'\u2620 Discontinued' : u'\u2620 已停止',
     u'\u26df Available' : u'\u26df 可以買賣',
-
+    u'Price Changes' : u'價格改變日期',
+    u'Show All Similar Products' : u'表現所類色的產品',
 }
 # Storage of StringVar by the english text as keyword.
 labeldict = {}

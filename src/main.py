@@ -201,6 +201,9 @@ class TaimauApp(Tix.Tk):
 
     def endsession(self):
         settings.update(geometry=self.geometry())
+        self._.dbm.session.close()
+        self._.parent.destroy()
+        del self._
         self.quit()
 
     def change_db(self):
@@ -367,7 +370,7 @@ def about():
 
 
 if __name__ == '__main__':
-    app = TaimauApp(None, debug=True)
+    app = TaimauApp(None, debug=False)
     app.title('Taimau')
     app.mainloop()
 

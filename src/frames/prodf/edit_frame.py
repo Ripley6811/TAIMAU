@@ -133,8 +133,6 @@ def main(_):
             return
 
         if _.curr.product != None:
-            for key, val in _.curr.product.__dict__.iteritems():
-                print key, val
             for row, ef in enumerate(entryfields):
                 text = _.curr.product.__dict__.get(ef[1])
                 if text:
@@ -152,7 +150,6 @@ def main(_):
                     print sv[0], sv[1].get()
                     raise ValueError, u"Product boolean value error. Value type {}".format(type(boo))
 
-                print sv[0], type(sv[1].get()), sv[1].get()
 
 
     def save_update():
