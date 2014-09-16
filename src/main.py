@@ -210,12 +210,13 @@ class TaimauApp(Tix.Tk):
 
         self._.dbm.change_db()
         try:
-            self._.refresh()
+            for ref in self._.refresh:
+                ref()
         except:
             print("'refresh()' method not found in state object.")
 
         # TODO: Bug in update. Suddenly not working...
-        self.menubar.entryconfig(6, label=u'DATABASE={}'.format(self._.dbm.dbpath))
+        self.menubar.entryconfig(8, label=u'DATABASE={}'.format(self._.dbm.dbpath))
 
 
 

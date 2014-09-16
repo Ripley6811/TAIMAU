@@ -3,7 +3,6 @@
 
 import Tix
 import tkMessageBox
-from utils import date_picker
 from datetime import date
 
 

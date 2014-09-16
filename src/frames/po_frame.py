@@ -438,6 +438,11 @@ def create(_):
                            unitVars=[c for a,b,c in manifest_list],
                             refresh=load_company)
 
+            #TODO: Close PO's that are completely shipped.
+            for order in activeOrders:
+                if order.all_shipped():
+                    print 'ALL SHIPPED'
+
         # Load PO HList 'All POs'
         for each_method in _.refresh:
             each_method()

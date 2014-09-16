@@ -124,21 +124,29 @@ def main(_):
             print each
             if each[0] != last_co:
                 #plot last batch if exists
-                if x:
+                if last_co and x:
                     print len(x), len(y)
                     if last_co == _.curr.product.group:
                         lw=3.0
                     else:
-                        lw=1.0
+                        lw=2.0
                     a.plot(x, y, '--' if is_supply else '-', linewidth=lw, label=last_co)
 
                 last_co = each[0]
                 is_supply = each[3]
-                x = []
-                y = []
+                x = [each[1]]
+                y = [each[2]]
             else:
                 x.append(each[1])
                 y.append(each[2])
+        else:
+            if last_co and x:
+                print len(x), len(y)
+                if last_co == _.curr.product.group:
+                    lw=3.0
+                else:
+                    lw=2.0
+                a.plot(x, y, '--' if is_supply else '-', linewidth=lw, label=last_co)
 
         a.yaxis.tick_right()
         a.grid()
