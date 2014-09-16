@@ -156,7 +156,6 @@ class TaimauApp(Tix.Tk):
         menubar.add_separator()
         menubar.add_command(label=u'DATABASE={}'.format(_state.dbm.dbpath),
                             background=u'LightSkyBlue1')
-#        menubar.entryconfig(5, background=u'LightSkyBlue1')
         self.menubar = menubar
 
 
@@ -215,6 +214,7 @@ class TaimauApp(Tix.Tk):
         except:
             print("'refresh()' method not found in state object.")
 
+        # TODO: Bug in update. Suddenly not working...
         self.menubar.entryconfig(6, label=u'DATABASE={}'.format(self._.dbm.dbpath))
 
 

@@ -66,7 +66,7 @@ def main(_, order, refresh):
     for i in range(6):
         dates.append(Tix.StringVar())
         Tix.Entry(x, textvariable=dates[i], **cc).grid(row=i+1, column=0, sticky='nsew')
-        dates[i].set(date.today())
+        dates[i].set(u'{0.year}-{0.month}-'.format(date.today()))
 
         number.append(Tix.StringVar())
         Tix.Entry(x, textvariable=number[i], **cc).grid(row=i+1, column=1, sticky='nsew')
@@ -83,6 +83,7 @@ def main(_, order, refresh):
 
         truck.append(Tix.StringVar())
         Tix.Entry(x, textvariable=truck[i], **cc).grid(row=i+1, column=5, sticky='nsew')
+        truck[i].trace('w', lambda a, b, c, index=i: truck[index].set(truck[index].get().upper().replace('-','')[:8]))
 
         note.append(Tix.StringVar())
         Tix.Entry(x, textvariable=note[i], **cc).grid(row=i+1, column=6, sticky='nsew')

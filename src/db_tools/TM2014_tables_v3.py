@@ -40,7 +40,6 @@ def today():
     return datetime.datetime.now()
 
 
-
 def AddDictRepr(aClass):
 
     def repr_str(obj):
