@@ -324,13 +324,16 @@ def create(_):
                     amt = u'\u221E' # Infinity symbol for unlimited POs.
                 _textvar = _.loc(u"(Avail:")
                 lw = Tix.Label(pobox, textvariable=_textvar, anchor='w')
-                lw.grid(row=row*2, column=2, sticky='w')
+                lw.grid(row=row*2, column=2, sticky='ew')
                 _sku = _prod.SKU if _prod.SKU != u"槽車" else "kg"
                 _text = u'{} {})'.format(amt, _sku)
-                lw = Tix.Label(pobox, text=_text, anchor='e')
-                lw.grid(row=row*2, column=3, sticky='e')
+                lw2 = Tix.Label(pobox, text=_text, anchor='e')
+                lw2.grid(row=row*2, column=3, sticky='ew')
 
-
+                # If PO remainder is zero. Make red.
+                if order.all_shipped():
+                    lw.config(bg=u'tomato')
+                    lw2.config(bg=u'tomato')
 
                 # QTY entry field
                 def highlight_entry(row, widget, capamt=100):
@@ -438,10 +441,6 @@ def create(_):
                            unitVars=[c for a,b,c in manifest_list],
                             refresh=load_company)
 
-            #TODO: Close PO's that are completely shipped.
-            for order in activeOrders:
-                if order.all_shipped():
-                    print 'ALL SHIPPED'
 
         # Load PO HList 'All POs'
         for each_method in _.refresh:
