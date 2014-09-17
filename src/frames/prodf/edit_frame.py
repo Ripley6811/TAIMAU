@@ -15,6 +15,29 @@ def main(_):
 
     _.product_edit = Tix.Frame(_.product_frame)
 
+    top_bar = Tix.Frame(_.product_edit)
+    top_bar.pack(side='top', fill='x')
+
+    infoText = Tix.StringVar()
+    tl = Tix.Label(top_bar, textvariable=infoText, font=(_.font, 18, 'bold'))
+    tl.pack(side='top', fill='x')
+
+    def update_product_info_line():
+        try:
+            ptext = u'{inventory_name} - {units}{UM} per {SKU}'
+            ptext = ptext.format(**collectSVvalues())
+        except KeyError:
+#        except ValueError:
+            ptext = _.loc(u'(Gold Fields Required!)', 1)
+
+        try:
+            nOrders = len(_.curr.product.orders)
+        except AttributeError:
+            nOrders = 0
+
+        text = _.loc(u'{} : {} Order Records', 1).format(ptext, nOrders)
+        infoText.set(text)
+
     mainf = Tix.Frame(_.product_edit)
     mainf.pack(side='top', fill='x')
 
@@ -49,6 +72,8 @@ def main(_):
             tew.config(foreground=hint_color, font=(_.font, 14, ""))
         else:
             tew.config(foreground=type_color, font=(_.font, 14, "bold"))
+
+        update_product_info_line()
 
 
     #########################
@@ -150,18 +175,26 @@ def main(_):
                     print sv[0], sv[1].get()
                     raise ValueError, u"Product boolean value error. Value type {}".format(type(boo))
 
-
+        update_product_info_line()
 
     def save_update():
         # Check that there is a current product loaded.
         if _.curr.product != None and _.curr.productSV.get() != u'':
             # Validate fields
             if validate_fields():
-#                update_dict = collectSVvalues()
-                query = _.dbm.session.query(_.dbm.Product)
-                query = query.filter_by(MPN=_.curr.productSV.get())
-                query.update(collectSVvalues())
-                _.dbm.session.commit()
+                # If orders already exist, then confirm again to change.
+                nOrders = len(_.curr.product.orders)
+                if nOrders > 0:
+                    head = _.loc(u'Changing existing records!', 1)
+                    body = _.loc(u'{} orders will be affected.\nContinue with changes?', 1).format(nOrders)
+                    confirm = tkMessageBox.askokcancel(head, body)
+                    if confirm:
+                        query = _.dbm.session.query(_.dbm.Product)
+                        query = query.filter_by(MPN=_.curr.productSV.get())
+                        query.update(collectSVvalues())
+                        _.dbm.session.commit()
+                    else:
+                        return
             else:
                 tkMessageBox.showwarning(u'Entry error',
                         u'\n'.join([

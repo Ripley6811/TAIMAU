@@ -109,6 +109,10 @@ worddict = {
     u'\u26df Available' : u'\u26df 可以買賣',
     u'Price Changes' : u'價格改變日期',
     u'Show All Similar Products' : u'表現所類色的產品',
+    u'{} : {} Order Records' : u'{} : {}個訂單記錄',
+    u'(Gold Fields Required!)' : u'(金色參數是必需的!)',
+    u'Changing existing records!' : u'變更會影響記錄!',
+    u'{} orders will be affected.\nContinue with changes?' : u'{}個記錄會被影響到.\n繼續採用變更?'
 }
 # Storage of StringVar by the english text as keyword.
 labeldict = {}
