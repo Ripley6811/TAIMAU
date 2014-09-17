@@ -276,6 +276,8 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest=None, refresh=None):
                 )
                 _.dbm.session.add(item)
             _.dbm.session.commit()
+            for order in orders:
+                check_order_qty(order)
         else: #if manifest
             manifest.shipmentdate = cal.selection
             manifest.shipment_no = _shipment_no.get().upper()
@@ -289,7 +291,18 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest=None, refresh=None):
         if refresh:
             refresh()
 
+    def check_order_qty(order):
+        if order.all_shipped():
+            head = u'Archive PO?'
+            body = u'\n'.join([
+                        u'PO {} : {}'.format(order.orderID, order.product.label()),
+                        _.loc(u'PO appears to be complete.',1),
+                        _.loc(u'All units have shipped.',1),
+                        _.loc(u'Archive this PO?',1)])
+            confirm = tkMessageBox.askyesno(head, body)
 
+            if confirm:
+                _.dbm.update_order(order.id, dict(is_open=False))
 
 
 

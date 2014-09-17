@@ -161,7 +161,11 @@ def main(_):
             for row, ef in enumerate(entryfields):
                 text = _.curr.product.__dict__.get(ef[1])
                 if text:
-                    entrySVars[row][0].set(text)
+                    try:
+                        text = str(int(text))
+                    except ValueError:
+                        pass
+                    entrySVars[row][0].set(text.split('{',1)[0])
                 else:
                     entrySVars[row][0].set(u'')
                     add_hint(entrySVars[row][1], row)
@@ -191,7 +195,11 @@ def main(_):
                     if confirm:
                         query = _.dbm.session.query(_.dbm.Product)
                         query = query.filter_by(MPN=_.curr.productSV.get())
-                        query.update(collectSVvalues())
+                        valdict = collectSVvalues()
+                        # Add back JSON note
+                        if u'{' in _.curr.product.note:
+                            valdict[u'note'] = valdict[u'note'] + u'{' + _.curr.product.note.split(u'{',1)[1]
+                        query.update(valdict)
                         _.dbm.session.commit()
                     else:
                         return

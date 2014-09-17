@@ -90,12 +90,20 @@ def main(_):
                 return
         invoice(_, tree.hlist.info_selection())
 
+        try:
+            for ref in _.refresh:
+                ref()
+        except AttributeError:
+            pass
+
+
     def create_report():
         '''Organized shipping history report that can be printed.
 
         Use selected rows to make a shipping history list.
         Like items are totaled and displayed at the bottom.'''
         activity_report.main(_)
+
 
     def mark_paid():
         '''Mark an invoice as paid.
@@ -146,8 +154,9 @@ def main(_):
 
             _.extwin.destroy()
             try:
-                _.refresh()
-            except:
+                for ref in _.refresh:
+                    ref()
+            except AttributeError:
                 pass
 
 
@@ -202,9 +211,6 @@ def main(_):
         orderPopMenu.post(event.x_root, event.y_root)
     tree.hlist.bind("<Double-Button-1>", orderoptions)
 
-#    def apply_selection():
-#        '''Show hlist selection code. Which is also the shipment record id.'''
-#        print tree.hlist.info_selection()
 
     def edit_shipment():
         sid = tree.hlist.info_selection()[0]
@@ -216,6 +222,11 @@ def main(_):
         smi = _.dbm.session.query(_.dbm.ShipmentItem).get(sid)
         if len(smi.invoiceitem):
             invoice(_, invoice=smi.invoiceitem[0].invoice)
+        try:
+            for ref in _.refresh:
+                ref()
+        except AttributeError:
+            pass
 
     def delete_shipmentitem():
         sid = tree.hlist.info_selection()[0]
@@ -234,8 +245,9 @@ def main(_):
             _.dbm.session.commit()
 
             try:
-                _.refresh()
-            except:
+                for ref in _.refresh:
+                    ref()
+            except AttributeError:
                 pass
 
     def delete_invoiceitem():
@@ -256,8 +268,9 @@ def main(_):
                     _.dbm.session.commit()
 
                     try:
-                        _.refresh()
-                    except:
+                        for ref in _.refresh:
+                            ref()
+                    except AttributeError:
                         pass
 
         except IndexError:
