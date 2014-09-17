@@ -110,7 +110,7 @@ class db_manager:
     def shipment_no(self, no):
         query = self.session.query(Shipment).filter_by(shipment_no=no)
         c = query.count()
-        if c:
+        if c and no: # if no == u'', can create an manifest without a number.
             if c > 1:
                 print u"Multiple manifest records with the same number found."
                 print u">> Manifest number {} has {} records.".format(no, c)
@@ -123,6 +123,17 @@ class db_manager:
     #==============================================================================
     def get_invoice(self, _id):
         return self.session.query(Invoice).get(_id)
+
+    def invoice_no(self, no):
+        query = self.session.query(Invoice).filter_by(invoice_no=no)
+        c = query.count()
+        if c and no: # if no == u'', can create an invoice without a number.
+            if c > 1:
+                print u"Multiple invoice records with the same number found."
+                print u">> Manifest number {} has {} records.".format(no, c)
+            return query.first()
+        else:
+            return None
 
     #==============================================================================
     # CoGroup table methods
