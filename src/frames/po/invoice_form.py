@@ -262,7 +262,9 @@ def main(_, shipment_ids=None, invoice=None):
                 _.extwin.focus_set()
                 return
         if invoice == None:
-            invoice = _.dbm.invoice_no(_invoice_no.get())
+            invoice = _.dbm.existing_invoice(_invoice_no.get(),
+                                             cal.selection,
+                                             _.curr.cogroup.name)
             if invoice:
                 confirm = tkMessageBox.askyesno(u'Invoice number exists.',
                                       u'Add items to existing invoice?')
@@ -297,7 +299,8 @@ def main(_, shipment_ids=None, invoice=None):
         exit_win()
 
         try:
-            _.refresh()
+            for ref in _.refresh:
+                ref()
         except:
             pass
 

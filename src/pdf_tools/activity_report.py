@@ -53,7 +53,7 @@ def main(_, records=[]):
         q = q.all()
 
         # Create dictionary
-        dfkeys = [u'日期',u'出貨單號',u'品',u'數量',u'單位',u'SKU',u'單價',u'總價']
+        dfkeys = [u'日期',u'出貨單號',u'品',u'數量',u'單位',u'SKU',u'單價',u'總價',u'發票編號']
         df = dict()
         df[u'日期'] = [rec.shipment.shipmentdate for rec in q]
         df[u'出貨單號'] = [rec.shipment.shipment_no for rec in q]
@@ -63,6 +63,7 @@ def main(_, records=[]):
         df[u'SKU']  = [u'({} {})'.format(rec.qty,rec.order.product.SKU) if (rec.order.product.unitpriced and rec.order.product.SKU != u'槽車') else u'' for rec in q]
         df[u'單價'] = [rec.order.price for rec in q]
         df[u'總價'] = [u'{:,}'.format(rec.order.qty_quote(rec.qty)) for rec in q]
+        df[u'發票編號'] = [rec.invoiceitem[0].invoice.invoice_no if len(rec.invoiceitem) else u'' for rec in q]
         sub_amt = sum([rec.order.qty_quote(rec.qty) for rec in q])
         try:
             df[u'數量'] = [int(rec) if float(rec).is_integer() else rec for rec in df[u'數量']]
@@ -77,9 +78,11 @@ def main(_, records=[]):
         font = r'C:\Windows\Fonts\simfang.ttf'
 #        font = r'C:\Windows\Fonts\simkai.ttf'
         font = r'C:\Windows\Fonts\simhei.ttf'
-        x =     [ 10, 36, 62,102,122,136,154,174]
-        w =     [ 26, 26, 40, 20, 16, 18, 20, 24]
-        align = ['C','C','L','R','L','C','R','R']
+        w =     [ 26, 24, 36, 16, 10, 18, 16, 20, 24]
+        x = 10
+        x = [x]+[reduce(lambda a,b:a+b, w[:i+1])+x for i in range(len(w))][:-1]
+        #x =     [ 10, 36, 62,102,122,136,154,174]
+        align = ['C','C','L','R','L','C','R','R','C']
         class myPDF(fpdf.FPDF):
             def header(self):
                 if _.sc_mode == u'c':
@@ -131,12 +134,74 @@ def main(_, records=[]):
         FPDF = myPDF('P','mm','A4')
         FPDF.alias_nb_pages()
         FPDF.add_font('SimHei', '', font, uni=True) # Only .ttf and not .ttc
-        FPDF.set_font('SimHei', '', 12)
+        FPDF.set_font('SimHei', '', 11)
         FPDF.add_page() # Adding a page also creates a page break from last page
+
+        # Test multi-item manifest
+        def bracket(row):
+            cat = df[u'出貨單號']
+            if cat[row] == u'':
+                return False, False, False
+            print row, len(cat)
+            add_start, add_body, add_end = False, False, False
+
+            if row == 0 or cat[row] != cat[row-1]:
+                if cat[row] == cat[row+1]:
+                    add_start = True
+            if row != 0 and row == len(cat)-1:
+                if cat[row] == cat[row-1]:
+                    add_end = True
+            if row != len(cat)-1 and cat[row] != cat[row+1]:
+                if cat[row] == cat[row-1]:
+                    add_end = True
+
+            if row > 0 and cat[row] == cat[row-1]:
+                add_body = True
+            if row < len(cat)-1 and cat[row] == cat[row+1]:
+                add_body = True
+            if add_body:
+                return add_start, add_body, add_end
+            else:
+                return False, False, False
 
         # Write data row by row
         last_manifest_no = None
         for row in range(len(q)):
+            #BRACKETING STYLE A - "3-point bracket"
+            # Add bracket to manifest group
+            add_start, add_body, add_end = bracket(row)
+            tadj = 0
+            badj = 6
+            if add_start:
+                bracket_start = FPDF.get_y()+0.5
+                FPDF.line(x[2], bracket_start, x[2]+1, bracket_start)
+                FPDF.line(x[2]-1, bracket_start+2.2, x[2], bracket_start+2.2)
+                FPDF.line(x[2], bracket_start, x[2], FPDF.get_y() + badj)
+            elif add_end:
+                b_end = FPDF.get_y()+4.8
+                FPDF.line(x[2], FPDF.get_y() + tadj, x[2], b_end)
+                FPDF.line(x[2], b_end, x[2]+1, b_end)
+            elif add_body:
+                FPDF.line(x[2], FPDF.get_y() + tadj, x[2], FPDF.get_y() + badj)
+            # End bracketing
+
+            '''#BRACKET STYLE B - "S bracket"
+            # Add bracket to manifest group
+            add_start, add_body, add_end = bracket(row)
+            tadj = 0
+            badj = 6
+            if add_start:
+                bracket_start = FPDF.get_y()+0.6
+                FPDF.line(sum(x[1:3])/2.0, bracket_start+5, x[2], bracket_start+5)
+                FPDF.line(x[2], bracket_start+5, x[2], FPDF.get_y() + badj +1)
+            elif add_end:
+                b_end = FPDF.get_y()+5.5
+                FPDF.line(x[2], FPDF.get_y() + tadj, x[2], b_end)
+                FPDF.line(x[2], b_end, x[2]+2, b_end)
+            elif add_body:
+                FPDF.line(x[2], FPDF.get_y() + tadj, x[2], FPDF.get_y() + badj)
+            # End bracketing'''
+
             for col, key in enumerate(dfkeys):
                 if col in (0,1) and unicode(df[u'出貨單號'][row]) == last_manifest_no and last_manifest_no not in (None, u''):
                     continue

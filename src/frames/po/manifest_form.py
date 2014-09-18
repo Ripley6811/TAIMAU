@@ -252,11 +252,21 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest=None, refresh=None):
         if cal.selection in (None, u''):
             return
         if manifest == None:
-            manifest = _.dbm.shipment_no(_shipment_no.get())
+            manifest = _.dbm.existing_shipment(_shipment_no.get(),
+                                               cal.selection,
+                                               _.curr.cogroup.name)
             if manifest:
                 confirm = tkMessageBox.askyesno(u'Manifest number exists.',
                                       u'Add items to existing manifest?')
                 if not confirm:
+                    _.extwin.focus_set()
+                    return
+                # Check that adding will not go over five items
+                count = len(manifest.items) + len(orders)
+                if count > 5:
+                    tkMessageBox.showerror(u'Too many to add',
+                        u'Additional items will go over the five item limit.\n' +
+                        u'Cannot add to existing manifest.')
                     _.extwin.focus_set()
                     return
             if manifest == None:

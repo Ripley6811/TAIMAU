@@ -118,6 +118,28 @@ class db_manager:
         else:
             return None
 
+    def existing_shipment(self, number, date, cogroupname=None):
+        if number != u'':
+            query = self.session.query(Shipment)
+            query = query.filter_by(shipment_no=number, shipmentdate=date)
+            count = query.count()
+            # If any records found, then try to return one.
+            if count > 0:
+                recs = query.all()
+                # If cogroup parameter passed, then must also match a record.
+                if cogroupname:
+                    for rec in recs:
+                        if rec.items[0].order.group == cogroupname:
+                            return rec
+                    else: # Matching cogroup manifest not found
+                        return None
+                else: # Return first if skipping cogroup matching
+                    return recs[0]
+            else: # No records found
+                return None
+
+
+
     #==============================================================================
     # Invoice table methods
     #==============================================================================
@@ -134,6 +156,26 @@ class db_manager:
             return query.first()
         else:
             return None
+
+    def existing_invoice(self, number, date, cogroupname=None):
+        if number != u'':
+            query = self.session.query(Invoice)
+            query = query.filter_by(invoice_no=number, invoicedate=date)
+            count = query.count()
+            # If any records found, then try to return one.
+            if count > 0:
+                recs = query.all()
+                # If cogroup parameter passed, then must also match a record.
+                if cogroupname:
+                    for rec in recs:
+                        if rec.items[0].order.group == cogroupname:
+                            return rec
+                    else: # Matching cogroup manifest not found
+                        return None
+                else: # Return first if skipping cogroup matching
+                    return recs[0]
+            else: # No records found
+                return None
 
     #==============================================================================
     # CoGroup table methods
