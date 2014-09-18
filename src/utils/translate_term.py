@@ -117,6 +117,9 @@ worddict = {
     u'Changing existing records!' : u'變更會影響記錄!',
     u'{} orders will be affected.\nContinue with changes?' : u'{}個記錄會被影響到.\n繼續採用變更?',
     u'Manifest #:' : u'出貨單編號:',
+    u'View/edit PO' : u'編輯訂單',
+    u'Re-open PO' : u'再開訂單利用',
+    u'Delete PO' : u'刪除訂單',
 }
 # Storage of StringVar by the english text as keyword.
 labeldict = {}

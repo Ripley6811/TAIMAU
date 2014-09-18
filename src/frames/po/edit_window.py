@@ -4,10 +4,9 @@ import Tix
 import datetime
 
 from utils import date_picker
-from utils import settings
 
 
-def main(_, order, refresh):
+def main(_, order, refresh=None):
     """PO editing window"""
 
     #### USE THIS TO INTEGRATE FRAME INTO MAIN WINDOW ####
@@ -38,8 +37,6 @@ def main(_, order, refresh):
 
     center_pane = Tix.Frame(_.extwin)
     center_pane.pack(side='left', fill='both')
-
-    language = settings.load()['language']
 
     #### VARIABLES FOR RECORD ENTRY ####
     ####################################
@@ -157,12 +154,19 @@ def main(_, order, refresh):
     sep.grid(row=90, column=0, columnspan=10, sticky='ew')
 
 
-    # Button for archiving PO
-    tb = Tix.Button(pogrid, textvariable=_.loc(u"\u2620 Archive this PO \u2620"),
-                    bg="orange red",
-                    command=lambda:inactivate_po(),
-                    activebackground="orange red")
-    tb.grid(row=99, column=2, columnspan=2, sticky='ew')
+    # Button for archiving/unarchiving PO
+    if order.is_open:
+        tb = Tix.Button(pogrid, textvariable=_.loc(u"\u2620 Archive this PO \u2620"),
+                        bg="orange red",
+                        command=lambda:inactivate_po(),
+                        activebackground="orange red")
+        tb.grid(row=99, column=2, columnspan=2, sticky='ew')
+    else:
+        tb = Tix.Button(pogrid, textvariable=_.loc(u'Re-open PO'),
+                        bg="blue", fg=u'white',
+                        command=lambda:activate_po(),
+                        activebackground="blue")
+        tb.grid(row=99, column=2, columnspan=2, sticky='ew')
 
     # Button for submitting new PO
     tb = Tix.Button(pogrid, textvariable=_.loc(u"\u2692 Update Product Order (PO)"),
@@ -209,8 +213,11 @@ def main(_, order, refresh):
 
 #        # Repack PO list frame if swapping with PO creator
 #        _.po_center.pack(**repack_info)
-
-        refresh()
+        if refresh:
+            refresh()
+        else:
+            for ref in _.refresh:
+                ref()
 
 
     def inactivate_po():
@@ -218,6 +225,10 @@ def main(_, order, refresh):
 
         exit_win()
 
+    def activate_po():
+        _.dbm.update_order(order.id, dict(is_open=True))
+
+        exit_win()
 
 
     def check_fields():

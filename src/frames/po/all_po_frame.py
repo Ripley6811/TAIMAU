@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import Tix
+import tkMessageBox
+
+from edit_window import main as po_edit
 
 
 def main(_):
@@ -64,6 +67,68 @@ def main(_):
     tree.hlist['indent'] = 14 # Adjust indentation of children
     tree.hlist['wideselect'] = 1 # Color selection from end to end
     tree.hlist['font'] = _.font
+
+
+    orderPopMenu = Tix.Menu(tree_box, tearoff=0)
+
+    def orderoptions(event):
+        orderPopMenu.post(event.x_root, event.y_root)
+    tree.hlist.bind("<Double-Button-1>", orderoptions)
+
+    def edit_PO():
+        oid, = tree.hlist.info_selection()
+        order = _.dbm.session.query(_.dbm.Order).get(oid)
+        if order:
+            po_edit(_, order)
+
+    def open_PO():
+        oid, = tree.hlist.info_selection()
+        try:
+            order = _.dbm.session.query(_.dbm.Order).get(oid)
+            order.is_open = True
+        except AttributeError:
+            return
+        _.dbm.session.commit()
+        for ref in _.refresh:
+            ref()
+        return True
+
+    def delete_PO():
+        oid, = tree.hlist.info_selection()
+        try:
+            query = _.dbm.session.query(_.dbm.Order).filter_by(id=oid)
+            order = query.first()
+        except AttributeError:
+            return
+        nShipped = len(order.shipments)
+        if nShipped:
+            head = u'Cannot Delete PO'
+            body = u'This PO already shipped {} times.'.format(nShipped)
+            body += u'\nDelete all shipments and invoices before deleting PO.'
+            tkMessageBox.showinfo(head, body)
+            return False
+        elif nShipped == 0:
+            head = u'Confirm deletion.'
+            body = u'This PO contains zero shipments.'
+            body += u'\nContinue with deletion?'
+            confirm = tkMessageBox.askokcancel(head, body)
+            if confirm:
+                query.delete()
+                _.dbm.session.commit()
+                for ref in _.refresh:
+                    ref()
+                return True
+            return False
+
+    orderPopMenu.add_command(label=_.loc(u'View/edit PO',1), command=lambda: edit_PO())
+    orderPopMenu.add_command(label=_.loc(u'Re-open PO',1), command=lambda: open_PO())
+#    orderPopMenu.add_command(label=_.loc(u'View/edit manifest',1), command=lambda: edit_shipment())
+#    orderPopMenu.add_command(label=_.loc(u'View/edit invoice',1), command=lambda: edit_invoice())
+    orderPopMenu.add_separator()
+    orderPopMenu.add_command(label=_.loc(u'Delete PO',1), command=lambda: delete_PO())
+#    orderPopMenu.add_command(label=_.loc(u'Delete manifest item',1), command=lambda: delete_shipmentitem())
+#    orderPopMenu.add_command(label=_.loc(u'Delete invoice item',1), command=lambda: delete_invoiceitem())
+
 
     tds = lambda anchor, bg: Tix.DisplayStyle(
         anchor=anchor,
