@@ -2,12 +2,14 @@
 # -*- coding: utf-8 -*-
 import Tix
 import tkMessageBox
+import datetime
+
 from utils import date_picker
 
 
 
 
-def main(_, orders=[], qtyVars=[], unitVars=[], manifest=None, refresh=None):
+def main(_, orders=[], qtyVars=[], unitVars=[], numbSVar=None, manifest=None, refresh=None):
     """Displays a window in the appearance of a Taimau shipping manifest.
 
     "orders" parameter is a list of orders for creating a new manifest.
@@ -52,11 +54,15 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest=None, refresh=None):
 
     # Shipment
     _shipment_no = Tix.StringVar()
+    if numbSVar and isinstance(numbSVar, Tix.StringVar):
+        _shipment_no = numbSVar
     _destination = Tix.StringVar()
     _driver = Tix.StringVar()
     _truck = Tix.StringVar()
     _truck.trace('w', lambda *args: _truck.set(_truck.get().upper().replace('-','')[:8]))
     _note = Tix.StringVar()
+
+    _date = Tix.StringVar()
 
 
     #####################################
@@ -133,10 +139,25 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest=None, refresh=None):
         tl.grid(row=0, column=0, columnspan=12, sticky='nsew')
         cell_config.update(anchor='w')
 
+    if manifest:
+        b = Tix.Button(main_frame, textvariable=_date, bg='DarkGoldenrod1',
+                       font=(_.font, 20))
+        b['command'] = lambda curr_date=manifest.shipmentdate: pick_date(curr_date)
+        b.grid(row=0, rowspan=3, column=8, columnspan=4, sticky='nsew')
 
+        _date.set(manifest.shipmentdate)
 
-    cal = date_picker.Calendar(main_frame)
-    cal.grid(row=0, rowspan=3, column=8, columnspan=4, sticky='nsew')
+        def pick_date(curr_date):
+            cal = date_picker.Calendar(main_frame,
+                                       textvariable=_date,
+                                       destroy=True,
+                                       month=curr_date.month,
+                                       year=curr_date.year,
+                                       day=curr_date.day)
+            cal.grid(row=0, rowspan=3, column=8, columnspan=4, sticky='nsew')
+    else:
+        cal = date_picker.Calendar(main_frame)
+        cal.grid(row=0, rowspan=3, column=8, columnspan=4, sticky='nsew')
 
 
     tl=Tix.Label(main_frame, text=u'貨單編號:', **cell_config)
@@ -249,9 +270,9 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest=None, refresh=None):
         _.extwin.destroy()
 
     def submit(manifest):
-        if cal.selection in (None, u''):
-            return
         if manifest == None:
+            if cal.selection in (None, u''):
+                return
             manifest = _.dbm.existing_shipment(_shipment_no.get(),
                                                cal.selection,
                                                _.curr.cogroup.name)
@@ -288,8 +309,8 @@ def main(_, orders=[], qtyVars=[], unitVars=[], manifest=None, refresh=None):
             _.dbm.session.commit()
             for order in orders:
                 check_order_qty(order)
-        else: #if manifest
-            manifest.shipmentdate = cal.selection
+        else: #if editing manifest
+            manifest.shipmentdate = datetime.date(*[int(z) for z in _date.get().split(u'-')])
             manifest.shipment_no = _shipment_no.get().upper()
             manifest.shipmentnote = _note.get()
             manifest.driver = _driver.get()

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-import tkMessageBox
-from utils import date_picker
-import datetime
 import Tix
+import tkMessageBox
+import datetime
+
+from utils import date_picker
 
 
 def main(_, shipment_ids=None, invoice=None):
@@ -62,6 +62,8 @@ def main(_, shipment_ids=None, invoice=None):
     _note = Tix.StringVar()
     _company_no = Tix.StringVar()
 
+    _date = Tix.StringVar()
+
 
     if invoice:
         _invoice_no.set(invoice.invoice_no)
@@ -79,8 +81,26 @@ def main(_, shipment_ids=None, invoice=None):
 
 
 
-    cal = date_picker.Calendar(head_frame)
-    cal.grid(row=0, rowspan=3, column=4, columnspan=4, sticky='nsew')
+    if invoice:
+        b = Tix.Button(head_frame, textvariable=_date, bg='DarkGoldenrod1',
+                       font=(_.font, 20))
+        b['command'] = lambda curr_date=invoice.invoicedate: pick_date(curr_date)
+        b.grid(row=0, rowspan=3, column=4, columnspan=4, sticky='nsew')
+
+        _date.set(invoice.invoicedate)
+
+        def pick_date(curr_date):
+            cal = date_picker.Calendar(head_frame,
+                                       textvariable=_date,
+                                       destroy=True,
+                                       month=curr_date.month,
+                                       year=curr_date.year,
+                                       day=curr_date.day)
+            cal.grid(row=0, rowspan=3, column=4, columnspan=4, sticky='nsew')
+    else:
+        cal = date_picker.Calendar(head_frame)
+        cal.grid(row=0, rowspan=3, column=4, columnspan=4, sticky='nsew')
+    head_frame.columnconfigure(4,weight=1)
 #    riqi = u'貨單日期: {0.year}年 {0.month}月 {0.day}日'.format(order.shipments[0].shipmentdate)
 #    tl=Tix.Label(main_frame, text=riqi, **cell_config)
 #    tl.grid(row=1,column=4, columnspan=2, sticky='ew')
@@ -253,8 +273,6 @@ def main(_, shipment_ids=None, invoice=None):
         _.extwin.destroy()
 
     def submit(invoice):
-        if cal.selection in (None, u''):
-            return
         if len(_invoice_no.get()) != 10:
             ok = tkMessageBox.askokcancel(u'Invoice number validation failure.',
                        u'Invoice number is not 10 characters\ncontinue anyway?')
@@ -262,6 +280,8 @@ def main(_, shipment_ids=None, invoice=None):
                 _.extwin.focus_set()
                 return
         if invoice == None:
+            if cal.selection in (None, u''):
+                return
             invoice = _.dbm.existing_invoice(_invoice_no.get(),
                                              cal.selection,
                                              _.curr.cogroup.name)
@@ -289,7 +309,7 @@ def main(_, shipment_ids=None, invoice=None):
                 _.dbm.session.add(item)
             _.dbm.session.commit()
         else: #if invoice
-            invoice.invoicedate = cal.selection
+            invoice.invoicedate = datetime.date(*[int(z) for z in _date.get().split(u'-')])
             invoice.invoice_no = _invoice_no.get().upper()
             invoice.invoicenote = _note.get()
             invoice.seller = seller.get()

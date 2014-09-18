@@ -281,6 +281,8 @@ def create(_):
 
 #            info.order.entryWs[row].icursor(Tk.END)
 #            info.order.entryWs[row].selection_range(0, Tk.END)
+        def fill_qty(i, amount):
+            _qtyVars[i].set(amount)
 
         order_list = cogroup.purchases if _.sc_mode == "s" else cogroup.sales
         TB = lambda _text, **kwargs: Tix.Button(pobox, text=_text, anchor='w',
@@ -329,6 +331,7 @@ def create(_):
                 _text = u'{} {})'.format(amt, _sku)
                 lw2 = Tix.Label(pobox, text=_text, anchor='e')
                 lw2.grid(row=row*2, column=3, sticky='ew')
+                lw2.bind('<Double-Button-1>', lambda e, a=amt, i=len(_qtyVars): fill_qty(i,a))
 
                 # If PO remainder is zero. Make red.
                 if order.all_shipped():
@@ -417,12 +420,18 @@ def create(_):
 
         # Button for submitting new manifest. Goto date selection, etc.
         #TODO: Add command
+        numbSVar = Tix.StringVar()
         if _poIDs:
+            tl = Tix.Label(pobox, textvariable=_.loc(u'Manifest #:'))
+            tl.grid(row=row*2+2, column=2, columnspan=2, sticky='e')
+            te = Tix.Entry(pobox, textvariable=numbSVar, width=9,
+                               justify="center", bg=u"moccasin")
+            te.grid(row=row*2+2, column=4, columnspan=2, sticky='ew')
             tb = Tix.Button(pobox, textvariable=_.loc(u"\u26DF Create Manifest"),
                             bg="lawn green",
                             command=lambda:make_manifest(),
                             activebackground="lime green")
-            tb.grid(row=row*2+2, column=4, columnspan=6, sticky='ew')
+            tb.grid(row=row*2+2, column=6, columnspan=5, sticky='ew')
 
         def make_manifest():
             manifest_list = [(a, b, c) for a,b,c in
@@ -439,7 +448,8 @@ def create(_):
             po.manifest(_, orders=[a for a,b,c in manifest_list],
                            qtyVars=[b for a,b,c in manifest_list],
                            unitVars=[c for a,b,c in manifest_list],
-                            refresh=load_company)
+                            refresh=load_company,
+                            numbSVar = numbSVar)
 
 
         # Load PO HList 'All POs'

@@ -115,7 +115,8 @@ worddict = {
     u'{} : {} Order Records' : u'{} : {}個訂單記錄',
     u'(Gold Fields Required!)' : u'(金色參數是必需的!)',
     u'Changing existing records!' : u'變更會影響記錄!',
-    u'{} orders will be affected.\nContinue with changes?' : u'{}個記錄會被影響到.\n繼續採用變更?'
+    u'{} orders will be affected.\nContinue with changes?' : u'{}個記錄會被影響到.\n繼續採用變更?',
+    u'Manifest #:' : u'出貨單編號:',
 }
 # Storage of StringVar by the english text as keyword.
 labeldict = {}

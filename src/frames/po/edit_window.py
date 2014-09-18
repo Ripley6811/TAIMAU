@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import Tix
+import datetime
+
 from utils import date_picker
+from utils import settings
 
 
 def main(_, order, refresh):
@@ -36,6 +39,7 @@ def main(_, order, refresh):
     center_pane = Tix.Frame(_.extwin)
     center_pane.pack(side='left', fill='both')
 
+    language = settings.load()['language']
 
     #### VARIABLES FOR RECORD ENTRY ####
     ####################################
@@ -45,6 +49,9 @@ def main(_, order, refresh):
     _price = Tix.StringVar()
     _note = Tix.StringVar()
     _tax = Tix.BooleanVar()
+
+    _date = Tix.StringVar()
+
 
 
 
@@ -59,13 +66,24 @@ def main(_, order, refresh):
     # Order date: preselect today
     tl = Tix.Label(pogrid, textvariable=_.loc(u"Date of PO"))
     tl.grid(row=0, column=2, columnspan=2)
-    cal = date_picker.Calendar(pogrid,
-                               month=order.orderdate.month,
-                               year=order.orderdate.year,
-                               day=order.orderdate.day)
-    cal.grid(row=1, rowspan=6, column=2, columnspan=2)
 
-    # Due date: nothing preselected (omit this?)
+
+    b = Tix.Button(pogrid, textvariable=_date, bg='DarkGoldenrod1',
+                   font=(_.font, 18))
+    b['command'] = lambda curr_date=order.orderdate: pick_date(curr_date)
+    b.grid(row=1, rowspan=2, column=2, columnspan=2, sticky='nsew')
+
+    _date.set(order.orderdate)
+
+    def pick_date(curr_date):
+        cal = date_picker.Calendar(pogrid,
+                                   textvariable=_date,
+                                   destroy=True,
+                                   month=curr_date.month,
+                                   year=curr_date.year,
+                                   day=curr_date.day)
+        cal.grid(row=1, rowspan=6, column=2, columnspan=2)
+
 
 
     ### SHOW PRODUCT ###
@@ -168,14 +186,14 @@ def main(_, order, refresh):
                    price=_price.get(),
                    orderID=_ponumber.get(),
                    ordernote=_note.get(),
-                   applytax=_tax.get())
+                   applytax=_tax.get(),
+                   orderdate=datetime.date(*[int(x) for x in _date.get().split(u'-')]))
         if _qty.get() == u"\u221E":
             ins['qty'] = 1e10
         if tm['value'] != u'' and br['value'] != u'':
             ins['seller'] = tm['value'] if _.sc_mode == 'c' else br['value'].upper()
             ins['buyer'] = tm['value'] if _.sc_mode == 's' else br['value'].upper()
-        if cal.selection:
-            ins['orderdate'] = cal.selection
+
 
         if _.debug:
             print ins

@@ -47,6 +47,7 @@ class Calendar(ttk.Frame):
         sel_fg = kw.pop('selectforeground', 'gold')
         # Optional StringVar parameter for returning a date selection.
         self.strvar = kw.pop('textvariable', None)
+        self.destroy_on_selection = kw.pop('destroy', False)
         self.highlightnow = kw.pop('highlightnow', True)
 
         self._date = self.datetime(year, month, 1)
@@ -210,8 +211,9 @@ class Calendar(ttk.Frame):
         # If a StringVar is supplied, then set it and destroy window.
         if isinstance(self.strvar, Tkinter.StringVar):
             self.strvar.set(self.selection)
-#            self.destroy()
-#            return
+            if self.destroy_on_selection:
+                self.destroy()
+                return
 
         self._show_selection(text, bbox)
 
