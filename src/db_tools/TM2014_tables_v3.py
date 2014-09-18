@@ -18,6 +18,7 @@ from sqlalchemy.orm import relationship as rel
 from sqlalchemy.orm import backref, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import datetime
+import json
 
 Int = sqla.Integer
 #Str = sqla.String  #TODO: Can probably delete this line
@@ -509,6 +510,28 @@ class Product(Base): # Information for each unique product (including packaging)
         else:
             txt = u"{0} {1} {2}"
             return txt.format(units,self.UM,self.SKU)
+
+
+    def json(self, new_dic=None):
+        '''Saves 'new_dic' as a json string and overwrites previous json.
+        Returns contents of json string as a dictionary object.
+        Note: Commit session after making changes.'''
+        if new_dic == None:
+            if self.note.find(u'}') != -1:
+                return json.loads(self.note[self.note.index(u'{'):])
+            else:
+                return None
+        else:
+            old_dic = dict()
+            # Delete existing json string
+            if self.note.find(u'}') != -1:
+                old_dic = self.json()
+                self.note = self.note.split(u'{')[0]
+            # Merge and overwrite old with new.
+            new_dic = dict(old_dic.items() + new_dic.items())
+            self.note += json.dumps(new_dic)
+            return True
+        return False
 
 
 

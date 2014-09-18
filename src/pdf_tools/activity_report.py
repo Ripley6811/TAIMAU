@@ -270,16 +270,17 @@ def main(_, records=[]):
 
 
 
-
+        initialfilename = u'{}_{}_{}_{}'.format(
+                            _.curr.cogroup.name,
+                            u'Sales' if _.sc_mode == u'c' else u'Purchases',
+                            str(startdate.selection),
+                            str(enddate.selection) )
         FILE_OPTS = dict(
             parent = _.po_frame,
             title = u'PDF name and location.',
             defaultextension = '.pdf',
             initialdir = os.path.expanduser('~') + '/Desktop/',
-            initialfile = u'{}_{}_{}_{}'.format(_.curr.cogroup.name,
-                                             u'Sales' if _.sc_mode == u'c' else u'Purchases',
-                                             str(startdate.selection),
-                                             str(enddate.selection)),
+            initialfile = initialfilename,
         )
         if settings.load().get(u'pdfpath'):
             FILE_OPTS['initialdir'] = settings.load()[u'pdfpath']

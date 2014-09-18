@@ -50,6 +50,9 @@ def main(_):
         (1, u'UM', u'Unit Measure:', u'Smallest measureable size. "kg", "L", "gal", etc.'),
         (0, u'SKUlong', u'SKU Description:', u'SKU longer description. "white 5gal barrel"'),
         (0, u'note', u'Note:', u'Note on production or packaging.'),
+        (0, u'ASE_PN', u'(ASE) PN:', u'(ASE) Product Number.'),
+        (0, u'ASE_RT', u'(ASE) RT:', u'(ASE) Routing number.'),
+#        (0, u'ASE_END', u'(ASE) Last SKU#:', u'(ASE) Last index number used on delivered barrels.'),
         (0, u'curr_price', u'Current Price:', u'Enter a starting price.'),
     ]
     entrySVars = [(Tix.StringVar(), None) for i in range(len(entryfields))]

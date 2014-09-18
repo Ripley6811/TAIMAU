@@ -45,7 +45,7 @@ import Tix
 #import analytics
 
 import db_tools.db_manager as dbm
-from pdf_tools import activity_report
+from pdf_tools import activity_report, product_QC_report
 import frames.po_frame
 import frames.product_frame
 from utils.translate_term import localize, setLang
@@ -110,8 +110,8 @@ class TaimauApp(Tix.Tk):
                                command=set_report_location)
         reportmenu.add_command(label=u"Activity Report (PDF)",
                                command=lambda:activity_report.main(_state))
-#        reportmenu.add_command(label=u"Product Price History (產品價格歷史)",
-#                               command=lambda:product_prices.main(_state))
+        reportmenu.add_command(label=u"ASE Product QC (PDF)",
+                               command=lambda:product_QC_report.main(_state))
         reportmenu.add_command(label=u"Save client shipments to Excel (6 months).",
                                command=sales_shipments_to_excel, state='disabled')
         reportmenu.add_command(label=u"Save incoming shipments to Excel (6 months).",

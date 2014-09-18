@@ -120,6 +120,9 @@ worddict = {
     u'View/edit PO' : u'編輯訂單',
     u'Re-open PO' : u'再開訂單利用',
     u'Delete PO' : u'刪除訂單',
+    u'(ASE) PN:' : u'(ASE) PN:',
+    u'(ASE) RT:' : u'(ASE) RT:',
+    u'(ASE) Last SKU#:' : u'(ASE) 最後桶的號碼:',
 }
 # Storage of StringVar by the english text as keyword.
 labeldict = {}
