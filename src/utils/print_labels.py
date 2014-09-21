@@ -11,7 +11,7 @@ Updated: 2013-11-29
 -Verification of RT. No.: 10 digits and uniqueness
 
 '''
-from ctypes import *
+from ctypes import cdll
 import xlrd
 from datetime import date, timedelta
 from tkMessageBox import showerror
@@ -26,20 +26,25 @@ except WindowsError as e:
     print e
     tsc = None
 
+portkeyword="243" # "TSC TTP-243 Plus"
+
+printers = [p[2] for p in EnumPrinters(2) if portkeyword in p[2]]
+if len(printers):
+    try:
+        portname, = printers # Asserts only one printer is in list.
+    except ValueError as e:
+        showerror("ValueError", "More than one printer matches the keyword '{}'".format(portkeyword))
+else:
+    showerror("Printer not found", "No printer found with keyword '{}'.".format(portkeyword))
+print "Printer:", portname
+
 #XXX: Portname must match the name of the printer on the system.
-def openport(portkeyword="243"): # "TSC TTP-243 Plus"
-    printers = [p[2] for p in EnumPrinters(2) if portkeyword in p[2]]
-    if len(printers):
-        try:
-            portname, = printers # Asserts only one printer is in list.
-        except ValueError as e:
-            showerror("ValueError", "More than one printer matches the keyword '{}'".format(portkeyword))
-        try:
-            tsc.openport(portname)
-        except ValueError as e:
-            showerror("ValueError", "{}\nValueError: {} not found.".format(e,portname))
-    else:
-        showerror("Printer not found", "No printer found with keyword '{}'.".format(portkeyword))
+def openport():
+    try:
+        tsc.openport(portname)
+    except ValueError:
+        #XXX: ValueError always thrown but functions properly. Ignore it.
+        pass
 
 def setup(w="70",h="70",c="2",d="2",e="0",f="3",g="0"):
     # w = label width mm
