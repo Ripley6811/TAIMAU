@@ -520,7 +520,7 @@ class Product(Base): # Information for each unique product (including packaging)
             if self.note.find(u'}') != -1:
                 return json.loads(self.note[self.note.index(u'{'):])
             else:
-                return None
+                return {}
         else:
             old_dic = dict()
             # Delete existing json string

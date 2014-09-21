@@ -4,7 +4,7 @@ import Tix
 import tkMessageBox
 from invoice_form import main as invoice
 from manifest_form import main as manifest
-from pdf_tools import activity_report
+import label_prep_frame
 #print 'invoice', type(frames.po.invoice)
 
 def main(_):
@@ -97,12 +97,12 @@ def main(_):
             pass
 
 
-    def create_report():
+    def print_shipmentitem_labels():
         '''Organized shipping history report that can be printed.
 
         Use selected rows to make a shipping history list.
         Like items are totaled and displayed at the bottom.'''
-        activity_report.main(_)
+        label_prep_frame.main(_, tree.hlist.info_selection())
 
 
     def mark_paid():
@@ -169,8 +169,8 @@ def main(_):
         command=create_invoice, font=(_.font, 18, 'bold'),
     ).pack(side='left', fill='x')
     Tix.Button(
-        rb_box, textvariable=_.loc(u'Activity Report'), bg=u'lawn green',
-        command=create_report, font=(_.font, 18, 'bold'),
+        rb_box, textvariable=_.loc(u'Print Labels'), bg=u'lawn green',
+        command=print_shipmentitem_labels, font=(_.font, 18, 'bold'),
     ).pack(side=u'left', fill='x')
     Tix.Button(
         rb_box, textvariable=_.loc(u'Mark as Paid'), bg=u'lawn green',
