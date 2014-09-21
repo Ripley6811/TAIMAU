@@ -14,7 +14,6 @@ Updated: 2013-11-29
 from ctypes import cdll
 import xlrd
 from datetime import date, timedelta
-from tkMessageBox import showerror
 from time import sleep
 from win32print import EnumPrinters
 
@@ -32,11 +31,11 @@ printers = [p[2] for p in EnumPrinters(2) if portkeyword in p[2]]
 if len(printers):
     try:
         portname, = printers # Asserts only one printer is in list.
+        print "Printer:", portname
     except ValueError as e:
-        showerror("ValueError", "More than one printer matches the keyword '{}'".format(portkeyword))
+        print "More than one printer matches the keyword '{}'".format(portkeyword)
 else:
-    showerror("Printer not found", "No printer found with keyword '{}'.".format(portkeyword))
-print "Printer:", portname
+    print "Printer not found", "No printer found with keyword '{}'.".format(portkeyword)
 
 #XXX: Portname must match the name of the printer on the system.
 def openport():

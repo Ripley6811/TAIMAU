@@ -95,7 +95,7 @@ def main(_, shipmentItemID):
             date_dic['month'] = 'C'
         rt_no_text = u'{year}{month}{day:0>2}'.format(**date_dic)
         try:
-            rt_no.set(u'{}{}'.format(rt_no_text, prod_rec.ASE_RT[4:]))
+            rt_no.set(u'{}{}{}'.format(rt_no_text, prod_rec.ASE_RT[4:-2], u'01'))
         except:
             rt_no.set(rt_no_text)
 
@@ -176,6 +176,7 @@ def main(_, shipmentItemID):
         ase_no_group.set(u'{:0>4}-{:0>4}'.format(begin, endno))
 
     def set_start(*args):
+        ase_no.trace_vdelete('w', _.ase_trace)
         # Ensure only uppercase letters and numbers are in entry field
         check_text = u''.join([ea for ea in ase_no.get().upper() if ea.isalnum()])
         if check_text != ase_no.get():
@@ -185,6 +186,8 @@ def main(_, shipmentItemID):
             start_no.set( prod_rec.ASE_END + 1 )
         else:
             start_no.set( 1 )
+
+        _.ase_trace = ase_no.trace_variable('w', set_start)
 
 
     def set_range(*args):
@@ -200,16 +203,48 @@ def main(_, shipmentItemID):
 
     start_no.trace('w', set_range)
 
-    ase_no.trace('w', set_start)
+    _.ase_trace = ase_no.trace_variable('w', set_start)
 
     def set_rt(*args):
+        rt_no.trace_vdelete('w', _.rt_trace)
         # Ensure only uppercase letters and numbers are in entry field
         check_text = u''.join([ea for ea in rt_no.get().upper() if ea.isalnum()])
         if check_text != rt_no.get():
             rt_no.set(check_text)
+
+        # Check RT length
+        if len(rt_no.get()) == 10:
+            # Check RT numbering (final digits).
+            query = _.dbm.session.query(_.dbm.ShipmentItem.rt_no)
+            query = query.join(_.dbm.Shipment)
+            month = rt_no.get()[1:2]
+            mdic = dict(A=10, B=11, C=12)
+            if month.isdigit():
+                month = int(month)
+            else:
+                month = mdic(month)
+            year = rt_no.get()[0:1]
+            if year != str(ship_rec.shipment.shipmentdate.year)[-1]:
+                year = ship_rec.shipment.shipmentdate.year - 1
+            else:
+                year = ship_rec.shipment.shipmentdate.year
+            test_date = ship_rec.shipment.shipmentdate.replace(
+                                year=year,
+                                month=month,
+                                day=int(rt_no.get()[2:4]))
+    #        print 'test_date', test_date
+            query = query.filter_by(shipmentdate = test_date)
+    #        print 'rt_list', [q[0] for q in query.all() if q[0]]
+            rt_list = [q[0][-2:] for q in query.all() if q[0]]
+            while check_text[-2:] in rt_list:
+                check_text = u'{}{:02}'.format(check_text[:-2], int(check_text[-2:]) + 1)
+            if check_text != rt_no.get():
+                rt_no.set(check_text)
+
+        _.rt_trace = rt_no.trace_variable('w', set_rt)
         update_print_preview(*args)
 
-    rt_no.trace('w', set_rt)
+    _.rt_trace = rt_no.trace_variable('w', set_rt)
 
 #    print_text = Tix.Text(_.extwin, width=30, height=10, font=(_.font, 14))
 #    print_text.grid(row=9,column=0,columnspan=5, sticky='nsew')
@@ -255,6 +290,8 @@ def main(_, shipmentItemID):
         except:
             vals.DOM = u'Date is out of range!'
         vals.RT = rt_no.get()
+#        rt_no.trace_variable('w', set_rt) #XXX: Helps force a label update.
+#        ase_no.trace_variable('w', set_start) #XXX: Helps force a label update.
         vals.RT_err = u'' if len(vals.RT) == 10 else u' (Error! Check RT# length)'
         try:
             Exp = int(exp_m.get())
@@ -285,15 +322,19 @@ def main(_, shipmentItemID):
         if vals.RT_err or vals.LOT_err or vals.ASE_err:
             pb.config(state="disabled")
             pb2.config(state="disabled")
+            pb3.config(state="disabled")
+            pb4.config(state="disabled")
         else:
             pb.config(state="normal")
             pb2.config(state="normal")
+            pb3.config(state="normal")
+            pb4.config(state="normal")
 
     ase_no_group.trace('w', update_print_preview)
     exp_m.trace('w', update_print_preview)
 
 
-    def submit_print_request(DM=False):
+    def submit_print_request(DM=False, test=False):
         print u'{}{}'.format(ase_no.get(), ase_no_group.get())
 #        ASE_data[u'ASE No'] = ase_no.get()
         ASE_data[u'current_lot'] = ase_no.get()
@@ -337,13 +378,22 @@ def main(_, shipmentItemID):
                          vals.QTY, vals.EXP, vals.DOM, vals.RT)
             except Exception as e:
                 print u'Failed to print:', ASE, e
+            if test:
+                break
 
     pb = Tix.Button(_.extwin, text=u'Print Barcode Labels', command=submit_print_request,
-                    bg=u'lawn green', activebackground=u'lime green')
+                    bg=u'lawn green', activebackground=u'lime green', font=(_.font, 18, 'bold'))
     pb.grid(row=100, column=0, columnspan=3, sticky='nsew')
     pb2 = Tix.Button(_.extwin, text=u'Print Datamatrix Labels', command=lambda:submit_print_request(DM=True),
-                    bg=u'lawn green', activebackground=u'lime green')
+                    bg=u'lawn green', activebackground=u'lime green', font=(_.font, 18, 'bold'))
     pb2.grid(row=100, column=3, columnspan=3, sticky='nsew')
+
+    pb3 = Tix.Button(_.extwin, text=u'Test Barcode Label', command=lambda:submit_print_request(test=True),
+                    bg=u'orange', activebackground=u'orange')
+    pb3.grid(row=101, column=0, columnspan=3, sticky='nsew')
+    pb4 = Tix.Button(_.extwin, text=u'Test Datamatrix Label', command=lambda:submit_print_request(DM=True, test=True),
+                    bg=u'orange', activebackground=u'orange')
+    pb4.grid(row=101, column=3, columnspan=3, sticky='nsew')
 
     set_group_nos()
     update_print_preview()
