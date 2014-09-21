@@ -13,6 +13,7 @@ description
 
 """
 import Tix
+import tkMessageBox
 import datetime
 
 from utils import print_labels
@@ -283,14 +284,16 @@ def main(_, shipmentItemID):
 
         if vals.RT_err or vals.LOT_err or vals.ASE_err:
             pb.config(state="disabled")
+            pb2.config(state="disabled")
         else:
             pb.config(state="normal")
+            pb2.config(state="normal")
 
     ase_no_group.trace('w', update_print_preview)
     exp_m.trace('w', update_print_preview)
 
 
-    def submit_print_request():
+    def submit_print_request(DM=False):
         print u'{}{}'.format(ase_no.get(), ase_no_group.get())
 #        ASE_data[u'ASE No'] = ase_no.get()
         ASE_data[u'current_lot'] = ase_no.get()
@@ -320,17 +323,27 @@ def main(_, shipmentItemID):
             begin = int(pF.get())
         if pL.get().isdigit():
             endno = int(pL.get())
+        if print_labels.tsc == None:
+            tkMessageBox.showerror(u'Printer not found', u'Printer could not be found.\nCheck that printer is installed and functioning.')
+            return
         for i in range(begin,endno+1):
             ASE = u"{0}{1:04}".format(vals.LOT, i)
             try:
-                print_labels.TM_label(vals.name, vals.PN, vals.LOT, ASE,
+                if DM:
+                    print_labels.TM_DMlabel(vals.name, vals.PN, vals.LOT, ASE,
+                         vals.QTY, vals.EXP, vals.DOM, vals.RT)
+                else:
+                    print_labels.TM_label(vals.name, vals.PN, vals.LOT, ASE,
                          vals.QTY, vals.EXP, vals.DOM, vals.RT)
             except Exception as e:
                 print u'Failed to print:', ASE, e
 
-    pb = Tix.Button(_.extwin, text=u'PRINT', command=submit_print_request,
+    pb = Tix.Button(_.extwin, text=u'Print Barcode Labels', command=submit_print_request,
                     bg=u'lawn green', activebackground=u'lime green')
-    pb.grid(row=100, column=2, columnspan=3, sticky='nsew')
+    pb.grid(row=100, column=0, columnspan=3, sticky='nsew')
+    pb2 = Tix.Button(_.extwin, text=u'Print Datamatrix Labels', command=lambda:submit_print_request(DM=True),
+                    bg=u'lawn green', activebackground=u'lime green')
+    pb2.grid(row=100, column=3, columnspan=3, sticky='nsew')
 
     set_group_nos()
     update_print_preview()
