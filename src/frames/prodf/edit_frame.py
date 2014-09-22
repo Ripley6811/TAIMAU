@@ -165,7 +165,7 @@ def main(_):
                 text = _.curr.product.__dict__.get(ef[1])
                 if text:
                     try:
-                        text = str(int(text))
+                        text = str(float(text))
                     except ValueError:
                         pass
                     entrySVars[row][0].set(text.split('{',1)[0])
@@ -191,21 +191,23 @@ def main(_):
             if validate_fields():
                 # If orders already exist, then confirm again to change.
                 nOrders = len(_.curr.product.orders)
+                confirm = True
                 if nOrders > 0:
+                    confirm = False
                     head = _.loc(u'Changing existing records!', 1)
                     body = _.loc(u'{} orders will be affected.\nContinue with changes?', 1).format(nOrders)
                     confirm = tkMessageBox.askokcancel(head, body)
-                    if confirm:
-                        query = _.dbm.session.query(_.dbm.Product)
-                        query = query.filter_by(MPN=_.curr.productSV.get())
-                        valdict = collectSVvalues()
-                        # Add back JSON note
-                        if u'{' in _.curr.product.note:
-                            valdict[u'note'] = valdict.get(u'note', u'') + u'{' + _.curr.product.note.split(u'{',1)[1]
-                        query.update(valdict)
-                        _.dbm.session.commit()
-                    else:
-                        return
+                if confirm:
+                    query = _.dbm.session.query(_.dbm.Product)
+                    query = query.filter_by(MPN=_.curr.productSV.get())
+                    valdict = collectSVvalues()
+                    # Add back JSON note
+                    if u'{' in _.curr.product.note:
+                        valdict[u'note'] = valdict.get(u'note', u'') + u'{' + _.curr.product.note.split(u'{',1)[1]
+                    query.update(valdict)
+                    _.dbm.session.commit()
+                else:
+                    return
             else:
                 tkMessageBox.showwarning(u'Entry error',
                         u'\n'.join([
