@@ -16,7 +16,7 @@ import Tix
 import tkMessageBox
 import datetime
 
-from utils import print_labels
+from utils import print_labels, settings
 
 
 def main(_, shipmentItemID):
@@ -36,7 +36,7 @@ def main(_, shipmentItemID):
         pass
 
     _.extwin = Tix.Toplevel(_.parent)
-    _.extwin.title(u"{} {}".format(_.curr.cogroup.name, _.loc(u"+ PO", asText=True)))
+    _.extwin.title(u"{} labels".format(_.curr.cogroup.name))
     _.extwin.geometry(u'+{}+{}'.format(_.parent.winfo_rootx()+100, _.parent.winfo_rooty()))
     _.extwin.focus_set()
 
@@ -271,7 +271,7 @@ def main(_, shipmentItemID):
     Tix.Label(textvariable=svDOM, **opts).grid(row=17, column=1, **gopts)
     Tix.Label(textvariable=rt_no, **opts).grid(row=18, column=1, **gopts)
 
-    vals = type('Vals',(),{})()
+    vals = _.__class__()
     def update_print_preview(*args):
         vals.name = prod_rec.product_label
         if not vals.name:
@@ -341,8 +341,6 @@ def main(_, shipmentItemID):
 #        ASE_data[u'RT No'] = rt_no.get()
         ASE_data[u'Expiration'] = int(exp_m.get())
 
-#        ship_xnote = {
-#        }
 
         product = _.dbm.session.query(_.dbm.Product).get(prod_rec.MPN)
         product.json(ASE_data) #
@@ -364,12 +362,15 @@ def main(_, shipmentItemID):
             begin = int(pF.get())
         if pL.get().isdigit():
             endno = int(pL.get())
+
+        # Check that driver and printer were located.
         if print_labels.tsc == None:
             tkMessageBox.showerror(u'Printer not found', u'Printer could not be found.\nCheck that printer is installed and functioning.')
             return
         for i in range(begin,endno+1):
             ASE = u"{0}{1:04}".format(vals.LOT, i)
             try:
+                settings.update(label=vals)
                 if DM:
                     print_labels.TM_DMlabel(vals.name, vals.PN, vals.LOT, ASE,
                          vals.QTY, vals.EXP, vals.DOM, vals.RT)

@@ -35,7 +35,7 @@ if len(printers):
     except ValueError as e:
         print "More than one printer matches the keyword '{}'".format(portkeyword)
 else:
-    print "Printer not found", "No printer found with keyword '{}'.".format(portkeyword)
+    print "No printer found with keyword '{}'.".format(portkeyword)
 
 #XXX: Portname must match the name of the printer on the system.
 def openport():
@@ -44,6 +44,7 @@ def openport():
     except ValueError:
         #XXX: ValueError always thrown but functions properly. Ignore it.
         pass
+    print 'PORT "{}" OPENED'.format(portname)
 
 def setup(w="70",h="70",c="2",d="2",e="0",f="3",g="0"):
     # w = label width mm
@@ -117,7 +118,10 @@ def TM_label(material, PN, LOT_NO, ASE_NO, QTY, ExpDate, DOM, RT_NO):
         noPNadjust = 43
     windowsfont(tab,15+noPNadjust, "Material name:", 30)
     #showinfo(material.encode('utf8'), material.encode('utf8'))
-    windowsfont(tab+180,6+noPNadjust, material.encode('big5'), 42, style=2)
+    try:
+        windowsfont(tab+180,6+noPNadjust, material.encode('big5'), 42, style=2)
+    except UnicodeEncodeError:
+        windowsfont(tab+180,6+noPNadjust, material.encode('utf8'), 42, style=2)
 
     if PN:
         windowsfont(tab,58, "P/N:", h=26)
@@ -274,172 +278,8 @@ def TM_QRlabel(material, PN, LOT_NO, ASE_NO, QTY, ExpDate, DOM, RT_NO):
     closeport()
     sleep(0.5)
 
-#TM_label("Liu Suan 98%", "2013-001-01116-000", "P13111401", "P131114010002",
-#         "6", "20141114", "20131114", "3B1476VB01")
-
-def lookup_product_code(book, sheetname, lookname):
-    # Get product lookup data
-    prodsheet = book.sheet_by_name("Products")
-    products = []
-    for row in range(prodsheet.nrows):
-        pname = prodsheet.cell_value(row,0)
-        if lookname == pname:
-            pcomp = prodsheet.cell_value(row,1)
-            pcode = prodsheet.cell_value(row,2)
-            pqty = prodsheet.cell_value(row,3)
-            pexp = prodsheet.cell_value(row,4)
-            products.append((pcomp,pcode,pqty,pexp))
-    if len(products) > 1:
-#        print "Which product code:"
-        for i, each in enumerate(products):
-#            print i+1, '=', each[0], ':', each[1], "(", each[2], ")"
-            if each[0] in sheetname:
-                return each
-#        return products[input("Select #")-1]
-
-    if len(products) == 0:
-        print "ERROR: Product not found in code lookup list."
-        print "Make sure the spelling is correct and matches the desired product."
-        raw_input("HIT ENTER TO EXIT...")
-
-#    print 'SELECTED:', products[0][0], ':', products[0][1], "(", products[0][2], ")"
-    return products[0]
 
 
-def rt_check(sheet, valrow, rtn):
-    if len(rtn) != 10:
-        print "RT No. ERROR: Not 10 characters long."
-        return False
-    # Find RT No. column
-    rtcol = -1
-    for icol in range(sheet.ncols):
-        if sheet.cell_value(0,icol) == u'RT.No':
-            rtcol = icol
-    if rtcol < 0:
-        print "RT No. ERROR: Column not found."
-        return False
-
-    for irow in range(1,valrow):
-        if sheet.cell_value(irow,rtcol) == rtn:
-            print "RT No. ERROR: Value already exists."
-            return False
-
-    return True
-
-
-
-def printapp(noprint=False):
-    filename = u'T:\\Users\\chairman\\Documents\\桶裝出貨表.xls'
-    book = xlrd.open_workbook(filename)
-
-
-    # Get print info from user
-    print "Select sheet by index number:"
-    for i, sheetname in enumerate(book.sheet_names()):
-        print i+1, "=", sheetname
-    sheet = book.sheet_by_index(input("From sheet #")-1)
-    row = input("Print row #")-1
-    print ''
-
-    # Headers and corresponding data
-    dic = {}
-    for col in range(sheet.ncols):
-        try:
-            dic[sheet.cell_value(0,col)] = sheet.cell_value(row,col).decode('utf8')
-        except:
-            dic[sheet.cell_value(0,col)] = sheet.cell_value(row,col)
-
-
-    # RT No. validation
-    if (sheet.name not in ['PR',u'雙葉']) and not rt_check(sheet, row, dic[u'RT.No']):
-        # Exit if check is False
-        raw_input("Hit enter to exit.")
-        return False
-
-    # Get ASE product code, P/N
-    PN, QTY, Exp = lookup_product_code(book, sheet.name, dic[u'品名'])[1:4]
-    print repr(PN), repr(QTY), repr(Exp)
-
-    # Check the ASE No and number of units match
-    #TODO
-    dic[u"ASE.No"] = int(dic[u"ASE.No"].split("-")[0][-4:])
-    print 'PRODUCT:', dic[u'品名']
-    print 'PN:', PN
-    print dic[u"包裝"], "labels in this set."
-    print ''
-
-    # Get DOM and Exp date
-    ExpDate = "dddddddd"
-    pdate = dic[u"製造批號"][1:7]
-    dateDOM = date(2000+int(pdate[:2]), int(pdate[2:4]), int(pdate[4:6]))
-    DOM = "{0:04}{1:02}{2:02}".format(dateDOM.year, dateDOM.month, dateDOM.day)
-    try:
-        dateDelta = timedelta((365/12)*Exp)
-        ''' # The following is for an exact expiration date
-        DOM = "{0:04}{1:02}{2:02}".format(dateDOM.year, dateDOM.month, dateDOM.day)
-        dateEXP = dateDOM + dateDelta
-        ExpDate = "{0:04}{1:02}{2:02}".format(dateEXP.year, dateEXP.month, dateEXP.day)
-        '''
-        inc_year = False
-        if int((dateDOM.month-1 + Exp) / 12):
-            inc_year = True
-        ExpDate = "{0:04}{1:02}{2:02}".format(
-                (dateDOM.year + int((dateDOM.month-1 + Exp) / 12)) if inc_year else dateDOM.year,
-                int((dateDOM.month-1 + Exp) % 12)+1,
-                dateDOM.day)
-    except:
-        raw_input('Error converting expiration date. Using "dddddddd"\nHIT ENTER TO CONTINUE...')
-
-
-    barQR = "barcode"
-    if u"中" in sheet.name:
-        print "Select 1 for BARCODE"
-        print "Select 2 for DATA MATRIX"
-        try:
-            barQR = int(raw_input(">"))
-            if barQR == 1:
-                barQR = "barcode"
-            if barQR == 2:
-                barQR = "DM"
-        except:
-            barQR = 0
-
-
-    while True:
-        print "Set max number to print (BLANK will EXIT)."
-        nPrint = raw_input("Stop at #")
-        try:
-            nPrint = int(nPrint)
-        except:
-            print "Not a valid number... Exiting."
-            break
-        for i in range(int(dic[u"包裝"])):
-            if i >= nPrint:
-                break
-            ASE_NO = "{0}{1:04}".format(dic[u"製造批號"],dic[u"ASE.No"] + i)
-            print "---------------------"
-            try:
-                print dic[u'品名']
-            except:
-                print "(can't print a Chinese character)"
-            print PN
-            print dic[u"製造批號"]
-            print ASE_NO
-            print QTY
-            print ExpDate
-            print DOM
-            print dic[u"RT.No"]
-            print "---------------------"
-            if not noprint:
-                if barQR == "barcode":
-                    TM_label(dic[u'品名'], PN, dic[u"製造批號"], ASE_NO,
-                             QTY, ExpDate, DOM, dic[u"RT.No"])
-                if barQR == "DM":
-                    TM_DMlabel(dic[u'品名'], PN, dic[u"製造批號"], ASE_NO,
-                             QTY, ExpDate, DOM, dic[u"RT.No"])
-        if noprint:
-            raw_input("Finished. Press enter to close")
-    raw_input("Hit enter to close")
 
 if __name__ == '__main__':
-    printapp()
+    pass
