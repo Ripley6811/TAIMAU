@@ -201,7 +201,7 @@ def main(_):
                         valdict = collectSVvalues()
                         # Add back JSON note
                         if u'{' in _.curr.product.note:
-                            valdict[u'note'] = valdict[u'note'] + u'{' + _.curr.product.note.split(u'{',1)[1]
+                            valdict[u'note'] = valdict.get(u'note', u'') + u'{' + _.curr.product.note.split(u'{',1)[1]
                         query.update(valdict)
                         _.dbm.session.commit()
                     else:

@@ -15,11 +15,16 @@ description
 import Tix
 import tkMessageBox
 import datetime
+#import xlwt, xlrd
 
 from utils import print_labels, settings
 
 
+
 def main(_, shipmentItemID):
+    #XXX: Does this slow things down? Doesn't seem like it.
+    #TODO: Run function if product code not found.
+#    make_product_code_list(_)
 
     #### NEW POPUP WINDOW: LIMIT TO ONE ####
     try:
@@ -370,7 +375,6 @@ def main(_, shipmentItemID):
         for i in range(begin,endno+1):
             ASE = u"{0}{1:04}".format(vals.LOT, i)
             try:
-                settings.update(label=vals)
                 if DM:
                     print_labels.TM_DMlabel(vals.name, vals.PN, vals.LOT, ASE,
                          vals.QTY, vals.EXP, vals.DOM, vals.RT)
@@ -398,6 +402,58 @@ def main(_, shipmentItemID):
 
     set_group_nos()
     update_print_preview()
-
-
-
+    
+    
+#def make_product_code_list(_):
+#    query = _.dbm.session.query(_.dbm.Product.MPN, _.dbm.Product.inventory_name, _.dbm.Product.product_label)
+#    products = query.all()
+#    
+#    '''
+#    with open(u'codemap.txt', 'w') as f:
+#        write = f.write
+#        for p in products:
+#            write(p[0].encode('utf8'))
+#            write(u'\n')
+#            if p[2] != u'':
+#                write(p[2].replace(u',',u'').encode('utf8'))
+#            else:
+#                write(p[1].replace(u',',u'').encode('utf8'))
+#            write(u'\n')
+#    '''
+#
+#    wb = xlwt.Workbook(encoding="utf_16_le")
+#    ws = wb.add_sheet('products')
+#    
+#    for i, p in enumerate(products):
+#        for col in range(3):
+#            ws.write(i, col, p[col])
+#            
+#    wb.save(u'codemap.xls')
+#    
+#
+#def product_code(MPN):
+#    '''
+#    with open(u'codemap.txt', 'r') as f:
+#        lines = f.readlines()
+#        for i, line in enumerate(lines):
+#            print repr(MPN), repr(line)
+#            if MPN == line.strip():
+#                return lines[i+1]
+#    '''
+#    wb = xlrd.open_workbook(u'codemap.xls')
+#    
+#    print wb.encoding
+#    
+#    try:
+#        ws = wb.sheet_by_name(u'products')
+#    except xlrd.XLRDError:
+#        ws = wb.sheet_by_index(0)
+#        
+#    cell = ws.cell_value
+#    
+#    for row in range(ws.nrows):
+#        if cell(row, 0) == MPN:
+#            if cell(row, 2) != u'':
+#                return cell(row, 2)
+#            else:
+#                return cell(row, 1)

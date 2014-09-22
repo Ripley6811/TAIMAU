@@ -10,9 +10,18 @@ Updated: 2013-11-29
 -Changed max number to print function: Exits when blank
 -Verification of RT. No.: 10 digits and uniqueness
 
+Updated: 2014-9-20
+-Printer name changed slightly. Now searches for printer by keyword in name.
+-Program will ask for input again instead of exiting on errors.
+
+Updated: 2014-9-22
+-Must avoid doing any kind of unnecessary encoding/decoding.
+
+XXX: If any Chinese characters fail to print. Try retyping the characters into
+the database and save.
+
 '''
 from ctypes import cdll
-import xlrd
 from datetime import date, timedelta
 from time import sleep
 from win32print import EnumPrinters
@@ -118,10 +127,11 @@ def TM_label(material, PN, LOT_NO, ASE_NO, QTY, ExpDate, DOM, RT_NO):
         noPNadjust = 43
     windowsfont(tab,15+noPNadjust, "Material name:", 30)
     #showinfo(material.encode('utf8'), material.encode('utf8'))
-    try:
-        windowsfont(tab+180,6+noPNadjust, material.encode('big5'), 42, style=2)
-    except UnicodeEncodeError:
-        windowsfont(tab+180,6+noPNadjust, material.encode('utf8'), 42, style=2)
+#    try:
+    windowsfont(tab+180,6+noPNadjust, material.encode('big5'), 42, style=2)
+#    except UnicodeEncodeError:
+#        print 'BIG5 failed. Trying UTF8'
+#        windowsfont(tab+180,6+noPNadjust, material.encode("u16"), 42, style=2)
 
     if PN:
         windowsfont(tab,58, "P/N:", h=26)
