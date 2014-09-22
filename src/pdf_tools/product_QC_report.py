@@ -341,11 +341,21 @@ def create_qc_pdf(**kwargs):
         try:
             subprocess.call(['start', outfile],
                              shell=True)
+            return
         except:
+            pass
+        
+        try:
             print u'Trying alternate subprocess command.'
             subprocess.call(['start', '/D'] +
                             list(os.path.split(outfile)),
                             shell=True)
+            return
+        except UnicodeEncodeError:
+            pass
+        
+        print u'Failed to autoload PDF after creation.'
+        return
     else:
         head = u'Cancelled'
         body = u'Canceled PDF creation.'
