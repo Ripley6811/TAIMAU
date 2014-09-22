@@ -314,6 +314,8 @@ def main(_):
         for txt, svset in zip(entryfields, entrySVars):
             if svset[0].get() not in (txt[-1], u''):
                 _dict[txt[1]] = svset[0].get()
+            else:
+                _dict[txt[1]] = u''
         # Get the radiobutton values.
         for txt, svset in radioSVars:
             _dict[txt] = bool(svset.get())
@@ -332,3 +334,4 @@ def main(_):
         _.refresh.append(refresh)
     except KeyError:
         _.refresh = [refresh,]
+

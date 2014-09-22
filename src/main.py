@@ -77,9 +77,16 @@ class TaimauApp(Tix.Tk):
 
         self.parent = parent
         self.option_add("*Font", "PMingLiU 13")
-        ttk.Style().configure('.', font=tkFont.Font(family="PMingLiU", size=-12))
-        self.tk_setPalette(background=u'AntiqueWhite1', foreground=u'black',
-                           selectColor='white')
+        ttk.Style().configure('.', font=tkFont.Font(family="PMingLiU", size=12))
+        self.tk_setPalette(
+                background=u'AntiqueWhite1',
+                foreground=u'black',
+                selectColor='white',
+                activeForeground='black',
+                selectBackground='black',
+                selectForeground='yellow',
+                disabledForeground='black',
+        )
 
 
         _state = Info()
