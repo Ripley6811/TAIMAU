@@ -9,8 +9,8 @@ Improvements over previous version include:
 - "settings" that are saved and loaded from file using the json package.
 
 :REQUIRES:
-    - Database using TM2014_tables_v2.py
-    - gdata (Google API) for pulling Android app data.
+    - Database using TM2014_tables_v3.py
+    - FPDF for create PDF files.
 
 :TODO:
 
@@ -35,6 +35,13 @@ __version__ = '0.3'
 # IMPORT STATEMENTS
 #===============================================================================
 import os  # os.walk(basedir) FOR GETTING DIR STRUCTURE
+# Change working directory one level up when running this module.
+if __name__ == '__main__':
+    os.chdir(os.pardir)
+# Make a "data" folder for storing default database and settings file.
+if not os.path.exists('data'):
+    os.mkdir('data')
+
 import datetime
 import tkMessageBox
 import tkFileDialog
@@ -50,7 +57,6 @@ import frames.po_frame
 import frames.product_frame
 from utils.translate_term import localize, setLang
 from utils import settings
-print 'CWD:', os.getcwd()
 #===============================================================================
 # METHODS
 #===============================================================================
@@ -69,7 +75,6 @@ class adict(dict):
 class TaimauApp(Tix.Tk):
     '''Main application.
     '''
-    run_location = os.getcwd()
 
     def __init__(self, parent, debug=False):
 
@@ -85,7 +90,7 @@ class TaimauApp(Tix.Tk):
                 activeForeground='black',
                 selectBackground='black',
                 selectForeground='yellow',
-                disabledForeground='black',
+                disabledForeground='gray',
         )
 
 
@@ -131,17 +136,17 @@ class TaimauApp(Tix.Tk):
 
 
         # FONT MENU OPTIONS
-        def setFont():
-            self.option_add("*Font", fontsize.get())
-        fontmenu = Tix.Menu(menubar, tearoff=0)
-        fontsize = Tix.StringVar()
-        fontmenu.add_radiobutton(label=u'Verdana 12', variable=fontsize,
-                                 command=setFont, value=u'Verdana 12')
-        fontmenu.add_radiobutton(label=u'PMingLiU 13', variable=fontsize,
-                                 command=setFont, value=u'PMingLiU 13')
-        fontmenu.add_radiobutton(label=u'NSimSun 13', variable=fontsize,
-                                 command=setFont, value=u'NSimSun 13')
-        menubar.add_cascade(label=_state.loc(u"Font", 1), menu=fontmenu)
+#        def setFont():
+#            self.option_add("*Font", fontsize.get())
+#        fontmenu = Tix.Menu(menubar, tearoff=0)
+#        fontsize = Tix.StringVar()
+#        fontmenu.add_radiobutton(label=u'Verdana 12', variable=fontsize,
+#                                 command=setFont, value=u'Verdana 12')
+#        fontmenu.add_radiobutton(label=u'PMingLiU 13', variable=fontsize,
+#                                 command=setFont, value=u'PMingLiU 13')
+#        fontmenu.add_radiobutton(label=u'NSimSun 13', variable=fontsize,
+#                                 command=setFont, value=u'NSimSun 13')
+#        menubar.add_cascade(label=_state.loc(u"Font", 1), menu=fontmenu)
 #        fontsize.set(u'NSimSun 13')
 #        setFont()
 

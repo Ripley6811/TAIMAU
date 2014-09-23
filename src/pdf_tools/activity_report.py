@@ -86,7 +86,7 @@ def main(_, records=[]):
         class myPDF(fpdf.FPDF):
             def header(self):
                 if _.sc_mode == u'c':
-                    self.image(u'images/TaimauChemicals.png', 25, 5)
+                    self.image(u'images/logo.png', 25, 5)
                     self.add_font(u'SimHei', 'B', font, uni=True) # Only .ttf and not .ttc
                     self.set_font(u'SimHei', 'B', 16)
                     self.set_xy(25, 25)
@@ -145,19 +145,20 @@ def main(_, records=[]):
             print row, len(cat)
             add_start, add_body, add_end = False, False, False
 
-            if row == 0 or cat[row] != cat[row-1]:
-                if cat[row] == cat[row+1]:
-                    add_start = True
-            if row != 0 and row == len(cat)-1:
-                if cat[row] == cat[row-1]:
-                    add_end = True
-            if row != len(cat)-1 and cat[row] != cat[row+1]:
-                if cat[row] == cat[row-1]:
-                    add_end = True
+            END = len(cat)-1
+            if (row != END and cat[row] == cat[row+1]):
+                add_start = True
+                if (row != 0 and cat[row] == cat[row-1]):
+                    add_start = False
+
+            if (row != 0 and cat[row] == cat[row-1]):
+                add_end = True
+                if (row != END and cat[row] == cat[row+1]):
+                    add_end = False
 
             if row > 0 and cat[row] == cat[row-1]:
                 add_body = True
-            if row < len(cat)-1 and cat[row] == cat[row+1]:
+            if row < END and cat[row] == cat[row+1]:
                 add_body = True
             if add_body:
                 return add_start, add_body, add_end

@@ -47,9 +47,7 @@ def main(_, shipmentItemID):
 
 
     ship_rec = _.dbm.session.query(_.dbm.ShipmentItem).get(shipmentItemID)
-    print repr(ship_rec)
     prod_rec = ship_rec.order.product
-    print repr(prod_rec)
 
 
 
@@ -60,7 +58,8 @@ def main(_, shipmentItemID):
     # Then replace with data from Shipment.note field if it exists.
     if prod_rec.json():
         ASE_data = prod_rec.json()
-        print 'JSON from product:', ASE_data
+        if _.debug:
+            print 'JSON from product:', ASE_data
     else:
         ASE_data = {u'current_lot':u'', u'Expiration':u''}
 #    try:
@@ -73,11 +72,11 @@ def main(_, shipmentItemID):
 
 
     ase_no = Tix.StringVar()
+
+    # Get lot from ship_rec else add default lot number.
     if ship_rec.lot:
         ase_no.set(ship_rec.lot)
-        print 'lot from ship_rec', ship_rec.lot
     else:
-        print 'adding default current_lot number'
         ase_no.set(ASE_data.get(u'current_lot', u''))
 
 
@@ -237,9 +236,9 @@ def main(_, shipmentItemID):
                                 year=year,
                                 month=month,
                                 day=int(rt_no.get()[2:4]))
-    #        print 'test_date', test_date
+
             query = query.filter_by(shipmentdate = test_date)
-    #        print 'rt_list', [q[0] for q in query.all() if q[0]]
+
             rt_list = [q[0][-2:] for q in query.all() if q[0]]
             while check_text[-2:] in rt_list:
                 check_text = u'{}{:02}'.format(check_text[:-2], int(check_text[-2:]) + 1)
@@ -340,7 +339,6 @@ def main(_, shipmentItemID):
 
 
     def submit_print_request(DM=False, test=False):
-        print u'{}{}'.format(ase_no.get(), ase_no_group.get())
 #        ASE_data[u'ASE No'] = ase_no.get()
         ASE_data[u'current_lot'] = ase_no.get()
 #        ASE_data[u'RT No'] = rt_no.get()
@@ -402,12 +400,12 @@ def main(_, shipmentItemID):
 
     set_group_nos()
     update_print_preview()
-    
-    
+
+
 #def make_product_code_list(_):
 #    query = _.dbm.session.query(_.dbm.Product.MPN, _.dbm.Product.inventory_name, _.dbm.Product.product_label)
 #    products = query.all()
-#    
+#
 #    '''
 #    with open(u'codemap.txt', 'w') as f:
 #        write = f.write
@@ -423,13 +421,13 @@ def main(_, shipmentItemID):
 #
 #    wb = xlwt.Workbook(encoding="utf_16_le")
 #    ws = wb.add_sheet('products')
-#    
+#
 #    for i, p in enumerate(products):
 #        for col in range(3):
 #            ws.write(i, col, p[col])
-#            
+#
 #    wb.save(u'codemap.xls')
-#    
+#
 #
 #def product_code(MPN):
 #    '''
@@ -441,16 +439,16 @@ def main(_, shipmentItemID):
 #                return lines[i+1]
 #    '''
 #    wb = xlrd.open_workbook(u'codemap.xls')
-#    
+#
 #    print wb.encoding
-#    
+#
 #    try:
 #        ws = wb.sheet_by_name(u'products')
 #    except xlrd.XLRDError:
 #        ws = wb.sheet_by_index(0)
-#        
+#
 #    cell = ws.cell_value
-#    
+#
 #    for row in range(ws.nrows):
 #        if cell(row, 0) == MPN:
 #            if cell(row, 2) != u'':

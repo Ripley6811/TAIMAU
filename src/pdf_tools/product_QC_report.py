@@ -109,8 +109,6 @@ def main(_):
     submit_w['command'] = lambda: submit()
     submit_w.grid(row=50, column=0, columnspan=3)
 
-    for each in dir(product_w.entry):
-        print each
 
     def submit():
         # Convert matrix of entry widgets into matrix of values.
@@ -167,11 +165,11 @@ class myPDF(FPDF):
         C = 'C'
         if True:
             # Company logo left-top corner and smaller
-            self.image(u'images/TaimauChemicals.png', x=12, y=10, w=34)
+            self.image(u'images/logo.png', x=12, y=10, w=34)
         else:
             # Company logo centered and the top
-            self.image(u'images/TaimauChemicals.png', x=84, y=8, w=40)
-        self.image(u'images/hsinfa.png', x=48, y=240, w=24)
+            self.image(u'images/logo.png', x=84, y=8, w=40)
+        self.image(u'images/signature1.png', x=48, y=240, w=24)
         self.add_font(family=u'SimHei', style='B', fname=font, uni=True) # Only .ttf and not .ttc
         self.set_font(family=u'SimHei', style='B', size=16)
 #        self.set_xy(lm, 25)
@@ -344,7 +342,7 @@ def create_qc_pdf(**kwargs):
             return
         except:
             pass
-        
+
         try:
             print u'Trying alternate subprocess command.'
             subprocess.call(['start', '/D'] +
@@ -353,7 +351,7 @@ def create_qc_pdf(**kwargs):
             return
         except UnicodeEncodeError:
             pass
-        
+
         print u'Failed to autoload PDF after creation.'
         return
     else:

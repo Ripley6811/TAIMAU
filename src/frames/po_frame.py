@@ -217,6 +217,9 @@ def create(_):
     center_pane = _.po_center = Tix.Frame(_.po_frame)
     center_pane.pack(side=Tix.LEFT, fill=Tix.BOTH, expand=1)
 
+    def branch_edit(name):
+        print 'branch edit'
+
     def load_company():
         try:
             cogroup = _.curr.cogroup
@@ -252,6 +255,7 @@ def create(_):
             tr.pack(side="left", fill='y')
             if i==0:
                 tr.invoke()
+            tr.bind('<Double-Button-1>', lambda e, bn=branch.name: branch_edit(bn))
         Tix.Label(branchbox_inner, textvariable=branch_info, justify='left',
                   font=(_.font, 14, 'bold')).pack(side='left')
 
@@ -288,8 +292,11 @@ def create(_):
         TB = lambda _text, **kwargs: Tix.Button(pobox, text=_text, anchor='w',
                                       bg="moccasin",
                                       activebackground="moccasin", **kwargs)
-        row = 0
-        for row, order in enumerate(order_list):
+
+        # Retrieve user designated PO ordering if it exists.
+        rows = settings.load().get('po_order', {}).get(cogroup.name, range(100))
+
+        for row, order in zip(rows, order_list):
             if order.is_open:
                 activeOrders.append(order)
                 _poIDs.append(order.id)
@@ -328,8 +335,13 @@ def create(_):
                 lw = Tix.Label(pobox, textvariable=_textvar, anchor='w')
                 lw.grid(row=row*2, column=2, sticky='ew')
                 _sku = _prod.SKU if _prod.SKU != u"槽車" else "kg"
+                _textvar2 = Tix.StringVar()
                 _text = u'{} {})'.format(amt, _sku)
-                lw2 = Tix.Label(pobox, text=_text, anchor='e')
+                _textvar2.set(_text)
+                _btext = u'{} {})'.format(amt * _prod.units if isinstance(amt, int) else amt, _prod.UM)
+                lw.bind('<Button-1>', lambda e, sv=_textvar2, a=_text, b=_btext: \
+                        sv.set(b if sv.get() == a else a))
+                lw2 = Tix.Label(pobox, textvariable=_textvar2, anchor='e')
                 lw2.grid(row=row*2, column=3, sticky='ew')
                 lw2.bind('<Double-Button-1>', lambda e, a=amt, i=len(_qtyVars): fill_qty(i,a))
 
@@ -416,22 +428,22 @@ def create(_):
                         bg="lawn green",
                         command=lambda:po.new(_, load_company),
                         activebackground="lime green")
-        tb.grid(row=row*2+2, column=0, sticky='ew')
+        tb.grid(row=1000, column=0, sticky='ew')
 
         # Button for submitting new manifest. Goto date selection, etc.
         #TODO: Add command
         numbSVar = Tix.StringVar()
         if _poIDs:
             tl = Tix.Label(pobox, textvariable=_.loc(u'Manifest #:'))
-            tl.grid(row=row*2+2, column=2, columnspan=2, sticky='e')
+            tl.grid(row=1000, column=2, columnspan=2, sticky='e')
             te = Tix.Entry(pobox, textvariable=numbSVar, width=9,
                                justify="center", bg=u"moccasin")
-            te.grid(row=row*2+2, column=4, columnspan=2, sticky='ew')
+            te.grid(row=1000, column=4, columnspan=2, sticky='ew')
             tb = Tix.Button(pobox, textvariable=_.loc(u"\u26DF Create Manifest"),
                             bg="lawn green",
                             command=lambda:make_manifest(),
                             activebackground="lime green")
-            tb.grid(row=row*2+2, column=6, columnspan=5, sticky='ew')
+            tb.grid(row=1000, column=6, columnspan=5, sticky='ew')
 
         def make_manifest():
             manifest_list = [(a, b, c) for a,b,c in

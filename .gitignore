@@ -214,7 +214,7 @@ pip-log.txt
 #Mr Developer
 .mr.developer.cfg
 
-extra/
+_old/
 *.png
 *.db
 *.txt
@@ -232,3 +232,4 @@ google_spreadsheet.py
 TM_excel_to_tsv.py
 TM_excel_filter_converter.py
 *.aia
+data/settings

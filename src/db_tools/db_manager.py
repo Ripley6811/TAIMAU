@@ -28,10 +28,10 @@ __version__ = '0.1'
 #===============================================================================
 # IMPORT STATEMENTS
 #===============================================================================
-from os.path import normpath
+import os
+from os.path import normpath, exists
 import datetime
 from sqlalchemy.orm import sessionmaker
-#from sqlalchemy import or_, and_
 import tkFileDialog
 
 from utils import settings
@@ -49,10 +49,12 @@ class db_manager:
     ShipmentItem = ShipmentItem
     Invoice = Invoice
     InvoiceItem = InvoiceItem
+    Vehicle = Vehicle
+    Contact = Contact
 
     def __init__(self):
         js = settings.load()
-        if js.get('dbpath'):
+        if js.get('dbpath', False) and exists(js.get('dbpath')):
             self.dbpath = js['dbpath']
 
             engine = get_database( self.dbpath, False )
@@ -70,6 +72,8 @@ class db_manager:
         FILE_OPTS = dict(
             title = u'Select Database',
             defaultextension = '.db',
+            filetypes = [('database files', '.db')],
+            initialdir = os.getcwd() + '/data'
         )
         self.dbpath = normpath(tkFileDialog.askopenfilename(**FILE_OPTS))
 
