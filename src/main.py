@@ -41,6 +41,8 @@ if __name__ == '__main__':
 # Make a "data" folder for storing default database and settings file.
 if not os.path.exists('data'):
     os.mkdir('data')
+if not os.path.exists('png'):
+    os.mkdir('png')
 
 import datetime
 import tkMessageBox
