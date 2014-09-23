@@ -21,5 +21,5 @@ Additional features:
 - View price changes for a product over time and compare with other companies.
 
 
-Program is free to use but was designed for TAIMAU's operation.
+This program was designed for TAIMAU's operation but could probably be used in many other setups.
 Please contact me if you think a similar database program could work for your business.
