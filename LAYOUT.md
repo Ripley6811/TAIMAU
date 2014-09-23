@@ -1,4 +1,5 @@
 - README.md
+- LICENSE.txt
 - LAYOUT.md
 - TODO.md
 - ***src***
