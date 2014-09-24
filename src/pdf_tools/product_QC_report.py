@@ -163,13 +163,19 @@ class myPDF(FPDF):
         rm = self.rm
         mw = rm-lm
         C = 'C'
-        if True:
-            # Company logo left-top corner and smaller
-            self.image(u'png/logo.png', x=12, y=10, w=34)
-        else:
-            # Company logo centered and the top
-            self.image(u'png/logo.png', x=84, y=8, w=40)
-        self.image(u'png/signature1.png', x=48, y=240, w=24)
+        try:
+            if True:
+                # Company logo left-top corner and smaller
+                self.image(u'png/logo.png', x=12, y=10, w=34)
+            else:
+                # Company logo centered and the top
+                self.image(u'png/logo.png', x=84, y=8, w=40)
+        except IOError as e:
+            print e
+        try:
+            self.image(u'png/signature1.png', x=48, y=240, w=24)
+        except IOError as e:
+            print e
         self.add_font(family=u'SimHei', style='B', fname=font, uni=True) # Only .ttf and not .ttc
         self.set_font(family=u'SimHei', style='B', size=16)
 #        self.set_xy(lm, 25)

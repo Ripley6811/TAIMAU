@@ -86,7 +86,11 @@ def main(_, records=[]):
         class myPDF(fpdf.FPDF):
             def header(self):
                 if _.sc_mode == u'c':
-                    self.image(u'png/logo.png', 25, 5)
+                    try:
+                        self.image(u'png/logo.png', 25, 5)
+                    except IOError as e:
+                        print e
+
                     self.add_font(u'SimHei', 'B', font, uni=True) # Only .ttf and not .ttc
                     self.set_font(u'SimHei', 'B', 16)
                     self.set_xy(25, 25)
