@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import os
 import json
-print os.path.abspath(__file__)
 
 if not os.path.exists('settings.json'):
     if os.path.exists('../../settings.json'):

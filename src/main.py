@@ -35,6 +35,8 @@ __version__ = '0.3'
 # IMPORT STATEMENTS
 #===============================================================================
 import os  # os.walk(basedir) FOR GETTING DIR STRUCTURE
+# Show full path to this file location.
+print os.path.abspath(__file__)
 # Change working directory one level up when running this module.
 if __name__ == '__main__':
     os.chdir(os.pardir)
