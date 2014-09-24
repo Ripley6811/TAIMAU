@@ -292,6 +292,56 @@ def TM_QRlabel(material, PN, LOT_NO, ASE_NO, QTY, ExpDate, DOM, RT_NO):
     sleep(0.5)
 
 
+def lookup_product_code(book, sheetname, lookname):
+    # Get product lookup data
+    prodsheet = book.sheet_by_name("Products")
+    products = []
+    for row in range(prodsheet.nrows):
+        pname = prodsheet.cell_value(row,0)
+        if lookname == pname:
+            pcomp = prodsheet.cell_value(row,1)
+            pcode = prodsheet.cell_value(row,2)
+            pqty = prodsheet.cell_value(row,3)
+            pexp = prodsheet.cell_value(row,4)
+            products.append((pcomp,pcode,pqty,pexp))
+    if len(products) > 1:
+#        print "Which product code:"
+        for i, each in enumerate(products):
+#            print i+1, '=', each[0], ':', each[1], "(", each[2], ")"
+            if each[0] in sheetname:
+                return each
+#        return products[input("Select #")-1]
+            
+    if len(products) == 0:
+        print "ERROR: Product not found in code lookup list."
+        print "Make sure the spelling is correct and matches the desired product."
+        raw_input("HIT ENTER TO EXIT...")
+        
+#    print 'SELECTED:', products[0][0], ':', products[0][1], "(", products[0][2], ")"
+    return products[0]
+    
+    
+def rt_check(sheet, valrow, rtn):
+    if len(rtn) != 10:
+        print "RT No. ERROR: Not 10 characters long."
+        return False
+    # Find RT No. column
+    rtcol = -1
+    for icol in range(sheet.ncols):
+        if sheet.cell_value(0,icol) == u'RT.No':
+            rtcol = icol
+    if rtcol < 0:
+        print "RT No. ERROR: Column not found."
+        return False
+        
+    for irow in range(1,valrow):
+        if sheet.cell_value(irow,rtcol) == rtn:
+            print "RT No. ERROR: Value already exists."
+            return False
+            
+    return True
+
+
 
 
 '''CMD Interface for working with 桶裝出貨表.xls when running this module
