@@ -158,26 +158,23 @@ def localize(word, asText=False):
         return labeldict[word]
 
 
-def setLang(lang=None):
+def setLang(lang):
     '''Set language to 'lang' or acts as a switch if lang is None.
 
     Only accepts "Chinese", any other word will set to English.
     If no parameter than alternates between Chinese and English.
     '''
     global toChinese
-    # Set 'toChinese' boolean
-    if lang == None:
-        toChinese = not toChinese
-    elif "Chinese" == lang.capitalize():
-        toChinese = True
-    else:
-        toChinese = False
+
+    toChinese = lang.capitalize() == u'Chinese'
+
     # Change all StringVar labels
     for key in labeldict:
         labeldict[key].set(translate_word(key))
 
     settings.update(language=lang)
-setLang(settings.load().get(u'language'))
+
+setLang(settings.load().get(u'language', u'Chinese'))
 
 
 
