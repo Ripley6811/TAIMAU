@@ -3,6 +3,8 @@
 import os
 import json
 
+# Set default path to this file then up two levels to find settings.json.
+os.chdir(os.path.dirname(__file__))
 if not os.path.exists('settings.json'):
     if os.path.exists('../../settings.json'):
         os.chdir(os.pardir)
