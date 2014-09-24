@@ -38,9 +38,10 @@ import os  # os.walk(basedir) FOR GETTING DIR STRUCTURE
 # Change working directory one level up when running this module.
 if __name__ == '__main__':
     os.chdir(os.pardir)
-# Make a "data" folder for storing default database and settings file.
+# Make a "data" folder for storing default database.
 if not os.path.exists('data'):
     os.mkdir('data')
+# Make a "png" folder for images used in PDF reports.
 if not os.path.exists('png'):
     os.mkdir('png')
 
