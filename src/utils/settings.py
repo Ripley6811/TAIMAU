@@ -1,20 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os
 import json
+print os.path.abspath(__file__)
+
+if not os.path.exists('settings.json'):
+    if os.path.exists('../../settings.json'):
+        os.chdir(os.pardir)
+        os.chdir(os.pardir)
 
 def load():
     try:
-        with open('data/settings', 'r') as rfile:
+        with open('settings.json', 'r') as rfile:
             js = json.load(rfile)
         rfile.close()
         return js
-    except:
+    except IOError as e:
+        print e
+        print 'CWD:', os.getcwd()
         return dict()
 
 def update(**kwargs):
     js = load()
     js.update(**kwargs)
-    with open('data/settings', 'w') as wfile:
+    with open('settings.json', 'w') as wfile:
         json.dump(js, wfile, indent=4)
     wfile.close()
     return True
