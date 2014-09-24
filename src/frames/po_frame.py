@@ -290,7 +290,7 @@ def create(_):
 
         order_list = cogroup.purchases if _.sc_mode == "s" else cogroup.sales
         TB = lambda _text, **kwargs: Tix.Button(pobox, text=_text, anchor='w',
-                                      bg="moccasin",
+                                      bg="moccasin", font=(_.font, 13, 'bold'),
                                       activebackground="moccasin", **kwargs)
 
         # Retrieve user designated PO ordering if it exists.
@@ -304,28 +304,46 @@ def create(_):
                 if _.debug:
                     print 'PRODUCT TYPE:', type(_prod)
                 assert isinstance(_prod, _.dbm.Product), u"Product not attached to order."
-                _id = order.orderID if order.orderID else _.loc(u"(NA)", 1)
-                _text = u"PO {} : {} ({})".format(_id, _prod.label(), _prod.specs)
-                #TODO: Button opens PO editing, like price, date, applytax and total qty.
+
+
+                # PO start date
+                _text=u'{d.month}月{d.day}日'.format(d=order.orderdate)
+                lw = Tix.Label(pobox, text=_text, font=(_.font, 11, 'bold'))
+                lw.grid(row=row*2, column=0)
+
+
+                _id = order.orderID if order.orderID else None
+                if _id:
+                    _text = u'PO {:<10}:'.format(_id)
+                else:
+                    _text = u''
+                _text += u"{}".format(_prod.label())
                 tb = TB(_text)
                 tb['command'] = lambda o=order: po.edit(_,o,load_company)
-                tb.grid(row=row*2, rowspan=2, column=0, sticky='nsew')
+                tb.grid(row=row*2, column=1, sticky='nsew')
                 _poBs.append(tb)
+
+                # Price per sku/unit
+                _Ptext = u' ${}/{} '.format(
+                    int(order.price) if order.price.is_integer() else order.price,
+                    _prod.UM if _prod.unitpriced else _prod.SKU
+                )
+#                lw = Tix.Label(pobox, text=_text)
+#                lw.grid(row=row*2, column=8)
+
+                _text=u'{}:{}'.format(_prod.specs, _Ptext)
+                lw = Tix.Label(pobox, text=_text, padx=10, font=("PMingLiU", 13, 'bold'))
+                lw.grid(row=row*2, column=2, sticky='w')
+
 
                 if order.ordernote:
                     lw = Tix.Label(pobox, textvariable=_.loc(u'NOTE:'),
                                    bg='coral', font=(_.font, 9))
-                    lw.grid(row=row*2+1, column=1, sticky='ew')
+                    lw.grid(row=row*2+1, column=0, sticky='ew')
                     lw = Tix.Label(pobox, text=order.ordernote, anchor='w',
                                    bg='lavender', font=(_.font, 9))
-                    lw.grid(row=row*2+1, column=2, columnspan=10, sticky='ew')
+                    lw.grid(row=row*2+1, column=1, columnspan=10, sticky='ew')
 
-                # Multiple entry option button
-                tb = Tix.Button(pobox, text=u'\u26DF \u26DF',
-                                font=(_.font, 11), bg="lawn green",
-                                activebackground="lime green")
-                tb['command'] = lambda o=order: po.add_many(_,o,load_company)
-                tb.grid(row=row*2, column=1, sticky='nsew')
 
                 # PO remaining QTY
                 amt = order.qty_remaining()
@@ -333,7 +351,7 @@ def create(_):
                     amt = u'\u221E' # Infinity symbol for unlimited POs.
                 _textvar = _.loc(u"(Avail:")
                 lw = Tix.Label(pobox, textvariable=_textvar, anchor='w')
-                lw.grid(row=row*2, column=2, sticky='ew')
+                lw.grid(row=row*2, column=3, sticky='ew')
                 _sku = _prod.SKU if _prod.SKU != u"槽車" else "kg"
                 _textvar2 = Tix.StringVar()
                 _text = u'{} {})'.format(amt, _sku)
@@ -342,13 +360,20 @@ def create(_):
                 lw.bind('<Button-1>', lambda e, sv=_textvar2, a=_text, b=_btext: \
                         sv.set(b if sv.get() == a else a))
                 lw2 = Tix.Label(pobox, textvariable=_textvar2, anchor='e')
-                lw2.grid(row=row*2, column=3, sticky='ew')
+                lw2.grid(row=row*2, column=4, sticky='ew')
                 lw2.bind('<Double-Button-1>', lambda e, a=amt, i=len(_qtyVars): fill_qty(i,a))
 
                 # If PO remainder is zero. Make red.
                 if order.all_shipped():
                     lw.config(bg=u'tomato')
                     lw2.config(bg=u'tomato')
+
+                # Multiple entry option button
+                tb = Tix.Button(pobox, text=u'\u26DF \u26DF',
+                                font=(_.font, 11), bg="lawn green",
+                                activebackground="lime green")
+                tb['command'] = lambda o=order: po.add_many(_,o,load_company)
+                tb.grid(row=row*2, column=5, sticky='nsew')
 
                 # QTY entry field
                 def highlight_entry(row, widget, capamt=100):
@@ -375,51 +400,39 @@ def create(_):
                 _qtyVars.append(Tix.StringVar())
                 ew = Tix.Entry(pobox, textvariable=_qtyVars[-1], width=7,
                                justify="center", bg=u"moccasin")
-                ew.grid(row=row*2, column=4)
+                ew.grid(row=row*2, column=6)
                 _qtyVars[-1].trace('w', lambda a,b,c,ew=ew,capamt=amt,row=len(_poIDs)-1: highlight_entry(row,ew,capamt) )
 
                 # SKU
                 _text = u'{}:'.format(_prod.SKU)
                 lw = Tix.Label(pobox, text=_text, anchor='w')
-                lw.grid(row=row*2, column=5, sticky='w')
+                lw.grid(row=row*2, column=7, sticky='w')
 
                 # Total units StringVar
                 _unitsVars.append(Tix.StringVar())
                 _multiplier.append(_prod.units)
                 lw = Tix.Label(pobox, textvariable=_unitsVars[-1],
                                anchor='e', bg=u'LightGoldenrod1')
-                lw.grid(row=row*2, column=6, sticky='e')
+                lw.grid(row=row*2, column=8, sticky='e')
                 _unitsVars[-1].set("0")
                 _text = u' {}'.format(
                     _prod.UM #if _prod.unitpriced else _prod.SKU
                 )
                 lw = Tix.Label(pobox, text=_text,
                                anchor='w', bg=u'LightGoldenrod1')
-                lw.grid(row=row*2, column=7, sticky='w')
-
-                # Price per sku/unit
-                _text = u' ${} per {} '.format(
-                    int(order.price) if order.price.is_integer() else order.price,
-                    _prod.UM if _prod.unitpriced else _prod.SKU
-                )
-                lw = Tix.Label(pobox, text=_text)
-                lw.grid(row=row*2, column=8)
+                lw.grid(row=row*2, column=9, sticky='w')
 
                 # Discount percentage
-                _discountVars.append(Tix.StringVar())
-                ew = Tix.Entry(pobox, textvariable=_discountVars[-1], width=7,
-                               justify="center", bg=u"moccasin")
-                ew.grid(row=row*2, column=9)
-                _discountVars[-1].set(order.discount)
-                _discountVars[-1].trace('w', lambda a,b,c,ew=ew,row=len(_poIDs)-1: highlight_entry(row,ew,100) )
-                lw = Tix.Label(pobox, textvariable=_.loc(u"% discount"), anchor='w')
-                lw.grid(row=row*2, column=10, sticky='w')
+#                _discountVars.append(Tix.StringVar())
+#                ew = Tix.Entry(pobox, textvariable=_discountVars[-1], width=7,
+#                               justify="center", bg=u"moccasin")
+#                ew.grid(row=row*2, column=9)
+#                _discountVars[-1].set(order.discount)
+#                _discountVars[-1].trace('w', lambda a,b,c,ew=ew,row=len(_poIDs)-1: highlight_entry(row,ew,100) )
+#                lw = Tix.Label(pobox, textvariable=_.loc(u"% discount"), anchor='w')
+#                lw.grid(row=row*2, column=10, sticky='w')
 
 
-                # PO start date
-                lw = Tix.Label(pobox, text=u'({})'.format(order.orderdate),
-                               font=(_.font, 10))
-                lw.grid(row=row*2, column=11)
 
 
         # Button for adding another product order.
@@ -428,7 +441,7 @@ def create(_):
                         bg="lawn green",
                         command=lambda:po.new(_, load_company),
                         activebackground="lime green")
-        tb.grid(row=1000, column=0, sticky='ew')
+        tb.grid(row=1000, column=1, sticky='ew')
 
         # Button for submitting new manifest. Goto date selection, etc.
         #TODO: Add command

@@ -87,7 +87,7 @@ class TaimauApp(Tix.Tk):
 
         self.parent = parent
         self.option_add("*Font", "PMingLiU 13")
-        ttk.Style().configure('.', font=tkFont.Font(family="PMingLiU", size=12))
+        ttk.Style().configure('.', font=tkFont.Font(family="PMingLiU", size=13))
         self.tk_setPalette(
                 background=u'AntiqueWhite1',
                 foreground=u'black',
@@ -161,6 +161,9 @@ class TaimauApp(Tix.Tk):
             command=lambda: setLang(u"Chinese"), value=u'Chinese')
         settingsmenu.add_radiobutton(label=u'English', variable='lang_select',
             command=lambda: setLang(u"English"), value=u'English')
+        settingsmenu.add_separator()
+        settingsmenu.add_command(label=_state.loc(u'PO Order', 1),
+            command=lambda: setPOorder(_state))
         menubar.add_cascade(label=_state.loc(u"Settings", 1), menu=settingsmenu)
 
         # HELP MENU OPTIONS
@@ -234,6 +237,84 @@ class TaimauApp(Tix.Tk):
 
         # TODO: Bug in update. Suddenly not working...
         self.menubar.entryconfig(8, label=u'DATABASE={}'.format(self._.dbm.dbpath))
+
+def setPOorder(_):
+    cogroup = _.curr.cogroup
+    order_list = cogroup.purchases if _.sc_mode == "s" else cogroup.sales
+    #### NEW POPUP WINDOW: LIMIT TO ONE ####
+    try:
+        if _.extwin.state() == 'normal':
+            if _.curr.cogroup.name in _.extwin.title():
+                # Focus existing frame and return
+                _.extwin.focus_set()
+                return
+            else:
+                # Destroy existing frame and make new one
+                _.extwin.destroy()
+    except:
+        # Continue with frame creation
+        pass
+
+    _.extwin = Tix.Toplevel(_.parent, width=700)
+    _.extwin.title(u"{} {}".format(cogroup.name, u'PO ordering'))
+    _.extwin.geometry(u'+{}+{}'.format(_.parent.winfo_rootx()+100, _.parent.winfo_rooty()))
+    _.extwin.focus_set()
+
+
+    ordering = []
+    for row, order in enumerate(order_list):
+        ordering.append(Tix.StringVar())
+
+        options = ___ = dict(master=_.extwin)
+        ___['font'] = (_.font, 14)
+        ___['text'] = u'{}:{} {}'.format(order.orderID,
+                      order.product.name, order.product.specs)
+        Tix.Label(**options).grid(row=row, column=0, sticky='w')
+
+        options = ___ = dict(master=_.extwin)
+        ___['bg'] = u'moccasin'
+        ___['font'] = (_.font, 14)
+        ___['width'] = 5
+        ___['textvariable'] = ordering[-1]
+        Tix.Entry(**options).grid(row=row, column=1, sticky='w')
+
+    options = ___ = dict(master=_.extwin)
+    ___['bg'] = u'lawn green'
+    ___['font'] = (_.font, 16, 'bold')
+    ___['textvariable'] = _.loc(u"\u2713 Submit")
+    ___['command'] = lambda *args: submit(ordering)
+    Tix.Button(**options).grid(row=101, column=0)
+
+    options = ___ = dict(master=_.extwin)
+    ___['bg'] = u'tomato'
+    ___['font'] = (_.font, 16, 'bold')
+    ___['textvariable'] = _.loc(u'Clear')
+    ___['command'] = lambda *args: [sv.set(u'') for sv in ordering]
+    Tix.Button(**options).grid(row=101, column=1)
+
+    # Get existing ordering if defined previously.
+    po_order = settings.load().get('po_order', {})
+    nset = po_order.get(cogroup.name, None)
+    if nset:
+        for val, sv in zip(nset, ordering):
+            sv.set(str(val))
+
+    def submit(ordering):
+        try:
+            unused = range(1,100)
+            # Convert entries to integers or None.
+            ordering = [int(sv.get()) if sv.get().isdigit() else None for sv in ordering]
+            # Removed used integers from the unused list.
+            [unused.remove(val) for val in ordering if isinstance(val, int)]
+            # Fill in blank (None) entries with unused integers.
+            ordering = [unused.pop(0) if val == None else val for val in ordering]
+            # Save ordering.
+            po_order[cogroup.name] = ordering
+            settings.update(po_order = po_order)
+
+            _.extwin.destroy()
+        except ValueError:
+            pass
 
 
 
