@@ -358,6 +358,12 @@ def create_qc_pdf(**kwargs):
         except UnicodeEncodeError:
             pass
 
+        try:
+            os.startfile(outfile)
+            return
+        except:
+            pass
+
         print u'Failed to autoload PDF after creation.'
         return
     else:

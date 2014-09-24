@@ -300,16 +300,10 @@ def main(_, records=[]):
         if outfile and not os.path.exists(outfile):
             FPDF.output(name=outfile)
 
-            if _.debug:
-                print u'start {0}'.format(outfile)
-                print u'start {0}'.format(outfile)
             try:
                 subprocess.call(['start', outfile],
                                  shell=True)
             except:
-                print u'Trying alternate subprocess command.'
-                subprocess.call(['start', '/D'] +
-                                list(os.path.split(outfile)),
-                                shell=True)
+                os.startfile(outfile)
         else:
             tkMessageBox.showinfo(u'',u'Canceled PDF creation.')
