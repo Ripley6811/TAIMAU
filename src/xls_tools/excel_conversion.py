@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-summary
+This program takes the data from a specific data-entry Excel sheet and converts
+it to two formatted Excel files for distribution to client.
 
 Parse new format Excel file to make formatted output.
 
