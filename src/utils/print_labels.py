@@ -21,6 +21,9 @@ XXX: If any Chinese characters fail to print. Try retyping the characters into
 the database and save.
 
 '''
+import os
+import tkFileDialog
+import xlrd
 from ctypes import cdll
 from datetime import date, timedelta
 from time import sleep
@@ -291,5 +294,155 @@ def TM_QRlabel(material, PN, LOT_NO, ASE_NO, QTY, ExpDate, DOM, RT_NO):
 
 
 
+'''CMD Interface for working with 桶裝出貨表.xls when running this module
+independently.
+'''
+def printapp(noprint=False):
+    import settings
+
+    def getpath(force_select=False):
+        filename = settings.load().get('tzpath', '')
+        if not filename or force_select:
+            FILE_OPTS = ___ = dict()
+            ___['title'] = u'Locate the 桶裝出貨表 file.'
+            ___['defaultextension'] = '.xls'
+            ___['filetypes'] = [('Excel files', '.xls'), ('all files', '.*')]
+            ___['initialdir'] = u'T:\\Users\\chairman\\Documents\\'
+            ___['initialfile'] = u'桶裝出貨表.xls'
+            filename = os.path.normpath(tkFileDialog.askopenfilename(**FILE_OPTS))
+
+            settings.update(tzpath = filename)
+        return filename
+
+    while True:
+        try:
+            book = xlrd.open_workbook(getpath())
+            break
+        except xlrd.biffh.XLRDError:
+            print 'Unsupported format, corrupt file, or wrong file.'
+            getpath(force_select=True)
+
+
+    # Get print info from user
+    print "Select sheet by index number:"
+    for i, sheetname in enumerate(book.sheet_names()):
+        print i+1, "=", sheetname
+    sheetNumber = input("From sheet #")
+    print u'You entered:{}'.format(repr(sheetNumber))
+    sheet = book.sheet_by_index(int(sheetNumber)-1)
+    while True:
+        row = input("Print row #")-1
+        print ''
+
+        # Headers and corresponding data
+        dic = {}
+        for col in range(sheet.ncols):
+            try:
+                dic[sheet.cell_value(0,col)] = sheet.cell_value(row,col).decode('utf8')
+            except IndexError:
+                print "Row does not contain data."
+                break
+            except Exception:
+                dic[sheet.cell_value(0,col)] = sheet.cell_value(row,col)
+
+        # Check if selected row has data
+        if sum([dic[key] != u'' for key in dic.keys()]) < 4:
+            print "Row does not contain data or is incomplete."
+            continue
+
+        # Check if dictionary is empty
+        if dic:
+            break
+
+    # RT No. validation
+    if (sheet.name not in ['PR',u'雙葉']) and not rt_check(sheet, row, dic[u'RT.No']):
+        # Exit if check is False
+        raw_input("Hit enter to exit.")
+        return False
+
+    # Get ASE product code, P/N
+    PN, QTY, Exp = lookup_product_code(book, sheet.name, dic[u'品名'])[1:4]
+    print repr(PN), repr(QTY), repr(Exp)
+
+    # Check the ASE No and number of units match
+    #TODO
+    dic[u"ASE.No"] = int(dic[u"ASE.No"].split("-")[0][-4:])
+    print 'PRODUCT:', dic[u'品名']
+    print 'PN:', PN
+    print dic[u"包裝"], "labels in this set."
+    print ''
+
+    # Get DOM and Exp date
+    ExpDate = "dddddddd"
+    pdate = dic[u"製造批號"][1:7]
+    dateDOM = date(2000+int(pdate[:2]), int(pdate[2:4]), int(pdate[4:6]))
+    DOM = "{0:04}{1:02}{2:02}".format(dateDOM.year, dateDOM.month, dateDOM.day)
+    try:
+        dateDelta = timedelta((365/12)*Exp)
+        ''' # The following is for an exact expiration date
+        DOM = "{0:04}{1:02}{2:02}".format(dateDOM.year, dateDOM.month, dateDOM.day)
+        dateEXP = dateDOM + dateDelta
+        ExpDate = "{0:04}{1:02}{2:02}".format(dateEXP.year, dateEXP.month, dateEXP.day)
+        '''
+        inc_year = False
+        if int((dateDOM.month-1 + Exp) / 12):
+            inc_year = True
+        ExpDate = "{0:04}{1:02}{2:02}".format(
+                (dateDOM.year + int((dateDOM.month-1 + Exp) / 12)) if inc_year else dateDOM.year,
+                int((dateDOM.month-1 + Exp) % 12)+1,
+                dateDOM.day)
+    except:
+        raw_input('Error converting expiration date. Using "dddddddd"\nHIT ENTER TO CONTINUE...')
+
+
+    barQR = "barcode"
+    if u"中" in sheet.name:
+        print "Select 1 for BARCODE"
+        print "Select 2 for DATA MATRIX"
+        try:
+            barQR = int(raw_input(">"))
+            if barQR == 1:
+                barQR = "barcode"
+            if barQR == 2:
+                barQR = "DM"
+        except:
+            barQR = 0
+
+
+    while True:
+        print "Set max number to print (BLANK will EXIT)."
+        nPrint = raw_input("Stop at #")
+        try:
+            nPrint = int(nPrint)
+        except:
+            print "Not a valid number... Exiting."
+            break
+        for i in range(int(dic[u"包裝"])):
+            if i >= nPrint:
+                break
+            ASE_NO = "{0}{1:04}".format(dic[u"製造批號"],dic[u"ASE.No"] + i)
+            print "---------------------"
+            try:
+                print dic[u'品名']
+            except:
+                print "(can't print a Chinese character)"
+            print PN
+            print dic[u"製造批號"]
+            print ASE_NO
+            print QTY
+            print ExpDate
+            print DOM
+            print dic[u"RT.No"]
+            print "---------------------"
+            if not noprint:
+                if barQR == "barcode":
+                    TM_label(dic[u'品名'], PN, dic[u"製造批號"], ASE_NO,
+                             QTY, ExpDate, DOM, dic[u"RT.No"])
+                if barQR == "DM":
+                    TM_DMlabel(dic[u'品名'], PN, dic[u"製造批號"], ASE_NO,
+                             QTY, ExpDate, DOM, dic[u"RT.No"])
+        if noprint:
+            raw_input("Finished. Press enter to close")
+    raw_input("Hit enter to close")
 if __name__ == '__main__':
-    pass
+    printapp()
