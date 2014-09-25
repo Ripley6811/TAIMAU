@@ -294,8 +294,12 @@ def create(_):
                                       activebackground="moccasin", **kwargs)
 
         # Retrieve user designated PO ordering if it exists.
-        rows = settings.load().get('po_order', {}).get(cogroup.name, range(100))
-
+        minlen = 100
+        rows = settings.load().get('po_order', {}).get(cogroup.name, range(minlen))
+        # Increase 'rows' length in case more PO's are added.
+        if len(rows) < minlen:
+            rows = rows + range(max(rows)+1, max(rows)+minlen-len(rows))
+        # Place PO (purchase orders) in the designated 'rows' ordering.
         for row, order in zip(rows, order_list):
             if order.is_open:
                 activeOrders.append(order)
