@@ -1,5 +1,4 @@
 ***Do Soon:***
-- Test os.startfile method in activity report.
 - Add functions for editing/adding companies and branches.
 - Option to output entire list of companies and products to Excel for reference.
 - Lock PO price after invoice attached
