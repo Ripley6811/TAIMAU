@@ -78,6 +78,7 @@ def main(_, records=[]):
         font = r'C:\Windows\Fonts\simfang.ttf'
 #        font = r'C:\Windows\Fonts\simkai.ttf'
         font = r'C:\Windows\Fonts\simhei.ttf'
+#        font = r'C:\Windows\Fonts\KAIU.ttf'
         w =     [ 26, 24, 36, 16, 10, 18, 16, 20, 24]
         x = 10
         x = [x]+[reduce(lambda a,b:a+b, w[:i+1])+x for i in range(len(w))][:-1]
@@ -251,6 +252,10 @@ def main(_, records=[]):
             aggregated[product][0] += df[u'數量'][i]
             aggregated[product][2] += int(''.join(df[u'總價'][i].split(',')))
 
+        # Stop header from auto-loading on next page.
+        FPDF.header = lambda: None
+        # Create different headers for each section.
+        FPDF.add_page()
 
         total = 0
         for key, vals in aggregated.iteritems():

@@ -14,4 +14,5 @@
 ***Extra:***
 - Command line method for updating database from outputed Excel of companies and products.
 - Add discount option widgets if it might be used.
-- See if JavaScript's pdfmake (or jsPDF) is a better option for producing PDFs. Currently, Python's FPDF skips a few Chinese characters.
+- ReportLab's open-source PDF toolkit shows the ming character. Do more testing and switch from FPDF.
+- Clean up/refactor and document code.

@@ -13,8 +13,6 @@ between all modules.
     - Database using TM2014_tables_v3.py
     - FPDF for create PDF files.
 
-:TODO:
-
 
 :AUTHOR: Jay W Johnson
 :ORGANIZATION: Taimau Chemicals
