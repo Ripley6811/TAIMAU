@@ -7,31 +7,11 @@ from utils import date_picker
 def main(_, refresh):
     """Window for adding a new purchase order (PO)."""
 
-    #### USE THIS TO INTEGRATE FRAME INTO MAIN WINDOW ####
-#    repack_info = _.po_center.pack_info()
-#    _.po_center.pack_forget() # .pack(**repack_info)
-#    center_pane = Tix.Frame(_.po_frame)
-#    center_pane.pack(side='left', fill='both')
+    # Create new external window.
+    if not _.getExtWin(_, co_name=_.curr.cogroup.name,
+                       title=_.loc(u"+ PO", asText=True)):
+        return
 
-
-    #### NEW POPUP WINDOW: LIMIT TO ONE ####
-    try:
-        if _.extwin.state() == 'normal':
-            if _.curr.cogroup.name in _.extwin.title():
-                # Focus existing frame and return
-                _.extwin.focus_set()
-                return
-            else:
-                # Destroy existing frame and make new one
-                _.extwin.destroy()
-    except:
-        # Continue with frame creation
-        pass
-
-    _.extwin = Tix.Toplevel(width=700)
-    _.extwin.title(u"{} {}".format(_.curr.cogroup.name, _.loc(u"+ PO", asText=True)))
-    _.extwin.geometry(u'+{}+{}'.format(_.parent.winfo_rootx()+100, _.parent.winfo_rooty()))
-    _.extwin.focus_set()
 
     center_pane = Tix.Frame(_.extwin)
     center_pane.pack(side='left', fill='both')

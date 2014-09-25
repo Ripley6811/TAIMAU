@@ -21,24 +21,10 @@ def main(_, orders=[], qtyVars=[], unitVars=[], numbSVar=None, manifest=None, re
     if _.debug:
         print 'In "main" of manifest_window.py.'
 
-    #### NEW POPUP WINDOW: LIMIT TO ONE ####
-    try:
-        if _.extwin.state() == 'normal':
-            if _.curr.cogroup.name in _.extwin.title():
-                # Focus existing frame and return
-                _.extwin.focus_set()
-                return
-            else:
-                # Destroy existing frame and make new one
-                _.extwin.destroy()
-    except:
-        # Continue with frame creation
-        pass
+    if not _.getExtWin(_, co_name=_.curr.cogroup.name,
+                       title=_.loc(u"\u26DF Create Manifest", asText=True)):
+        return
 
-    _.extwin = Tix.Toplevel(_.parent, width=700)
-    _.extwin.title(u"{} {}".format(_.curr.cogroup.name, _.loc(u"\u26DF Create Manifest", asText=True)))
-    _.extwin.geometry(u'+{}+{}'.format(_.parent.winfo_rootx()+100, _.parent.winfo_rooty()))
-    _.extwin.focus_set()
 
     main_frame = Tix.Frame(_.extwin)
     main_frame.pack(side='left', fill='both')

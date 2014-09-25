@@ -106,6 +106,7 @@ class TaimauApp(Tix.Tk):
         _state.loc = localize # Translation to Chinese
         _state.dbm = dbm.db_manager() # Database API methods
         _state.curr = Info() # For storage current company, list ID's, etc.
+        _state.getExtWin = getExtWin
         self._ = _state
 
 
@@ -162,7 +163,7 @@ class TaimauApp(Tix.Tk):
         settingsmenu.add_radiobutton(label=u'English', variable='lang_select',
             command=lambda: setLang(u"English"), value=u'English')
         settingsmenu.add_separator()
-        settingsmenu.add_command(label=_state.loc(u'PO Order', 1),
+        settingsmenu.add_command(label=_state.loc(u'PO List Ordering', 1),
             command=lambda: setPOorder(_state))
         menubar.add_cascade(label=_state.loc(u"Settings", 1), menu=settingsmenu)
 
@@ -238,28 +239,66 @@ class TaimauApp(Tix.Tk):
         # TODO: Bug in update. Suddenly not working...
         self.menubar.entryconfig(8, label=u'DATABASE={}'.format(self._.dbm.dbpath))
 
-def setPOorder(_):
-    cogroup = _.curr.cogroup
-    order_list = cogroup.purchases if _.sc_mode == "s" else cogroup.sales
-    #### NEW POPUP WINDOW: LIMIT TO ONE ####
+
+
+def getExtWin(_, co_name=u'', title=u'', width=700, destroy=False):
+    '''Create new external window or "set focus" if one is already open.
+
+    See if an external window is open already. If window is not associated
+    with the currently selected company in the main window, then destroy it
+    and create a new external window. Otherwise set focus on window for user
+    to see it and exit. This allows the number of external windows to be
+    limited to one (as long as they all use the "_.extwin" reference).
+
+    Company association is set by putting the CoGroup (Company Group) name
+    in the title of the external window.
+
+    Set 'destroy' to True to unconditionally close any open external window
+    and create a new one.
+
+    Returns reference to a new window (also accessible by "_.extwin") or
+    "False" if a new window is not created.
+    '''
+    #### LIMIT EXTERNAL WINDOW TO ONE ####
     try:
-        if _.extwin.state() == 'normal':
+        if _.extwin.state() == 'normal' and not destroy:
             if _.curr.cogroup.name in _.extwin.title():
                 # Focus existing frame and return
                 _.extwin.focus_set()
-                return
-            else:
-                # Destroy existing frame and make new one
-                _.extwin.destroy()
-    except:
+                return False
+    except KeyError:
         # Continue with frame creation
         pass
+    except Tix.TclError:
+        pass
 
-    _.extwin = Tix.Toplevel(_.parent, width=700)
-    _.extwin.title(u"{} {}".format(cogroup.name, u'PO ordering'))
-    _.extwin.geometry(u'+{}+{}'.format(_.parent.winfo_rootx()+100, _.parent.winfo_rooty()))
+    #### CREATE NEW EXTERNAL WINDOW ####
+    # Destroy existing frame and make new one
+    try:
+        _.extwin.destroy()
+    except KeyError:
+        pass
+    _.extwin = Tix.Toplevel(_.parent, width=width)
+    # Add title string
+    if co_name:
+        title = u'{}: {}'.format(co_name, title)
+    _.extwin.title(title)
+    # Place new window over main window
+    xoffset = _.parent.winfo_rootx()+100
+    yoffset = _.parent.winfo_rooty()
+    _.extwin.geometry(u'+{}+{}'.format(xoffset, yoffset))
+    # Set focus and return
     _.extwin.focus_set()
+    return _.extwin
 
+
+
+def setPOorder(_):
+    cogroup = _.curr.cogroup
+    order_list = cogroup.purchases if _.sc_mode == "s" else cogroup.sales
+
+    if not getExtWin(_, co_name=cogroup.name, title=u'PO ordering'):
+        return
 
     ordering = []
     for row, order in enumerate(order_list):

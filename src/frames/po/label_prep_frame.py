@@ -26,24 +26,10 @@ def main(_, shipmentItemID):
     #TODO: Run function if product code not found.
 #    make_product_code_list(_)
 
-    #### NEW POPUP WINDOW: LIMIT TO ONE ####
-    try:
-        if _.extwin.state() == 'normal':
-            if _.curr.cogroup.name in _.extwin.title():
-                # Focus existing frame and return
-                _.extwin.focus_set()
-                return
-            else:
-                # Destroy existing frame and make new one
-                _.extwin.destroy()
-    except:
-        # Continue with frame creation
-        pass
-
-    _.extwin = Tix.Toplevel(_.parent)
-    _.extwin.title(u"{} labels".format(_.curr.cogroup.name))
-    _.extwin.geometry(u'+{}+{}'.format(_.parent.winfo_rootx()+100, _.parent.winfo_rooty()))
-    _.extwin.focus_set()
+    # Create new external window.
+    if not _.getExtWin(_, co_name=_.curr.cogroup.name,
+                       title=u"Labels"):
+        return
 
 
     ship_rec = _.dbm.session.query(_.dbm.ShipmentItem).get(shipmentItemID)

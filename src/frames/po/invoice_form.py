@@ -14,24 +14,12 @@ def main(_, shipment_ids=None, invoice=None):
     shipment_ids: List of shipment items to include in new invoice.
     invoice: Existing invoice for editing. If None, then create new invoice.'''
 
-    #### NEW POPUP WINDOW: LIMIT TO ONE ####
-    try:
-        if _.extwin.state() == 'normal':
-            if _.curr.cogroup.name in _.extwin.title():
-                # Focus existing frame and return
-                _.extwin.focus_set()
-                return
-            else:
-                # Destroy existing frame and make new one
-                _.extwin.destroy()
-    except:
-        # Continue with frame creation
-        pass
+    # Create new external window.
+    if not _.getExtWin(_, co_name=_.curr.cogroup.name,
+                       title=u"Invoice"):
+        return
 
-    _.extwin = Tix.Toplevel(_.parent)
-    _.extwin.title(u"{} {}".format(_.curr.cogroup.name, _.loc(u"+ PO", asText=True)))
-    _.extwin.geometry(u'+{}+{}'.format(_.parent.winfo_rootx()+100, _.parent.winfo_rooty()))
-    _.extwin.focus_set()
+
 
     head_frame = Tix.Frame(_.extwin)
     head_frame.pack(side='top', fill='x', expand=1)

@@ -11,31 +11,12 @@ def main(_, order, refresh):
 
     For getting 'caught-up' on processing manifests."""
 
+    # Create new external window.
+    if not _.getExtWin(_, co_name=_.curr.cogroup.name,
+                       title=u"\u26DF \u26DF \u26DF {}".format(order.product.label())):
+        return
 
-    #### NEW POPUP WINDOW: LIMIT TO ONE ####
-    try:
-        if _.extwin.state() == 'normal':
-            if _.curr.cogroup.name in _.extwin.title():
-                # Focus existing frame and return
-                _.extwin.focus_set()
-                return
-            else:
-                # Destroy existing frame and make new one
-                _.extwin.destroy()
-    except:
-        # Continue with frame creation
-        pass
-
-    _.extwin = Tix.Toplevel()
-    _.extwin.title(u"{} {} {}".format(
-                        _.curr.cogroup.name,
-                        u"\u26DF \u26DF \u26DF",
-                        order.product.label()
-                    ))
-    _.extwin.geometry(u'+{}+{}'.format(_.parent.winfo_rootx()+100,
-                                       _.parent.winfo_rooty()))
-    _.extwin.focus_set()
-    x = _.extwin
+    xwin = _.extwin
 
 
     dates = []
@@ -53,7 +34,7 @@ def main(_, order, refresh):
     )
     for i, each in enumerate([u'日期',u'出貨編號',u'件數',u'數量',
                               u'司機',u'車牌',u'備註']):
-        tl=Tix.Label(x, text=each, **cell_config)
+        tl=Tix.Label(xwin, text=each, **cell_config)
         tl.grid(row=0,column=i, columnspan=1, sticky='nsew')
 
     cc = dict(
@@ -64,28 +45,28 @@ def main(_, order, refresh):
     )
     for i in range(6):
         dates.append(Tix.StringVar())
-        Tix.Entry(x, textvariable=dates[i], **cc).grid(row=i+1, column=0, sticky='nsew')
+        Tix.Entry(xwin, textvariable=dates[i], **cc).grid(row=i+1, column=0, sticky='nsew')
         dates[i].set(u'{0.year}-{0.month}-'.format(date.today()))
 
         number.append(Tix.StringVar())
-        Tix.Entry(x, textvariable=number[i], **cc).grid(row=i+1, column=1, sticky='nsew')
+        Tix.Entry(xwin, textvariable=number[i], **cc).grid(row=i+1, column=1, sticky='nsew')
 
         qty.append(Tix.StringVar())
-        Tix.Entry(x, textvariable=qty[i], **cc).grid(row=i+1, column=2, sticky='nsew')
+        Tix.Entry(xwin, textvariable=qty[i], **cc).grid(row=i+1, column=2, sticky='nsew')
 
         units.append(Tix.StringVar())
-        Tix.Label(x, textvariable=units[i], **cc).grid(row=i+1, column=3, sticky='nsew')
+        Tix.Label(xwin, textvariable=units[i], **cc).grid(row=i+1, column=3, sticky='nsew')
         qty[i].trace('w', lambda a, b, c, index=i: update_units(a, b, index))
 
         driver.append(Tix.StringVar())
-        Tix.Entry(x, textvariable=driver[i], **cc).grid(row=i+1, column=4, sticky='nsew')
+        Tix.Entry(xwin, textvariable=driver[i], **cc).grid(row=i+1, column=4, sticky='nsew')
 
         truck.append(Tix.StringVar())
-        Tix.Entry(x, textvariable=truck[i], **cc).grid(row=i+1, column=5, sticky='nsew')
+        Tix.Entry(xwin, textvariable=truck[i], **cc).grid(row=i+1, column=5, sticky='nsew')
         truck[i].trace('w', lambda a, b, c, index=i: truck[index].set(truck[index].get().upper().replace('-','')[:8]))
 
         note.append(Tix.StringVar())
-        Tix.Entry(x, textvariable=note[i], **cc).grid(row=i+1, column=6, sticky='nsew')
+        Tix.Entry(xwin, textvariable=note[i], **cc).grid(row=i+1, column=6, sticky='nsew')
 
     def update_units(a, b, i):
         if _.debug:
@@ -97,14 +78,14 @@ def main(_, order, refresh):
 
 
     # SUBMIT BUTTON
-    tb = Tix.Button(x, textvariable=_.loc(u"\u2713 Submit"),
+    tb = Tix.Button(xwin, textvariable=_.loc(u"\u2713 Submit"),
                     bg="lawn green",
                     command=lambda:submit(),
                     activebackground="lime green")
     tb.grid(row=1000, column=0, columnspan=4, sticky='nsew')
 
     # CANCEL BUTTON
-    tb = Tix.Button(x, textvariable=_.loc(u"\u26D4 Cancel"),
+    tb = Tix.Button(xwin, textvariable=_.loc(u"\u26D4 Cancel"),
                     bg="tomato",
                     command=lambda:exit_win(),
                     activebackground="tomato")

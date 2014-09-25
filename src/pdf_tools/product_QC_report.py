@@ -10,29 +10,15 @@ from utils import settings
 
 
 def main(_):
-    # Currently aimed at producing product testing results for ASE
-    # products but could change it to work for any product in the
-    # future.
-    #
-    #### NEW POPUP WINDOW: LIMIT TO ONE ####
-    try:
-        if _.extwin.state() == 'normal':
-            if _.curr.cogroup.name in _.extwin.title():
-                # Focus existing frame and return
-                _.extwin.focus_set()
-                return
-            else:
-                # Destroy existing frame and make new one
-                _.extwin.destroy()
-    except:
-        # Continue with frame creation
-        pass
+    '''Currently aimed at producing product testing results for ASE
+    products but could change it to work for any product in the
+    future.
+    '''
 
+    # Create new external window.
+    if not _.getExtWin(_, title=u"Production Analysis Report"):
+        return
 
-    _.extwin = Tix.Toplevel(width=700)
-    _.extwin.title(u"Production Analysis Report")
-    _.extwin.geometry(u'+{}+{}'.format(_.parent.winfo_rootx()+100, _.parent.winfo_rooty()))
-    _.extwin.focus_set()
 
     options = 'selectColor gold'
     company_w = Tix.Select(_.extwin, label=u'公司',

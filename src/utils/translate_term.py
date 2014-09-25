@@ -125,7 +125,7 @@ worddict = {
     u'(ASE) RT:' : u'(ASE) RT:',
     u'(ASE) Last SKU#:' : u'(ASE) 最後桶的號碼:',
     u'Print Labels' : u'列印條碼',
-    u'PO Order' : u'訂單順序',
+    u'PO List Ordering' : u'訂單順序',
 }
 # Storage of StringVar by the english text as keyword.
 labeldict = {}

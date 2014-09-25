@@ -8,10 +8,10 @@ import os
 import subprocess
 
 def main(_, records=[]):
-    pdfwin = Tix.Toplevel(_.parent)
-    pdfwin.geometry(u'+{}+{}'.format(_.parent.winfo_rootx()+100, _.parent.winfo_rooty()))
-    pdfwin.title(u"New Purchase Order (PO) Form")
-    pdfwin.focus_set()
+
+    pdfwin = _.getExtWin(_, title=u"Select date range for report.")
+    if not pdfwin:
+        return
 
 
     tl = Tix.Label(pdfwin, textvariable=_.loc(u"Start date"))
@@ -280,15 +280,13 @@ def main(_, records=[]):
                             u'Sales' if _.sc_mode == u'c' else u'Purchases',
                             str(startdate.selection),
                             str(enddate.selection) )
-        FILE_OPTS = dict(
-            parent = _.po_frame,
-            title = u'PDF name and location.',
-            defaultextension = '.pdf',
-            initialdir = os.path.expanduser('~') + '/Desktop/',
-            initialfile = initialfilename,
-        )
+        FILE_OPTS = ___ = dict(title = u'PDF name and location.')
+        ___['parent'] = _.po_frame
+        ___['defaultextension'] = '.pdf'
+        ___['initialdir'] = os.path.expanduser('~') + '/Desktop/'
+        ___['initialfile'] = initialfilename
         if settings.load().get(u'pdfpath'):
-            FILE_OPTS['initialdir'] = settings.load()[u'pdfpath']
+            ___['initialdir'] = settings.load()[u'pdfpath']
 
         pdfwin.destroy()
 
