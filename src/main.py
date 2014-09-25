@@ -4,7 +4,8 @@
 summary
 
 Improvements over previous version include:
-- "_state" object that maintains and passes session info between all modules.
+- "state" object (single underscore) that maintains and passes session info
+between all modules.
 - Translation module for registering StringVars and easily switch languages.
 - "settings" that are saved and loaded from file using the json package.
 
@@ -99,15 +100,15 @@ class TaimauApp(Tix.Tk):
         )
 
 
-        _state = Info()
-        _state.parent = self
-        _state.debug = debug # For console messages and English GUI
-        _state.font = u"NSimSun"
-        _state.loc = localize # Translation to Chinese
-        _state.dbm = dbm.db_manager() # Database API methods
-        _state.curr = Info() # For storage current company, list ID's, etc.
-        _state.getExtWin = getExtWin
-        self._ = _state
+        _ = Info()
+        _.parent = self
+        _.debug = debug # For console messages and English GUI
+        _.font = u"NSimSun"
+        _.loc = localize # Translation to Chinese
+        _.dbm = dbm.db_manager() # Database API methods
+        _.curr = Info() # For storage current company, list ID's, etc.
+        _.getExtWin = getExtWin
+        self._ = _
 
 
         #
@@ -117,19 +118,19 @@ class TaimauApp(Tix.Tk):
 
         # FILE MENU OPTIONS: LOAD, SAVE, EXIT...
         filemenu = Tix.Menu(menubar, tearoff=0)
-        filemenu.add_command(label=_state.loc(u"Change Database", 1), command=self.change_db)
+        filemenu.add_command(label=_.loc(u"Change Database", 1), command=self.change_db)
         filemenu.add_separator()
-        filemenu.add_command(label=_state.loc(u"Exit", 1), command=self.endsession)
-        menubar.add_cascade(label=_state.loc(u"File", 1), menu=filemenu)
+        filemenu.add_command(label=_.loc(u"Exit", 1), command=self.endsession)
+        menubar.add_cascade(label=_.loc(u"File", 1), menu=filemenu)
 
         # REPORT MENU OPTIONS
         reportmenu = Tix.Menu(menubar, tearoff=0)
         reportmenu.add_command(label=u"Change location for saving reports",
                                command=set_report_location)
         reportmenu.add_command(label=u"Activity Report (PDF)",
-                               command=lambda:activity_report.main(_state))
+                               command=lambda:activity_report.main(_))
         reportmenu.add_command(label=u"ASE Product QC (PDF)",
-                               command=lambda:product_QC_report.main(_state))
+                               command=lambda:product_QC_report.main(_))
         reportmenu.add_command(label=u"Save client shipments to Excel (6 months).",
                                command=sales_shipments_to_excel, state='disabled')
         reportmenu.add_command(label=u"Save incoming shipments to Excel (6 months).",
@@ -138,7 +139,7 @@ class TaimauApp(Tix.Tk):
                                command=save_products_to_excel, state='disabled')
 #        reportmenu.add_command(label="Report3", command=None, state=Tk.DISABLED)
 #        reportmenu.add_command(label="Report4", command=None, state=Tk.DISABLED)
-        menubar.add_cascade(label=_state.loc(u"Reports", 1), menu=reportmenu)
+        menubar.add_cascade(label=_.loc(u"Reports", 1), menu=reportmenu)
 
 
         # FONT MENU OPTIONS
@@ -152,7 +153,7 @@ class TaimauApp(Tix.Tk):
 #                                 command=setFont, value=u'PMingLiU 13')
 #        fontmenu.add_radiobutton(label=u'NSimSun 13', variable=fontsize,
 #                                 command=setFont, value=u'NSimSun 13')
-#        menubar.add_cascade(label=_state.loc(u"Font", 1), menu=fontmenu)
+#        menubar.add_cascade(label=_.loc(u"Font", 1), menu=fontmenu)
 #        fontsize.set(u'NSimSun 13')
 #        setFont()
 
@@ -163,19 +164,19 @@ class TaimauApp(Tix.Tk):
         settingsmenu.add_radiobutton(label=u'English', variable='lang_select',
             command=lambda: setLang(u"English"), value=u'English')
         settingsmenu.add_separator()
-        settingsmenu.add_command(label=_state.loc(u'PO List Ordering', 1),
-            command=lambda: setPOorder(_state))
-        menubar.add_cascade(label=_state.loc(u"Settings", 1), menu=settingsmenu)
+        settingsmenu.add_command(label=_.loc(u'PO List Ordering', 1),
+            command=lambda: setPOorder(_))
+        menubar.add_cascade(label=_.loc(u"Settings", 1), menu=settingsmenu)
 
         # HELP MENU OPTIONS
         helpmenu = Tix.Menu(menubar, tearoff=0)
-        helpmenu.add_command(label=_state.loc(u"About", 1), command=about)
-        menubar.add_cascade(label=_state.loc(u"Help", 1), menu=helpmenu)
+        helpmenu.add_command(label=_.loc(u"About", 1), command=about)
+        menubar.add_cascade(label=_.loc(u"Help", 1), menu=helpmenu)
 
         #
         menubar.add_separator()
         menubar.add_separator()
-        menubar.add_command(label=u'DATABASE={}'.format(_state.dbm.dbpath),
+        menubar.add_command(label=u'DATABASE={}'.format(_.dbm.dbpath),
                             background=u'LightSkyBlue1')
         self.menubar = menubar
 
@@ -193,13 +194,13 @@ class TaimauApp(Tix.Tk):
         nb = ttk.Notebook()
         #---------- Add PO (main) frame
         #XXX: merging Purchases & Sales frames to PO frame in version 0.3
-        _state.po_frame = ttk.Frame(nb)
-        frames.po_frame.create(_state)
-        nb.add(_state.po_frame, text='PO')
+        _.po_frame = ttk.Frame(nb)
+        frames.po_frame.create(_)
+        nb.add(_.po_frame, text='PO')
         #---------- Add Product frame
-        _state.product_frame = ttk.Frame(nb)
-        frames.product_frame.create(_state)
-        nb.add(_state.product_frame, text=_state.loc(u'Products',1))
+        _.product_frame = ttk.Frame(nb)
+        frames.product_frame.create(_)
+        nb.add(_.product_frame, text=_.loc(u'Products',1))
         #---------- Add Pending info frame
 #        frame = ttk.Frame(nb)
 #        frame_pending.get_pending_frame(frame, dmv2)
