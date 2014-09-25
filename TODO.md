@@ -9,9 +9,10 @@
 - Add editable (autosaved) note under branch buttons. Large obvious letters for keeping PO/Manifest instructions.
 
 ***Requested:***
-- RT should match manifest order (and PO order).
+- RT should match manifest order (and PO order). Check this.
 - Added destinations list to CoGroups and make selectable in manifest (and PO optional).
 
 ***Extra:***
 - Command line method for updating database from outputed Excel of companies and products.
 - Add discount option widgets if it might be used.
+- See if JavaScript's jsPDF is a better option for producing PDFs. Currently, Python's FPDF skips a few Chinese characters.
