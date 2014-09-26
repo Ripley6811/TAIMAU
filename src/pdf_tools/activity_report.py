@@ -88,6 +88,8 @@ def main(_, records=[]):
             def header(self):
                 if _.sc_mode == u'c':
                     try:
+                        # Image( file, x, y, w=0, h=0, type)
+                        #XXX: Default size seems enlarged. Reducing to ~23%.
                         self.image(u'png/logo.png', 25, 8, 34, 0, 'PNG')
                     except IOError as e:
                         print e
