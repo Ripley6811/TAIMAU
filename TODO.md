@@ -16,3 +16,4 @@
 - Add discount option widgets if it might be used.
 - ReportLab's open-source PDF toolkit shows the ming character. Do more testing and switch from FPDF.
 - Clean up/refactor and document code.
+- Learn to output matplotlib plot as PDF and transfer that image to another PDF. Use 'pdfrw' package. Another option is to integrate R somehow for generating reports.
