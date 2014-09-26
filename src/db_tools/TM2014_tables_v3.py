@@ -364,7 +364,7 @@ class CoGroup(Base):
     is_supplier = Col(Bool, nullable=False, default=True) # Maybe use in later versions
     is_customer = Col(Bool, nullable=False, default=True) # Maybe use in later versions
 
-    branches = rel('Branch', lazy='joined') # lazy -> Attaches on retrieving a cogroup
+    branches = rel('Branch', backref='cogroup', lazy='joined') # lazy -> Attaches on retrieving a cogroup
     orders = rel('Order')
     products = rel('Product', backref='cogroup')
     contacts = rel('Contact')
@@ -396,7 +396,7 @@ class Branch(Base):
     address = Col(Utf, default=u'') # Extra address space if needed
     is_active = Col(Bool, nullable=False, default=True) # Boolean for listing the company. Continuing business.
 
-    parent = rel('CoGroup')
+#    parent = rel('CoGroup')
     contacts = rel('Contact')
 
     purchases = rel('Order', primaryjoin="and_(Branch.name==Order.seller, Order.is_sale==False)") #Purchases FROM this company

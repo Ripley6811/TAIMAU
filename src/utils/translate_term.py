@@ -126,6 +126,10 @@ worddict = {
     u'(ASE) Last SKU#:' : u'(ASE) 最後桶的號碼:',
     u'Print Labels' : u'列印條碼',
     u'PO List Ordering' : u'訂單順序',
+    u'Enter the group name for all branches\nUse 2-4 characters' : \
+                u'輸入公司團體的縮寫名稱\n縮寫2到4個字',
+    u'Enter the first branch name\nAgain, use 2-4 characters' : \
+                u'Enter the first branch name\n縮寫2到4個字',
 }
 # Storage of StringVar by the english text as keyword.
 labeldict = {}

@@ -259,7 +259,7 @@ def main(_, records=[]):
         # Stop header from auto-loading on next page.
         FPDF.header = lambda: None
         # Create different headers for each section.
-        FPDF.add_page()
+#        FPDF.add_page() # For showing totals starting on the next page
 
         total = 0
         for key, vals in aggregated.iteritems():

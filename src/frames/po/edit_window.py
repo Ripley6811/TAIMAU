@@ -165,6 +165,7 @@ def main(_, order, refresh=None):
 
     def make_po():
         if check_fields() == False:
+            _.extwin.focus_set()
             return
         ins = dict(qty=_qty.get(),
                    price=_price.get(),

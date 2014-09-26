@@ -32,6 +32,7 @@ import Tix
 import tkMessageBox
 
 import po #package
+import add_cogroup
 from utils import settings
 
 #===============================================================================
@@ -65,7 +66,14 @@ def create(_):
     def sc_switch(mode):
         _.sc_mode = mode
         settings.update(sc_mode=mode)
-        for each_butt in cog_butts:
+
+        # Ensure button is selected when invoked.
+        if mode == 'c':
+            cmodeRB.select()
+        else:
+            smodeRB.select()
+
+        for each_butt in _.cog_butts:
             if "{}:0".format(mode) not in each_butt["value"]:
                 each_butt.configure(bg='burlywood')
             else:
@@ -74,6 +82,7 @@ def create(_):
             load_company()
         except NameError:
             pass # Pass on initialization.
+    _.sc_switch = sc_switch
 
     modebox = Tix.Frame(left_pane)
     modebox.pack(side=Tix.TOP, fill=Tix.X)
@@ -99,50 +108,52 @@ def create(_):
             print(cogroup)
         load_company()
 
-    def add_cogroup():
-        #TODO: Ability to add a new company group
-        # Use the currently selected cogroup button "+" to add to list
-        print("TODO: Add method to add a new company group!")
 
 
-    cogroups = _.dbm.cogroups()
     if _.debug:
-        print len(cogroups), "company groups in database loaded."
+        print len(_.dbm.cogroups()), "company groups in database loaded."
 
-    colist_frame = Tix.Frame(left_pane)
-    colist_frame.pack(side=Tix.LEFT, fill=Tix.BOTH)
-    options = dict(variable="companybuttons", indicatoron=False,
-                   font=(_.font, "12", "bold"), bg="burlywood",
-                   selectcolor="gold",
-                   activebackground="gold")
+    def refresh_colist():
+        try:
+            _.colist.destroy()
+        except KeyError:
+            pass
 
-    cog_butts = []
-    i = 0
-    cols = 4
-    for i, cog in enumerate(cogroups):
-        text = cog.name
-        nPOs = _.dbm.active_POs(cog.name) # number of (Purchase, Sale) POs
-        if _.debug:
-            text += u'\n{}'.format(nPOs)
-        tr = Tix.Radiobutton(colist_frame, text=text,
-                             value=u"s:{}c:{} {}".format(nPOs[0],
-                                                       nPOs[1],
-                                                       cog.name),
-                             command=lambda x=cog.name:select_cogroup(x),
-                             **options)
-        #TODO: color by supplier/client
-        tr.grid(row=i/cols,column=i%cols, sticky=Tix.W+Tix.E)
-        cog_butts.append(tr)
-    else:
-        # Increment one more to add the "+" button.
-        i += 1
-    tr = Tix.Button(colist_frame, text=u"+",
-                    command=add_cogroup,
-                    font=(_.font, "12", "bold"), bg="lawn green",
-                    activebackground="lime green")
-    tr.grid(row=i/cols,column=i%cols, sticky='ew')
+        colist_frame = _.colist = Tix.Frame(left_pane)
+        colist_frame.pack(side=Tix.LEFT, fill=Tix.BOTH)
+        options = dict(variable="companybuttons", indicatoron=False,
+                       font=(_.font, "12", "bold"), bg="burlywood",
+                       selectcolor="gold",
+                       activebackground="gold")
 
+        cog_butts = _.cog_butts = []
+        i = 0
+        cols = 4
+        for i, cog in enumerate(_.dbm.cogroups()):
+            text = cog.name
+            nPOs = _.dbm.active_POs(cog.name) # number of (Purchase, Sale) POs
+            if _.debug:
+                text += u'\n{}'.format(nPOs)
+            tr = Tix.Radiobutton(colist_frame, text=text,
+                                 value=u"s:{}c:{} {}".format(nPOs[0],
+                                                           nPOs[1],
+                                                           cog.name),
+                                 command=lambda x=cog.name:select_cogroup(x),
+                                 **options)
+            #TODO: color by supplier/client
+            tr.grid(row=i/cols,column=i%cols, sticky=Tix.W+Tix.E)
+            cog_butts.append(tr)
+        else:
+            # Increment one more to add the "+" button.
+            i += 1
+        tr = Tix.Button(colist_frame, text=u"+",
+                        command=lambda *args:add_cogroup.main(_),
+                        font=(_.font, "12", "bold"), bg="lawn green",
+                        activebackground="lime green")
+        tr.grid(row=i/cols,column=i%cols, sticky='ew')
 
+    _.refresh_colist = refresh_colist
+    _.refresh_colist()
 
 
 
@@ -492,27 +503,24 @@ def create(_):
         try:
             _.curr.cogroup = _.dbm.get_cogroup(js.get('cogroup'))
             _.curr.cogroupSV.set(_.curr.cogroup.name)
-            for key, val in colist_frame.children.iteritems():
+            for key, val in _.colist.children.iteritems():
                 try:
                     if _.curr.cogroup.name in val['value']:
                         if _.debug:
                             print _.curr.cogroup, val['value']
-                            print colist_frame.children[key]
-                        colist_frame.children[key].select()
+                            print _.colist.children[key]
+                        _.colist.children[key].select()
                 except:
                     pass
         except TypeError:
             pass
 
         if js['sc_mode'] == 'c':
-            cmodeRB.select()
             cmodeRB.invoke()
         else:
-            smodeRB.select()
             smodeRB.invoke()
     else:
         # Set "Supplier" button as active
-        smodeRB.select()
         smodeRB.invoke()
     del js
 

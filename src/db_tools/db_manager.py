@@ -51,6 +51,8 @@ class db_manager:
     InvoiceItem = InvoiceItem
     Vehicle = Vehicle
     Contact = Contact
+    CoGroup = CoGroup
+    Branch = Branch
 
     def __init__(self):
         js = settings.load()
