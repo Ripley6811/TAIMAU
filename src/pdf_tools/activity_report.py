@@ -88,14 +88,16 @@ def main(_, records=[]):
             def header(self):
                 if _.sc_mode == u'c':
                     try:
-                        self.image(u'png/logo.png', 25, 5)
+                        self.image(u'png/logo.png', 25, 8, 34, 0, 'PNG')
                     except IOError as e:
                         print e
 
                     self.add_font(u'SimHei', 'B', font, uni=True) # Only .ttf and not .ttc
-                    self.set_font(u'SimHei', 'B', 16)
-                    self.set_xy(25, 25)
+                    self.set_font(u'SimHei', 'B', 14)
+                    self.set_xy(25, 20)
+                    self.set_text_color(0,69,14)
                     self.cell(40, 10, u'台茂化工儀器原料行', align='L')
+                    self.set_text_color(0,0,0)
 
                     # Client name
                     self.set_font(u'SimHei', 'B', 12)
