@@ -1,6 +1,6 @@
 ***Do Soon:***
 - Add functions for editing/adding branches.
-- Option to output entire list of companies and products to Excel for reference.
+- Option to output entire list of companies to Excel for reference.
 - Lock PO price after invoice attached
 - Allow move of remaining non-invoiced shipments to new PO in case of price change. In all PO view mode.
     - When closing PO and non-invoiced manifests are present, ask if remainder need to move to new PO.
@@ -11,7 +11,7 @@
 
 ***Requested:***
 - RT should match manifest order (and PO order). Check this.
-- Added destinations list to CoGroups and make selectable in manifest (and PO optional).
+- Add destinations list to CoGroups and make selectable in manifest (and PO optional).
 - Add destinations option/buttons to manifest.
 - Add vehicle radiobuttons
 

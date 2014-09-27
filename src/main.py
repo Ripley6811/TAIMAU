@@ -130,11 +130,11 @@ class TaimauApp(Tix.Tk):
         reportmenu.add_command(label=u"ASE Product QC (PDF)",
                                command=lambda:product_QC_report.main(_))
         reportmenu.add_command(label=u"Save client shipments to Excel (6 months).",
-                               command=sales_shipments_to_excel, state='disabled')
+                               command=lambda:sales_shipments_to_excel(_))
         reportmenu.add_command(label=u"Save incoming shipments to Excel (6 months).",
-                               command=purchases_shipments_to_excel, state='disabled')
+                               command=lambda:purchases_shipments_to_excel(_))
         reportmenu.add_command(label=u"Save all products to Excel file.",
-                               command=save_products_to_excel, state='disabled')
+                               command=lambda:save_products_to_excel(_))
 #        reportmenu.add_command(label="Report3", command=None, state=Tk.DISABLED)
 #        reportmenu.add_command(label="Report4", command=None, state=Tk.DISABLED)
         menubar.add_cascade(label=_.loc(u"Reports", 1), menu=reportmenu)
@@ -370,30 +370,33 @@ def set_report_location():
     settings.update(pdfpath=outdir)
 
 
-def sales_shipments_to_excel():
-    save_shipments_to_excel(is_sale=True)
+def sales_shipments_to_excel(_):
+    save_shipments_to_excel(_, is_sale=True)
 
 
-def purchases_shipments_to_excel():
-    save_shipments_to_excel(is_sale=False)
+def purchases_shipments_to_excel(_):
+    save_shipments_to_excel(_, is_sale=False)
 
 
-def save_shipments_to_excel(is_sale=None):
+def save_shipments_to_excel(_, is_sale=None, days=180):
     '''Save all activity in the last half-year to Excel.
     Order by delivery date.
+
+    #TODO: Add first page with everyone combined
+    #TODO: Make columns for every parameter and add header
     '''
     wb = xlwt.Workbook()
-    cogroups = dmv2.cogroups()
-    cutoff = datetime.date.today() - datetime.timedelta(180)
+    cogroups = _.dbm.cogroups()
+    cutoff = datetime.date.today() - datetime.timedelta(days)
 
     style = xlwt.XFStyle()
     style.num_format_str = '"$"#,##0.00_);("$"#,##'
 
     for group in cogroups:
-        query = dmv2.session.query(dmv2.Order)
+        query = _.dbm.session.query(_.dbm.Order)
         query = query.filter_by(group=group.name, is_sale=is_sale)
-        query = query.filter(dmv2.Order.duedate > cutoff)
-        orders = query.order_by(dmv2.Order.duedate).all()
+        query = query.filter(_.dbm.Order.duedate > cutoff)
+        orders = query.order_by(_.dbm.Order.duedate).all()
 
         if orders:
             #Make sheet with cogroup name
@@ -402,13 +405,13 @@ def save_shipments_to_excel(is_sale=None):
             continue
         row = 0
         for order in orders:
-            for shipment in order.shipments:
-                ws.write(row, 0, str(shipment.shipmentdate))
+            for shipmentitem in order.shipments:
+                ws.write(row, 0, str(shipmentitem.shipment.shipmentdate))
                 ws.write(row, 1, unicode(order.seller))
                 ws.write(row, 2, '->')
                 ws.write(row, 3, unicode(order.buyer))
-                ws.write(row, 4, unicode(order.product.summary))
-                qty = shipment.sku_qty
+                ws.write(row, 4, unicode(order.product.name))
+                qty = shipmentitem.qty
                 sku = order.product.SKU
                 if order.product.unitpriced or sku == u'槽車':
                     qty *= order.product.units
@@ -437,8 +440,9 @@ def save_shipments_to_excel(is_sale=None):
     wb.save(path)
     os.system('start "'+ base + '" ' + filename)
 
-def save_products_to_excel():
-    '''Save all products to Excel.'''
+def save_products_to_excel(_):
+    '''Save all products to Excel.
+    #TODO: Line between companies'''
     wb = xlwt.Workbook()
 
     style = xlwt.XFStyle()
@@ -446,16 +450,13 @@ def save_products_to_excel():
     def_style = xlwt.XFStyle()
 
 
-    query = dmv2.session.query(dmv2.Product)
-    recs = query.order_by(dmv2.Product.group).all()
+    query = _.dbm.session.query(_.dbm.Product)
+    recs = query.order_by(_.dbm.Product.group).all()
 
     ws = wb.add_sheet(u'Products')
 
-    headers = [u'group', u'product_label', u'inventory_name', u'curr_price',
-               u'english_name', u'units', u'UM', u'SKU',
-               u'SKUlong', u'unitpriced', u'ASE_PN',
-               u'note', u'is_supply', u'discontinued',
-               ]
+    headers = _.dbm.Product.__table__.columns.keys()
+
     row = 0
     for col, head in enumerate(headers):
         ws.write(row, col, head)
@@ -479,22 +480,6 @@ def save_products_to_excel():
     path = os.path.join(base, filename)
     wb.save(path)
     os.system('start "'+ base + '" ' + filename)
-
-
-
-#def save_co_text():
-#    '''Saves orders from one company to a text file.'''
-#    tmpwin = Tk.Toplevel(width=700)
-#    tmpwin.title(u"Pick company group to export")
-#
-#    cogroups = dmv2.cogroups()
-#
-#    co_lb = Tk.Listbox(tmpwin, width=30, height=30)
-#    co_lb.grid()
-#
-#    for co in cogroups:
-#        br_list = [br.name for br in co.branches]
-#        co_lb.insert(0, u'{0.name} ({1})'.format(co, u', '.join(br_list)))
 
 
 
