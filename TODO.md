@@ -7,6 +7,7 @@
     - Change PO close prompt to show only after total PO qty shipped **and** invoiced.
 - Add editable (autosaved) note under branch buttons. Large obvious letters for keeping PO/Manifest instructions.
 - Deleting 'parent' link in Branch might break something. Look to see where it is used.
+- Allow editing of manifest amount. Lock when invoiced (thus verified).
 
 ***Requested:***
 - RT should match manifest order (and PO order). Check this.
