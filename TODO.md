@@ -8,6 +8,7 @@
 - Add editable (autosaved) note under branch buttons. Large obvious letters for keeping PO/Manifest instructions.
 - Deleting 'parent' link in Branch might break something. Look to see where it is used.
 - Allow editing of manifest amount. Lock when invoiced (thus verified).
+- Undo 'paid' command in case of mistake
 
 ***Requested:***
 - RT should match manifest order (and PO order). Check this.
@@ -21,3 +22,4 @@
 - ReportLab's open-source PDF toolkit shows the ming character. Do more testing and switch from FPDF.
 - Clean up/refactor and document code.
 - Learn to output matplotlib plot as PDF and transfer that image to another PDF. Use 'pdfrw' package. Another option is to integrate R somehow for generating reports.
+- Add popup balloon messages all over for more info.
