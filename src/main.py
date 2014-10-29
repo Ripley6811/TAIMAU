@@ -486,7 +486,7 @@ def save_products_to_excel(_):
 
 def about():
     '''Display program author and date.'''
-    tkMessageBox.showinfo('About', '台茂化工\nWritten by Jay W Johnson\n2014')
+    tkMessageBox.showinfo('About', '台茂化工資料庫\nWritten by Jay W Johnson\n2014')
 
 
 

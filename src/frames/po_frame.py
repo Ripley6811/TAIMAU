@@ -127,10 +127,14 @@ def create(_):
                        activebackground="gold")
 
         cog_butts = _.cog_butts = []
-        i = 0
-        cols = 4
-        for i, cog in enumerate(_.dbm.cogroups()):
-            text = cog.name
+        i = 0 # Counter for row placement.
+        cols = 4 # Number of columns for company names.
+        # Order the company groups by number of branches.
+        ord_cogs = [(len(cog.branches), cog) for cog in _.dbm.cogroups()]
+        ord_cogs = sorted(ord_cogs)[::-1]
+        ord_cogs = [tup[1] for tup in ord_cogs]
+        for i, cog in enumerate(ord_cogs):
+            text = u'\n'.join([br.name for br in cog.branches])
             nPOs = _.dbm.active_POs(cog.name) # number of (Purchase, Sale) POs
             if _.debug:
                 text += u'\n{}'.format(nPOs)
@@ -141,7 +145,7 @@ def create(_):
                                  command=lambda x=cog.name:select_cogroup(x),
                                  **options)
             #TODO: color by supplier/client
-            tr.grid(row=i/cols,column=i%cols, sticky=Tix.W+Tix.E)
+            tr.grid(row=i/cols,column=i%cols, sticky=u'nsew')
             cog_butts.append(tr)
         else:
             # Increment one more to add the "+" button.
