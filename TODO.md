@@ -1,13 +1,14 @@
 ***Do Soon:***
-- Add functions for editing/adding branches.
+- Add functions for editing branches.
 - Option to output entire list of companies to Excel for reference.
-- Lock PO price after invoice attached
+- Save editing in excel to database with password and notes on double-checking, and backup.
+- Lock PO price after invoice attached!
+- Allow editing of manifest amount. Lock when invoiced (thus verified).
 - Allow move of remaining non-invoiced shipments to new PO in case of price change. In all PO view mode.
     - When closing PO and non-invoiced manifests are present, ask if remainder need to move to new PO.
     - Change PO close prompt to show only after total PO qty shipped **and** invoiced.
 - Add editable (autosaved) note under branch buttons. Large obvious letters for keeping PO/Manifest instructions.
 - Deleting 'parent' link in Branch might break something. Look to see where it is used.
-- Allow editing of manifest amount. Lock when invoiced (thus verified).
 - Undo 'paid' command in case of mistake
 
 ***Requested:***
@@ -19,7 +20,7 @@
 ***Extra:***
 - Command line method for updating database from outputed Excel of companies and products.
 - Add discount option widgets if it might be used.
-- ReportLab's open-source PDF toolkit shows the ming character. Do more testing and switch from FPDF.
+- Use ReportLab for QC report instead of FPDF.
 - Clean up/refactor and document code.
 - Learn to output matplotlib plot as PDF and transfer that image to another PDF. Use 'pdfrw' package. Another option is to integrate R somehow for generating reports.
 - Add popup balloon messages all over for more info.
