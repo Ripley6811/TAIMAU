@@ -114,7 +114,7 @@ def sendcommand(s):
 def closeport():
     tsc.closeport()
 
-def TM_label(material, PN, LOT_NO, ASE_NO, QTY, ExpDate, DOM, RT_NO):
+def TM_label(material, PN, LOT_NO, ASE_NO, QTY, ExpDate, DOM, RT_NO, PO):
     if not tsc:
         return
     openport()
@@ -178,6 +178,10 @@ def TM_label(material, PN, LOT_NO, ASE_NO, QTY, ExpDate, DOM, RT_NO):
         windowsfont(tab,458, "RT NO:", h=26)
         windowsfont(tab2,455, RT_NO, h=30, style=2)
         barcode(tab,485, RT_NO, d=40)
+    elif PO:
+        windowsfont(tab,458, "PO:", h=26)
+        windowsfont(tab2,455, PO, h=30, style=2)
+        barcode(tab,485, PO, d=40)
 
     printlabel(1,1)
     closeport()
@@ -311,16 +315,16 @@ def lookup_product_code(book, sheetname, lookname):
             if each[0] in sheetname:
                 return each
 #        return products[input("Select #")-1]
-            
+
     if len(products) == 0:
         print "ERROR: Product not found in code lookup list."
         print "Make sure the spelling is correct and matches the desired product."
         raw_input("HIT ENTER TO EXIT...")
-        
+
 #    print 'SELECTED:', products[0][0], ':', products[0][1], "(", products[0][2], ")"
     return products[0]
-    
-    
+
+
 def rt_check(sheet, valrow, rtn):
     if len(rtn) != 10:
         print "RT No. ERROR: Not 10 characters long."
@@ -333,12 +337,12 @@ def rt_check(sheet, valrow, rtn):
     if rtcol < 0:
         print "RT No. ERROR: Column not found."
         return False
-        
+
     for irow in range(1,valrow):
         if sheet.cell_value(irow,rtcol) == rtn:
             print "RT No. ERROR: Value already exists."
             return False
-            
+
     return True
 
 
@@ -405,7 +409,7 @@ def printapp(noprint=False):
             break
 
     # RT No. validation
-    if (sheet.name not in ['PR',u'雙葉']) and not rt_check(sheet, row, dic[u'RT.No']):
+    if (sheet.name not in ['PR',u'雙葉',u'光大',u'台駿']) and not rt_check(sheet, row, dic[u'RT.No']):
         # Exit if check is False
         raw_input("Hit enter to exit.")
         return False
@@ -476,18 +480,19 @@ def printapp(noprint=False):
                 print dic[u'品名']
             except:
                 print "(can't print a Chinese character)"
-            print PN
-            print dic[u"製造批號"]
-            print ASE_NO
-            print QTY
-            print ExpDate
-            print DOM
-            print dic[u"RT.No"]
+            print "PN:", PN
+            print "LOT#:", dic[u"製造批號"]
+            print "ASE#:", ASE_NO
+            print "QTY:", QTY
+            print "EXP:", ExpDate
+            print "DOM:", DOM
+            print "RT:", dic[u"RT.No"]
+            print "PO:", dic[u"PO"]
             print "---------------------"
             if not noprint:
                 if barQR == "barcode":
                     TM_label(dic[u'品名'], PN, dic[u"製造批號"], ASE_NO,
-                             QTY, ExpDate, DOM, dic[u"RT.No"])
+                             QTY, ExpDate, DOM, dic[u"RT.No"], dic[u"PO"])
                 if barQR == "DM":
                     TM_DMlabel(dic[u'品名'], PN, dic[u"製造批號"], ASE_NO,
                              QTY, ExpDate, DOM, dic[u"RT.No"])
