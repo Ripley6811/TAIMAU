@@ -1,5 +1,6 @@
 ***Do Soon:***
 - Add functions for editing branches.
+- New frame that consolidates the PO, manifest, invoice, and payment.
 - Option to output entire list of companies to Excel for reference.
 - Save editing in excel to database with password and notes on double-checking, and backup.
 - Lock PO price after invoice attached!
