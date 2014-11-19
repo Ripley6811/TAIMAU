@@ -25,3 +25,4 @@
 - Clean up/refactor and document code.
 - Learn to output matplotlib plot as PDF and transfer that image to another PDF. Use 'pdfrw' package. Another option is to integrate R somehow for generating reports.
 - Add popup balloon messages all over for more info.
+- Switch from sqlite3 database to a remote MySQL server.
