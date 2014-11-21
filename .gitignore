@@ -234,3 +234,4 @@ TM_excel_filter_converter.py
 *.aia
 data/settings
 settings.json
+*.ffs_db

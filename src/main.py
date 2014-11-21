@@ -135,6 +135,12 @@ class TaimauApp(Tix.Tk):
                                command=lambda:purchases_shipments_to_excel(_))
         reportmenu.add_command(label=u"Save all products to Excel file.",
                                command=lambda:save_products_to_excel(_))
+
+        reportmenu.add_command(label=u"Save all static data to an Excel file.",
+                               command=lambda:staticDB2excel(_))
+        reportmenu.add_command(label=u"Save all active data to an Excel file.",
+                               command=lambda:activeDB2excel(_))
+
 #        reportmenu.add_command(label="Report3", command=None, state=Tk.DISABLED)
 #        reportmenu.add_command(label="Report4", command=None, state=Tk.DISABLED)
         menubar.add_cascade(label=_.loc(u"Reports", 1), menu=reportmenu)
@@ -481,8 +487,80 @@ def save_products_to_excel(_):
     wb.save(path)
     os.system('start "'+ base + '" ' + filename)
 
+def staticDB2excel(_):
+    '''Export entire database to an Excel file.'''
+    wb = xlwt.Workbook()
+
+    tables = {
+        u'Product': _.dbm.Product,
+        u'CoGroup': _.dbm.CoGroup,
+        u'Branch': _.dbm.Branch,
+        u'Contact': _.dbm.Contact,
+        u'Stock': _.dbm.Stock,
+        u'Vehicle': _.dbm.Vehicle,
+    }
+
+    for key, val in tables.iteritems():
+        query = _.dbm.session.query(val)
+        recs = query.all()
+
+        ws = wb.add_sheet(key)
+
+        headers = val.__table__.columns.keys()
+
+        row = 0
+        for col, head in enumerate(headers):
+            ws.write(row, col, head)
+        for rec in recs:
+            row += 1
+            for col, head in enumerate(headers):
+
+                ws.write(row, col, rec.__dict__[head])
 
 
+    filename = u'TAIMAU_DB_Static.xls'
+
+    base = os.getcwd()
+    path = os.path.join(base, filename)
+    wb.save(path)
+    os.system('start "'+ base + '" ' + filename)
+
+def activeDB2excel(_):
+    '''Export entire database to an Excel file.'''
+    wb = xlwt.Workbook()
+
+    tables = {
+        u'Order': _.dbm.Order,
+        u'Shipment': _.dbm.Shipment,
+        u'ShipmentItem': _.dbm.ShipmentItem,
+        u'Invoice': _.dbm.Invoice,
+        u'InvoiceItem': _.dbm.InvoiceItem,
+    }
+
+    for key, val in tables.iteritems():
+        query = _.dbm.session.query(val)
+        recs = query.all()
+
+        ws = wb.add_sheet(key)
+
+        headers = val.__table__.columns.keys()
+
+        row = 0
+        for col, head in enumerate(headers):
+            ws.write(row, col, head)
+        for rec in recs:
+            row += 1
+            for col, head in enumerate(headers):
+
+                ws.write(row, col, rec.__dict__[head])
+
+
+    filename = u'TAIMAU_DB_Active.xls'
+
+    base = os.getcwd()
+    path = os.path.join(base, filename)
+    wb.save(path)
+    os.system('start "'+ base + '" ' + filename)
 
 def about():
     '''Display program author and date.'''
