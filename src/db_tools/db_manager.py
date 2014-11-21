@@ -53,13 +53,14 @@ class db_manager:
     Contact = Contact
     CoGroup = CoGroup
     Branch = Branch
+    Stock = Stock
 
     def __init__(self):
         js = settings.load()
         if js.get('dbpath', False) and exists(js.get('dbpath')):
             self.dbpath = js['dbpath']
 
-            engine = get_database( self.dbpath, False )
+            engine = get_database( echo=False )
             self.session = sessionmaker(bind=engine)()
             print "DB PATH:", self.dbpath
         else:
@@ -79,7 +80,7 @@ class db_manager:
         )
         self.dbpath = normpath(tkFileDialog.askopenfilename(**FILE_OPTS))
 
-        engine = get_database( self.dbpath, False )
+        engine = get_database( echo=False )
         self.session = sessionmaker(bind=engine)()
         print "DB PATH:", self.dbpath
 

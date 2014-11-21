@@ -66,15 +66,15 @@ def AddDictRepr(aClass):
 class Order(Base):
     __tablename__ = 'order'
     id = Col(Int, primary_key=True)
-    group = Col(Utf, ForeignKey('cogroup.name'), nullable=False) # Of second party main company
-    seller = Col(Utf, ForeignKey('branch.name'), nullable=False) # For billing/receipts
-    buyer = Col(Utf, ForeignKey('branch.name'), nullable=False) # For billing/receipts
+    group = Col(Utf(4), ForeignKey('cogroup.name'), nullable=False) # Of second party main company
+    seller = Col(Utf(4), ForeignKey('branch.name'), nullable=False) # For billing/receipts
+    buyer = Col(Utf(4), ForeignKey('branch.name'), nullable=False) # For billing/receipts
     parent = rel('CoGroup')
 
     recorddate = Col(DateTime, nullable=False, default=today) # Date of entering a record
 
     # Keep all product information in the outgoing product list
-    MPN = Col(Utf, ForeignKey('product.MPN'), nullable=False) # Product code
+    MPN = Col(Utf(20), ForeignKey('product.MPN'), nullable=False) # Product code
 
     price = Col(Float) # Price for one SKU or unit on this order
     discount = Col(Int, nullable=False, default=0) # Discount percentage as integer (0-100)
@@ -91,10 +91,10 @@ class Order(Base):
     duedate = Col(Date)  # Expected delivery date
     date = Col(Date) # Extra date field if needed
 
-    orderID = Col(Utf)  # PO Number
+    orderID = Col(Utf(20))  # PO Number
 
-    ordernote = Col(Utf) # Information concerning the order
-    note = Col(Utf) # Extra note field if needed.
+    ordernote = Col(Utf(100)) # Information concerning the order
+    note = Col(Utf(100)) # Extra note field if needed.
 
     checked = Col(Bool, nullable=False, default=False) # Match against second party records
     is_sale = Col(Bool, nullable=False, default=False) # Boolean. Customer
@@ -164,58 +164,6 @@ class Order(Base):
             subtotal *= self.product.units
         return int(round(subtotal))
 
-#    def listbox_summary(self):
-#        """
-#        Single line unicode text summary of order intended for use in a listbox.
-#
-#        Only displays number of attached shipments and invoices.
-#        """
-#
-#        prodtmp = self.product.product_label, self.product.inventory_name
-#        if prodtmp[0] and prodtmp[0] != prodtmp[1]:
-#            prodtmp = u'{} (台茂:{})'.format(*prodtmp)
-#        else:
-#            prodtmp = prodtmp[1]
-#
-#        #Start with checkbox to show that order is completed (delivered and paid)
-#        tmp = u'\u2611' if self.all_paid() and self.all_invoiced() and self.all_shipped() else u'\u2610'
-#
-#        #PO number if available
-#        po_no_txt = self.orderID.strip() if self.orderID else '({})'.format(self.id)
-#        tmp += u"{0:<14}".format(po_no_txt)
-#
-#        #Shipping icon and number of shipments
-#        tmp += u'\u26DF' if len(self.shipments)>0 else u'\u25C7'
-#        tmp += u'*{:<3}'.format(len(self.shipments)) if self.shipments else u'    '
-#
-#        #Invoice sent icon and number of invoices
-#        tmp += u'\u2696' if len(self.invoices)>0 else u'\u25C7'
-#        tmp += u'*{:<3}'.format(len(self.invoices)) if self.invoices else u'    '
-#
-#
-#        try:
-#            tmp += u"訂單日:{0.month:>2}月{0.day:>2}日".format(self.orderdate)
-#        except:
-#            tmp += u'(Order date not entered)'
-#
-##        try:
-##            tmp += u" \u273F {s.seller}\u2794{s.buyer} ".format(s=self)
-##        except Exception as e:
-##            tmp += u'(ERROR: {})'.format(e)
-#
-#        try:
-#            tmp += u"\u273F {rem_qty:>6}{s.qty:>5}{um} {pt:<14} @ ${pr} \u214C {um}".format(
-#                pt= prodtmp,
-#                pr= int(self.price) if float(self.price).is_integer() else self.price,
-#                um= self.product.UM if self.product.unitpriced else self.product.SKU,
-#                rem_qty= u'{}/'.format(self.qty_remaining()),
-#                s= self,
-#                )
-#        except Exception as e:
-#            tmp += u'(ERROR: {})'.format(e)
-#
-#        return tmp
-
 
 #==============================================================================
 # Shipment (track multiple shipments in SKU's for one order)
@@ -228,22 +176,16 @@ class Shipment(Base): # Keep track of shipments/SKUs for one order
     '''
     __tablename__ = 'shipment'
     id = Col(Int, primary_key=True)
-    #XXX: Removed in version 3
-    #order_id = Col(Int, ForeignKey('order.id'), nullable=False)
-    #qty = Col(Int, nullable=False) # Deduct from total SKUs due
-
     shipmentdate = Col(Date, nullable=False)
-    shipment_no = Col(Utf, default=u'') # i.e., Manifest number
-    shipmentnote = Col(Utf, default=u'') # Information concerning the delivery
-    #XXX: New in version 3
-    shipmentdest = Col(Utf, default=u'')
+    shipment_no = Col(Utf(20), default=u'') # i.e., Manifest number
+    shipmentnote = Col(Utf(100), default=u'') # Information concerning the delivery
+    shipmentdest = Col(Utf(100), default=u'')
 
-    driver = Col(Utf) # Track vehicle driver (optional)
-    truck = Col(Utf) # Track vehicle by license (optional)
-    note = Col(Utf) # Extra note field if needed
+    driver = Col(Utf(4)) # Track vehicle driver (optional)
+    truck = Col(Utf(10)) # Track vehicle by license (optional)
+    note = Col(Utf(100)) # Extra note field if needed
     checked = Col(Bool, nullable=False, default=False) # Extra boolean for matching/verifying
 
-    #XXX: New in version 3
     items = rel('ShipmentItem', backref='shipment')
 
 #    # METHODS
@@ -265,10 +207,10 @@ class ShipmentItem(Base):
 
     qty = Col(Int, nullable=False) # Deduct from total SKUs due
 
-    lot = Col(Utf)
+    lot = Col(Utf(20))
     lot_start = Col(Int)
     lot_end = Col(Int)
-    rt_no = Col(Utf)
+    rt_no = Col(Utf(20))
 
     invoiceitem = rel('InvoiceItem', backref='shipmentitem')
 
@@ -281,19 +223,19 @@ class Invoice(Base): # Keep track of invoices/payments for one order
     #XXX: New in version 3, primary key change
     id = Col(Int, primary_key=True)
 
-    invoice_no = Col(Utf, default=u'') # i.e., Invoice number
+    invoice_no = Col(Utf(20), default=u'') # i.e., Invoice number
 
-    seller = Col(Utf, ForeignKey('branch.name'), nullable=False) # For billing/receipts
-    buyer = Col(Utf, ForeignKey('branch.name'), nullable=False) # For billing/receipts
+    seller = Col(Utf(4), ForeignKey('branch.name'), nullable=False) # For billing/receipts
+    buyer = Col(Utf(4), ForeignKey('branch.name'), nullable=False) # For billing/receipts
 
     invoicedate = Col(Date, nullable=False)
-    invoicenote = Col(Utf) # Information concerning the invoice
+    invoicenote = Col(Utf(100)) # Information concerning the invoice
 
-    check_no = Col(Utf)
+    check_no = Col(Utf(20))
     paid = Col(Bool, nullable=False, default=False)
     paydate = Col(Date)
 
-    note = Col(Utf) # Extra note field if needed
+    note = Col(Utf(100)) # Extra note field if needed
     checked = Col(Bool, nullable=False, default=False) # Extra boolean for matching/verifying
 
     items = rel('InvoiceItem', backref='invoice')
@@ -323,8 +265,8 @@ class InvoiceItem(Base): # Keep track of invoices/payments for one order
     __tablename__ = 'invoiceitem'
     id = Col(Int, primary_key=True)
 
-    invoice_id = Col(Utf, ForeignKey('invoice.id'), nullable=False)
-    shipmentitem_id = Col(Utf, ForeignKey('shipmentitem.id'), nullable=False)
+    invoice_id = Col(Int, ForeignKey('invoice.id'), nullable=False)
+    shipmentitem_id = Col(Int, ForeignKey('shipmentitem.id'), nullable=False)
 
     order_id = Col(Int, ForeignKey('order.id'), nullable=False)
 
@@ -359,7 +301,7 @@ class InvoiceItem(Base): # Keep track of invoices/payments for one order
 @AddDictRepr
 class CoGroup(Base):
     __tablename__ = 'cogroup'
-    name = Col(Utf, primary_key=True, nullable=False) # Abbreviated name of company (2 to 4 chars)
+    name = Col(Utf(4), primary_key=True, nullable=False) # Abbreviated name of company (2 to 4 chars)
     is_active = Col(Bool, nullable=False, default=True) # Boolean for listing the company. Continuing business.
     is_supplier = Col(Bool, nullable=False, default=True) # Maybe use in later versions
     is_customer = Col(Bool, nullable=False, default=True) # Maybe use in later versions
@@ -381,19 +323,19 @@ class CoGroup(Base):
 @AddDictRepr
 class Branch(Base):
     __tablename__ = 'branch'
-    name = Col(Utf, primary_key=True, nullable=False) # Abbreviated name of company (2 to 4 chars)
-    group= Col(Utf, ForeignKey('cogroup.name'), nullable=False) # Name of main company representing all branches
-    fullname = Col(Utf, default=u'')
-    english_name = Col(Utf, default=u'')
-    tax_id = Col(Utf, nullable=False, default=u'')
-    phone = Col(Utf, default=u'')
-    fax = Col(Utf, default=u'')
-    email = Col(Utf, default=u'')
-    note = Col(Utf, default=u'')
-    address_office = Col(Utf, default=u'')
-    address_shipping = Col(Utf, default=u'')
-    address_billing = Col(Utf, default=u'')
-    address = Col(Utf, default=u'') # Extra address space if needed
+    name = Col(Utf(4), primary_key=True, nullable=False) # Abbreviated name of company (2 to 4 chars)
+    group= Col(Utf(4), ForeignKey('cogroup.name'), nullable=False) # Name of main company representing all branches
+    fullname = Col(Utf(100), default=u'')
+    english_name = Col(Utf(100), default=u'')
+    tax_id = Col(Utf(8), nullable=False, default=u'')
+    phone = Col(Utf(20), default=u'')
+    fax = Col(Utf(20), default=u'')
+    email = Col(Utf(20), default=u'')
+    note = Col(Utf(100), default=u'')
+    address_office = Col(Utf(100), default=u'')
+    address_shipping = Col(Utf(100), default=u'')
+    address_billing = Col(Utf(100), default=u'')
+    address = Col(Utf(100), default=u'') # Extra address space if needed
     is_active = Col(Bool, nullable=False, default=True) # Boolean for listing the company. Continuing business.
 
 #    parent = rel('CoGroup')
@@ -411,14 +353,14 @@ class Branch(Base):
 class Contact(Base):
     __tablename__ = 'contact'
     id = Col(Int, primary_key=True)
-    group = Col(Utf, ForeignKey('cogroup.name'), nullable=False)
-    branch = Col(Utf, ForeignKey('branch.name'))
-    name = Col(Utf, nullable=False)
-    position = Col(Utf, default=u'')
-    phone = Col(Utf, default=u'')
-    fax = Col(Utf, default=u'')
-    email = Col(Utf, default=u'')
-    note = Col(Utf, default=u'')
+    group = Col(Utf(4), ForeignKey('cogroup.name'), nullable=False)
+    branch = Col(Utf(4), ForeignKey('branch.name'))
+    name = Col(Utf(20), nullable=False)
+    position = Col(Utf(20), default=u'')
+    phone = Col(Utf(20), default=u'')
+    fax = Col(Utf(20), default=u'')
+    email = Col(Utf(20), default=u'')
+    note = Col(Utf(100), default=u'')
 
 
 
@@ -430,28 +372,26 @@ class Contact(Base):
 class Product(Base): # Information for each unique product (including packaging)
     __tablename__ = 'product'
 
-    MPN = Col(Utf, primary_key=True)
-    group = Col(Utf, ForeignKey('cogroup.name'), nullable=False)
+    MPN = Col(Utf(20), primary_key=True)
+    group = Col(Utf(4), ForeignKey('cogroup.name'), nullable=False)
 
-    product_label = Col(Utf, default=u'') #Optional 2nd party product name
-    inventory_name = Col(Utf, nullable=False) #Required
-    english_name = Col(Utf, default=u'')
+    product_label = Col(Utf(100), default=u'') #Optional 2nd party product name
+    inventory_name = Col(Utf(100), nullable=False) #Required
+    english_name = Col(Utf(100), default=u'')
     units = Col(Float, nullable=False)  #Units per SKU
-    UM = Col(Utf, nullable=False)   #Unit measurement
-    SKU = Col(Utf, nullable=False)  #Stock keeping unit (sold unit)
-    SKUlong = Col(Utf, default=u'')
+    UM = Col(Utf(10), nullable=False)   #Unit measurement
+    SKU = Col(Utf(10), nullable=False)  #Stock keeping unit (sold unit)
+    SKUlong = Col(Utf(100), default=u'')
     unitpriced = Col(Bool, nullable=False)
-    ASE_PN = Col(Utf) # ASE product number
-    ASE_RT = Col(Utf) # ASE department routing number
+    ASE_PN = Col(Utf(20)) # ASE product number
+    ASE_RT = Col(Utf(20)) # ASE department routing number
     ASE_END = Col(Int) # Last used SKU index number for current lot
-    note = Col(Utf) # {JSON} contains extra data, i.e. current ASE and RT numbers
+    note = Col(Utf(100)) # {JSON} contains extra data, i.e. current ASE and RT numbers
                     # {JSON} must be appended to the end after any notes. Last char == '}'
     is_supply = Col(Bool, nullable=False)
     discontinued = Col(Bool, nullable=False, default=False)
 
     curr_price = Col(Float, default=0.0)
-
-    #summary = Col(Utf, default=summarize, onupdate=summarize)
 
     stock = rel('Stock', backref='product')
     orders = rel('Order', primaryjoin="Product.MPN==Order.MPN")
@@ -542,13 +482,13 @@ class Product(Base): # Information for each unique product (including packaging)
 class Stock(Base): #For warehouse transactions
     __tablename__ = 'stock'
     id = Col(Int, primary_key=True)
-    MPN = Col(Utf, ForeignKey('product.MPN'), nullable=False)
+    MPN = Col(Utf(20), ForeignKey('product.MPN'), nullable=False)
 
     date = Col(Date, nullable=False)
     adj_unit = Col(Float, nullable=False)   #Use units for stock amounts
     adj_SKU = Col(Float) #Probably will NOT use this
     adj_value = Col(Float, nullable=False)  #Value of units in transaction
-    note = Col(Utf)
+    note = Col(Utf(100))
 
 
 
@@ -558,21 +498,25 @@ class Stock(Base): #For warehouse transactions
 @AddDictRepr
 class Vehicle(Base):
     __tablename__ = 'vehicle'
-    id = Col(Utf, primary_key=True) #license plate number
+    id = Col(Utf(10), primary_key=True) #license plate number
 
     purchasedate = Col(Date)
-    description = Col(Utf)
+    description = Col(Utf(100))
     value = Col(Float)
-    note = Col(Utf)
+    note = Col(Utf(100))
 
 
 
 #==============================================================================
 # Database loading method
 #==============================================================================
-def get_database(filename, echo=False):
+def get_database(echo=False,
+                 name = u'admin', pw = u'admin',
+                 db = u'taimau', port = u'192.168.1.113:3306'):
     '''Opens a database and returns an 'engine' object.'''
-    database = sqla.create_engine('sqlite:///'+filename, echo=echo)
+    db_path = u"mysql+pymysql://{name}:{pw}@{port}/{db}?charset=utf8".format(
+              name=name, pw=pw, db=db, port=port)
+    database = sqla.create_engine(db_path, echo=echo)
     Base.metadata.create_all(database)   #FIRST TIME SETUP ONLY
     return database
 
