@@ -130,6 +130,7 @@ worddict = {
                 u'輸入公司團體的縮寫名稱\n縮寫2到4個字',
     u'Enter the first branch name\nAgain, use 2-4 characters' : \
                 u'Enter the first branch name\n縮寫2到4個字',
+    u'Include Summary' : u'包括總結',
 }
 # Storage of StringVar by the english text as keyword.
 labeldict = {}

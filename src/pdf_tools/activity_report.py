@@ -24,14 +24,19 @@ def main(_, records=[]):
     enddate = date_picker.Calendar(pdfwin)
     enddate.grid(row=1, rowspan=6, column=2, columnspan=2)
 
+    include_sum = Tix.BooleanVar()
+    cb = Tix.Checkbutton(pdfwin, textvariable=_.loc(u"Include Summary"), variable=include_sum)
+    cb.grid(row=10, column=0, columnspan=4)
+    include_sum.set(False)
 
 
     tb = Tix.Button(pdfwin, textvariable=_.loc(u"\u2713 Submit"), bg=u'light salmon')
 #    tb['command'] = lambda: submit() # FPDF
     tb['command'] = lambda: submit_RLab(_,  # Report Lab
                                         start=startdate.selection,
-                                        end=enddate.selection)
-    tb.grid(row=10, column=0, columnspan=4, sticky='ew')
+                                        end=enddate.selection,
+                                        summary=include_sum.get())
+    tb.grid(row=20, column=0, columnspan=4, sticky='ew')
 
 
 
@@ -58,7 +63,7 @@ def display_pdf(outfile):
         os.startfile(outfile)
 
 
-def submit_RLab(_, start, end):
+def submit_RLab(_, start, end, summary=False):
 
     #TODO: Add client branch column
 
@@ -231,42 +236,42 @@ def submit_RLab(_, start, end):
     table.setStyle(TableStyle(cellstyles))
     body.append(table)
 
-
     #### CREATE PRODUCT TOTALS TABLE ####
-    body.append(Spacer(1, 5*mm))
-    aggregated = dict()
-    for i, product in enumerate(df[u'品名']):
-        if product not in aggregated:
-            aggregated[product] = [0, df[u'單位'][i], 0, 0]
-        aggregated[product][0] += df[u'數量'][i]
-        aggregated[product][2] += int(''.join(df[u'總價'][i].split(',')))
-        aggregated[product][3] += 1
+    if summary:
+        body.append(Spacer(1, 5*mm))
+        aggregated = dict()
+        for i, product in enumerate(df[u'品名']):
+            if product not in aggregated:
+                aggregated[product] = [0, df[u'單位'][i], 0, 0]
+            aggregated[product][0] += df[u'數量'][i]
+            aggregated[product][2] += int(''.join(df[u'總價'][i].split(',')))
+            aggregated[product][3] += 1
 
-    cells = [[u'出貨次數', u'品名', u'總出貨量', u'單位', u'總價']]
-    total = 0
-    for product_name, vals in aggregated.iteritems():
-        line = []
-        line.append(vals[3])
-        line.append(product_name)
-        line.append(u'{:,}'.format(vals[0]))
-        line.append(u'{}'.format(vals[1]))
-        line.append(u'${:,}'.format(vals[2]))
-        cells.append(line)
-        total += vals[2]
+        cells = [[u'出貨次數', u'品名', u'總出貨量', u'單位', u'總價']]
+        total = 0
+        for product_name, vals in aggregated.iteritems():
+            line = []
+            line.append(vals[3])
+            line.append(product_name)
+            line.append(u'{:,}'.format(vals[0]))
+            line.append(u'{}'.format(vals[1]))
+            line.append(u'${:,}'.format(vals[2]))
+            cells.append(line)
+            total += vals[2]
 
-    cellstyles = [('LINEABOVE', (0,0), (-1,0), 2, 'black'),
-           ('LINEBELOW', (0,0), (-1,0), 1, 'black'),
-           ('FONTNAME', (0,0), (-1,-1), chfont),
-           ('FONTSIZE', (0,0), (-1,-1), 10),
-           ('ALIGN', (2,0), (2,-1), 'RIGHT'),
-           ('ALIGN', (4,0), (4,-1), 'RIGHT'),
-           ('ALIGN', (0,0), (-1,0), 'CENTER'),]
+        cellstyles = [('LINEABOVE', (0,0), (-1,0), 2, 'black'),
+               ('LINEBELOW', (0,0), (-1,0), 1, 'black'),
+               ('FONTNAME', (0,0), (-1,-1), chfont),
+               ('FONTSIZE', (0,0), (-1,-1), 10),
+               ('ALIGN', (2,0), (2,-1), 'RIGHT'),
+               ('ALIGN', (4,0), (4,-1), 'RIGHT'),
+               ('ALIGN', (0,0), (-1,0), 'CENTER'),]
 
-    w = map(lambda x: x*mm, [14, 42, 16, 14, 22])
+        w = map(lambda x: x*mm, [14, 42, 16, 14, 22])
 
-    table = Table(cells, colWidths=w, repeatRows=1)
-    table.setStyle(TableStyle(cellstyles))
-    body.append(table)
+        table = Table(cells, colWidths=w, repeatRows=1)
+        table.setStyle(TableStyle(cellstyles))
+        body.append(table)
 
     #### BUILD PDF ####
     pdf.build(body)
