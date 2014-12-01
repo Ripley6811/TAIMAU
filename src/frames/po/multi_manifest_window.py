@@ -18,7 +18,35 @@ def main(_, order, refresh):
 
     xwin = _.extwin
 
+    """
+    http://stackoverflow.com/questions/1450180/how-can-i-change-the-focus-from-one-text-box-to-another-in-python-tkinter
+    """
+    def focus_next(event):
+        event.widget.tk_focusNext().focus()
+        return("break")
+    def focus_down(event):
+        #TODO: Need to skip five widgets.
+        event.widget.tk_focusNext()\
+                    .tk_focusNext()\
+                    .tk_focusNext()\
+                    .tk_focusNext()\
+                    .tk_focusNext()\
+                    .tk_focusNext().focus()
+        return("break")
+    def focus_up(event):
+        #TODO: Need to skip five widgets.
+        event.widget.tk_focusPrev()\
+                    .tk_focusPrev()\
+                    .tk_focusPrev()\
+                    .tk_focusPrev()\
+                    .tk_focusPrev()\
+                    .tk_focusPrev().focus()
+        return("break")
+    xwin.bind("<Return>", focus_next)
+    xwin.bind("<Down>", focus_down)
+    xwin.bind("<Up>", focus_up)
 
+    nRecs = 12 # Max records that can be entered at one time.
     dates = []
     number = []
     qty = []
@@ -43,7 +71,7 @@ def main(_, order, refresh):
         bg= u'wheat', justify='center',
         width= 10,
     )
-    for i in range(6):
+    for i in range(nRecs):
         dates.append(Tix.StringVar())
         Tix.Entry(xwin, textvariable=dates[i], **cc).grid(row=i+1, column=0, sticky='nsew')
         dates[i].set(u'{0.year}-{0.month}-'.format(date.today()))
@@ -72,8 +100,10 @@ def main(_, order, refresh):
         if _.debug:
             print a, b, i
             print type(i), i
-        units[i].set(int(qty[i].get())*order.product.units)
-
+        if qty[i].get().isdigit():
+            units[i].set(int(qty[i].get())*order.product.units)
+        else:
+            units[i].set(0)
 
 
 
