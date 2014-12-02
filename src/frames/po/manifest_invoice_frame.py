@@ -240,15 +240,15 @@ def main(_):
 
             # Temp link to shipment/manifest record and delete item.
             ship_main = smi.shipment
-            _.dbm.session.query(_.dbm.ShipmentItem)
-                         .filter(_.dbm.ShipmentItem.id == sid)
+            _.dbm.session.query(_.dbm.ShipmentItem)\
+                         .filter(_.dbm.ShipmentItem.id == sid)\
                          .delete()
 
             # Delete manifest if no items are attached.
             if len(ship_main.items) == 0:
                 sm_id = ship_main.id
-                _.dbm.session.query(_.dbm.Shipment)
-                             .filter(_.dbm.Shipment.id == sm_id)
+                _.dbm.session.query(_.dbm.Shipment)\
+                             .filter(_.dbm.Shipment.id == sm_id)\
                              .delete()
 
             # Commit changes.
