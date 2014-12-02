@@ -234,14 +234,24 @@ def main(_):
         confirmation = tkMessageBox.askyesno(u'Delete Shipment Item',
             u'Confirm deletion:\n{0.shipment.shipmentdate} {0.order.product.name}'.format(smi))
         if confirmation:
+            # Delete an associated invoice item.
             if len(smi.invoiceitem) >= 1:
                 delete_invoiceitem()
 
-            nItems = len(smi.shipment.items)
-            if nItems == 1:
-                sm_id = smi.shipment.id
-                _.dbm.session.query(_.dbm.Shipment).filter(_.dbm.Shipment.id == sm_id).delete()
-            _.dbm.session.query(_.dbm.ShipmentItem).filter(_.dbm.ShipmentItem.id == sid).delete()
+            # Temp link to shipment/manifest record and delete item.
+            ship_main = smi.shipment
+            _.dbm.session.query(_.dbm.ShipmentItem)
+                         .filter(_.dbm.ShipmentItem.id == sid)
+                         .delete()
+
+            # Delete manifest if no items are attached.
+            if len(ship_main.items) == 0:
+                sm_id = ship_main.id
+                _.dbm.session.query(_.dbm.Shipment)
+                             .filter(_.dbm.Shipment.id == sm_id)
+                             .delete()
+
+            # Commit changes.
             _.dbm.session.commit()
 
             try:
@@ -260,11 +270,20 @@ def main(_):
                     u'Confirm deletion:\n{0.invoice.invoicedate} {0.order.product.name}'.format(invi))
 
                 if confirmation:
-                    nItems = len(invi.invoice.items)
-                    if nItems == 1:
-                        invi_id = invi.invoice.id
-                        _.dbm.session.query(_.dbm.Invoice).filter(_.dbm.Invoice.id == invi_id).delete()
-                    _.dbm.session.query(_.dbm.InvoiceItem).filter(_.dbm.InvoiceItem.id == invi.id).delete()
+                    # Link to main invoice and delete invoice item.
+                    inv_main = invi.invoice
+                    _.dbm.session.query(_.dbm.InvoiceItem)\
+                                 .filter(_.dbm.InvoiceItem.id == invi.id)\
+                                 .delete()
+
+                    # Delete main invoice if there are no items.
+                    if len(inv_main.items) == 0:
+                        inv_id = inv_main.id
+                        _.dbm.session.query(_.dbm.Invoice)\
+                                     .filter(_.dbm.Invoice.id == inv_id)\
+                                     .delete()
+
+                    # Commit changes to database.
                     _.dbm.session.commit()
 
                     try:
@@ -276,11 +295,15 @@ def main(_):
         except IndexError:
             pass
 
-    orderPopMenu.add_command(label=_.loc(u'View/edit manifest',1), command=lambda: edit_shipment())
-    orderPopMenu.add_command(label=_.loc(u'View/edit invoice',1), command=lambda: edit_invoice())
+    orderPopMenu.add_command(label=_.loc(u'View/edit manifest',1),
+                             command=lambda: edit_shipment())
+    orderPopMenu.add_command(label=_.loc(u'View/edit invoice',1),
+                             command=lambda: edit_invoice())
     orderPopMenu.add_separator()
-    orderPopMenu.add_command(label=_.loc(u'Delete manifest item',1), command=lambda: delete_shipmentitem())
-    orderPopMenu.add_command(label=_.loc(u'Delete invoice item',1), command=lambda: delete_invoiceitem())
+    orderPopMenu.add_command(label=_.loc(u'Delete manifest item',1),
+                             command=lambda: delete_shipmentitem())
+    orderPopMenu.add_command(label=_.loc(u'Delete invoice item',1),
+                             command=lambda: delete_invoiceitem())
 
     tds = lambda anchor, bg: Tix.DisplayStyle(
         anchor=anchor,
