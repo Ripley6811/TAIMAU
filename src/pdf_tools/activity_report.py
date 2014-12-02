@@ -24,9 +24,21 @@ def main(_, records=[]):
     enddate = date_picker.Calendar(pdfwin)
     enddate.grid(row=1, rowspan=6, column=2, columnspan=2)
 
+    #NOTE: StringVar must be a persistant variable to work properly.
+    _.co = Tix.StringVar()
+    if _.sc_mode == u'c':
+        co_sel_frame = Tix.Frame(pdfwin)
+        co_sel_frame.grid(row=10, column=0, columnspan=4)
+        names = [u"台茂",u"富茂",u"永茂"]
+        _.co.set(names[0])
+        for i, n in enumerate(names):
+            b = Tix.Radiobutton(co_sel_frame, text=n, variable=_.co, value=n)
+            b.pack(side="left")
+    print _.co.get()
+
     include_sum = Tix.BooleanVar()
     cb = Tix.Checkbutton(pdfwin, textvariable=_.loc(u"Include Summary"), variable=include_sum)
-    cb.grid(row=10, column=0, columnspan=4)
+    cb.grid(row=20, column=0, columnspan=4)
     include_sum.set(False)
 
 
@@ -36,7 +48,7 @@ def main(_, records=[]):
                                         start=startdate.selection,
                                         end=enddate.selection,
                                         summary=include_sum.get())
-    tb.grid(row=20, column=0, columnspan=4, sticky='ew')
+    tb.grid(row=100, column=0, columnspan=4, sticky='ew')
 
 
 
@@ -144,7 +156,10 @@ def submit_RLab(_, start, end, summary=False):
                 print e
             canvas.setFont(chfont, 14)
             canvas.setFillColorRGB(0,71/256.,18/256.)
-            canvas.drawString(25*mm, PL-22*mm, u'台茂化工儀器原料行')
+            tmpd = {u'台茂': u'台茂化工儀器原料行',
+                    u'富茂': u'富茂工業原料行',
+                    u'永茂': u'永茂企業行' }
+            canvas.drawString(25*mm, PL-22*mm, tmpd[_.co.get()])
             canvas.setFillColorRGB(0,0,0)
 
             # Client name
@@ -282,7 +297,13 @@ def submit_RLab(_, start, end, summary=False):
                         u'Sales' if _.sc_mode == u'c' else u'Purchases',
                         str(start),
                         str(end) )
+
     outfile = get_savename(_, initialfilename)
+
+    if outfile == ".":
+        print "PDF creation cancelled"
+        return False
+
     if os.path.exists(outfile):
         os.remove(outfile)
 
