@@ -92,11 +92,21 @@ def create(_):
         else:
             smodeRB.select()
 
-#        for each_butt in _.cog_butts:
-#            if "{}:0".format(mode) not in each_butt["value"]:
-#                each_butt.configure(bg='burlywood')
-#            else:
-#                each_butt.configure(bg='NavajoWhite4')
+        tds = lambda anchor, bg: Tix.DisplayStyle(
+            anchor=anchor,
+            bg=bg,
+            itemtype='text',
+            refwindow=_.co_tree.hlist,
+            font=_.font
+        )
+        for each in _.co_tree.hlist.info_children(''):
+            hcolor = u'NavajoWhite4'
+            if mode == 'c' and len(_.dbm.get_cogroup(each).sales):
+                    hcolor = u'gold'
+            if mode == 's' and len(_.dbm.get_cogroup(each).purchases):
+                    hcolor = u'gold'
+            _.co_tree.hlist.entryconfigure(each, style=tds('w', hcolor))
+
         try:
             load_company()
         except NameError:
