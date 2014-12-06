@@ -62,6 +62,21 @@ def create(_):
     left_pane.pack_propagate(0)
     left_pane.pack(side='left', fill='y', padx=2, pady=3)
 
+    #### Set up right pane containing company info and POs ####
+    ###########################################################
+    top_pane = Tix.Frame(_.po_frame)
+    top_pane.pack(side='top', fill='x', padx=4, pady=5)
+
+    right_top = Tix.Frame(top_pane)
+    right_top.pack(side='top', fill=Tix.X)
+
+    modebox = Tix.Frame(right_top)
+    modebox.pack(side='left', fill='y')
+
+    # Add branch selection buttons across top
+    branchbox = Tix.Frame(right_top)
+    branchbox.pack(side='left', fill=Tix.X)
+
 
     # Set up mode switching buttons: Purchases, Sales
     def sc_switch(mode):
@@ -86,18 +101,16 @@ def create(_):
     _.sc_switch = sc_switch
 
     # Mode here refers to supplier or customer records.
-    modebox = Tix.Frame(left_pane)
-    modebox.pack(side=Tix.TOP, fill=Tix.X)
     options = dict(variable="modebuttons", indicatoron=False,
                    bg="NavajoWhite4", font=(_.font, "15", "bold"),
-                   selectcolor="light sky blue",
-                   activebackground="light sky blue")
+                   selectcolor="gold",
+                   activebackground="gold")
     smodeRB = Tix.Radiobutton(modebox, value="s", textvariable=_.loc("Supplier"),
                          command=lambda:sc_switch("s"), **options)
-    smodeRB.pack(side=Tix.LEFT, expand=True, fill=Tix.X)
+    smodeRB.pack(side='top', expand=True, fill='x')
     cmodeRB = Tix.Radiobutton(modebox, value="c", textvariable=_.loc("Customer"),
                          command=lambda:sc_switch("c"), **options)
-    cmodeRB.pack(side=Tix.RIGHT, expand=True, fill=Tix.X)
+    cmodeRB.pack(side='top', expand=True, fill='x')
 
 
     # Set up company switching buttons
@@ -135,9 +148,16 @@ def create(_):
         '''Show_branch fires after the opendir method runs'''
         def show_branch(e):
             path = tree.hlist.info_selection()[0]
-#            opendir(tree, path, load=True)
-            select_cogroup(path)
-            tree.hlist.selection_set(path)
+            branch_selected = True if u'~' in path.decode("utf8") else False
+
+            if branch_selected:
+                '''Doubleclick on Branch name'''
+                #TODO: Add branch editing window here.
+                pass
+            else:
+                '''Doubleclick on Company Group'''
+                select_cogroup(path)
+                tree.hlist.selection_set(path)
         tree.hlist.bind('<Double-ButtonRelease-1>', show_branch)
 
         tds = lambda anchor, bg: Tix.DisplayStyle(
@@ -180,43 +200,7 @@ def create(_):
 
 
 
-        """
-        options = dict(variable="companybuttons", indicatoron=False,
-                       font=(_.font, "12", "bold"), bg="burlywood",
-                       selectcolor="gold",
-                       activebackground="gold")
 
-        cog_butts = _.cog_butts = []
-        i = 0 # Counter for row placement.
-        cols = 4 # Number of columns for company names.
-        # Order the company groups by number of branches.
-        ord_cogs = [(len(cog.branches), cog) for cog in _.dbm.cogroups()]
-        ord_cogs = sorted(ord_cogs)[::-1]
-        ord_cogs = [tup[1] for tup in ord_cogs]
-        for i, cog in enumerate(ord_cogs):
-            text = u'\n'.join([br.name for br in cog.branches])
-            nPOs = _.dbm.active_POs(cog.name) # number of (Purchase, Sale) POs
-            if _.debug:
-                text += u'\n{}'.format(nPOs)
-            tr = Tix.Radiobutton(colist_frame, text=text,
-                                 value=u"s:{}c:{} {}".format(nPOs[0],
-                                                           nPOs[1],
-                                                           cog.name),
-                                 command=lambda x=cog.name:select_cogroup(x),
-                                 **options)
-            #TODO: color by supplier/client
-            tr.grid(row=i/cols,column=i%cols, sticky=u'nsew')
-            cog_butts.append(tr)
-        else:
-            # Increment one more to add the "+" button.
-            i += 1
-        tr = Tix.Button(colist_frame, text=u"+",
-                        command=lambda *args:fr_branch.add_new(_),
-                        font=(_.font, "12", "bold"), bg="lawn green",
-                        activebackground="lime green")
-        tr.grid(row=i/cols,column=i%cols, sticky='ew')
-
-        """
 
     _.refresh_colist = refresh_colist
     _.refresh_colist()
@@ -224,14 +208,6 @@ def create(_):
 
 
 
-    #### Set up right pane containing company info and POs ####
-    ###########################################################
-    top_pane = Tix.Frame(_.po_frame)
-    top_pane.pack(side='top', fill='x', padx=4, pady=5)
-
-    # Add branch selection buttons across top
-    branchbox = Tix.Frame(top_pane)
-    branchbox.pack(side='top', fill=Tix.X)
 
     #### PAGE BUTTONS: PO, MANIFEST, INVOICE, ALL PO ####
     #####################################################
@@ -312,7 +288,7 @@ def create(_):
         branchbox_inner.pack(side=Tix.TOP, fill=Tix.X)
 
         options = dict(variable=_.curr.branchSV, indicatoron=False,
-                       font=(_.font, "20", "bold"), bg="burlywood",
+                       font=(_.font, "20", "bold"), bg="NavajoWhite4",
                        selectcolor="gold",
                        activebackground="gold")
         Tix.Label(branchbox_inner, textvariable=_.loc(u"Branch")).pack(side="left")
