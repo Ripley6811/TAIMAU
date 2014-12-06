@@ -70,6 +70,9 @@ def create(_):
     right_top = Tix.Frame(top_pane)
     right_top.pack(side='top', fill=Tix.X)
 
+    expandbox = Tix.Frame(left_pane)
+    expandbox.pack(side='top', fill='x')
+
     modebox = Tix.Frame(right_top)
     modebox.pack(side='left', fill='y')
 
@@ -174,38 +177,62 @@ def create(_):
                            itemtype=Tix.TEXT,
                            style=tds('w', u'gold') )
             tree.setmode(cog.name, 'open')
-
-    def opendir(tree, path, load=False):
-        if _.debug:
-            print 'HList path:', path
-        path = tree.hlist.info_selection()[0]
-        for each in tree.hlist.info_children(''):
-            tree.close(each)
-            for subeach in tree.hlist.info_children(each):
-                tree.hlist.hide_entry(subeach)
-            tree.setmode(each, 'open')
-        entries = tree.hlist.info_children(path)
-#        if load:
-        if entries: # Show previously loaded entries
-            for entry in entries:
-                tree.hlist.show_entry(entry)
-
-        else:
-            for br in _.dbm.get_cogroup(path).branches:
-                hid = path.decode("utf8")+u'~'+br.name
-                tree.hlist.add(hid,
-                               text=br.fullname if br.fullname else br.name,
-                               itemtype=Tix.TEXT)
-
-
-
-
-
+        _.co_tree = tree
 
     _.refresh_colist = refresh_colist
     _.refresh_colist()
 
 
+    '''Expands all companies in company selection list.'''
+    def cogroup_expand(tree):
+        opendir(tree, all=True)
+
+    '''Closes all sublists in company selection list.'''
+    def cogroup_contract(tree):
+        for each in tree.hlist.info_children(''):
+            tree.close(each)
+            for subeach in tree.hlist.info_children(each):
+                tree.hlist.hide_entry(subeach)
+            tree.setmode(each, 'open')
+
+    '''Expands currently selected company or all companies.'''
+    def opendir(tree, path=None, all=False):
+        if _.debug:
+            print 'HList path:', path
+        path = tree.hlist.info_selection()
+        if all == True:
+            path = tree.hlist.info_children('')
+        for each in path:
+            entries = tree.hlist.info_children(each)
+
+            if entries: # Show previously loaded entries
+                for entry in entries:
+                    tree.hlist.show_entry(entry)
+
+            else:
+                for br in _.dbm.get_cogroup(each).branches:
+                    hid = each.decode("utf8")+u'~'+br.name
+                    tree.hlist.add(hid,
+                                   text=br.fullname if br.fullname else br.name,
+                                   itemtype=Tix.TEXT)
+
+
+
+
+
+
+
+#==============================================================================
+# Add expand all and contract all for company list.
+#==============================================================================
+    options = dict(bg="skyblue", font=(_.font, "15", "bold"),
+                   activebackground="gold")
+    expand = Tix.Button(expandbox, textvariable=_.loc("Expand All"),
+                         command=lambda:cogroup_expand(_.co_tree), **options)
+    expand.pack(side='left', fill='x', expand=1)
+    contract = Tix.Button(expandbox, textvariable=_.loc("Close All"),
+                         command=lambda:cogroup_contract(_.co_tree), **options)
+    contract.pack(side='left', fill='x', expand=1)
 
 
 
