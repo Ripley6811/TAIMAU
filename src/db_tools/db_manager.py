@@ -188,7 +188,10 @@ class db_manager:
     # CoGroup table methods
     #==============================================================================
     def cogroups(self):
-        return self.session.query(CoGroup).filter(CoGroup.name != u'台茂').all()
+        cogroups = self.session.query(CoGroup).filter(CoGroup.name != u'台茂').all()
+        recNumbers = sorted([(len(cg.orders), cg) for cg in cogroups], reverse=True)
+        return [each[1] for each in recNumbers]
+
 
     def get_cogroup(self, name):
         return self.session.query(CoGroup).get(name)

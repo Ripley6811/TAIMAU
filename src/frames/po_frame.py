@@ -32,7 +32,7 @@ import Tix
 import tkMessageBox
 
 import po #package
-import add_cogroup
+import fr_branch
 from utils import settings
 
 #===============================================================================
@@ -58,7 +58,8 @@ def create(_):
 
     #### Set up left pane containing company names ####
     ###################################################
-    left_pane = Tix.Frame(_.parent)
+    left_pane = Tix.Frame(_.parent, width=260)
+    left_pane.pack_propagate(0)
     left_pane.pack(side='left', fill='y', padx=2, pady=3)
 
 
@@ -73,17 +74,18 @@ def create(_):
         else:
             smodeRB.select()
 
-        for each_butt in _.cog_butts:
-            if "{}:0".format(mode) not in each_butt["value"]:
-                each_butt.configure(bg='burlywood')
-            else:
-                each_butt.configure(bg='NavajoWhite4')
+#        for each_butt in _.cog_butts:
+#            if "{}:0".format(mode) not in each_butt["value"]:
+#                each_butt.configure(bg='burlywood')
+#            else:
+#                each_butt.configure(bg='NavajoWhite4')
         try:
             load_company()
         except NameError:
             pass # Pass on initialization.
     _.sc_switch = sc_switch
 
+    # Mode here refers to supplier or customer records.
     modebox = Tix.Frame(left_pane)
     modebox.pack(side=Tix.TOP, fill=Tix.X)
     options = dict(variable="modebuttons", indicatoron=False,
@@ -113,6 +115,8 @@ def create(_):
     if _.debug:
         print len(_.dbm.cogroups()), "company groups in database loaded."
 
+
+
     def refresh_colist():
         try:
             _.colist.destroy()
@@ -120,7 +124,63 @@ def create(_):
             pass
 
         colist_frame = _.colist = Tix.Frame(left_pane)
-        colist_frame.pack(side=Tix.LEFT, fill=Tix.BOTH)
+        colist_frame.pack(side='left', fill='both', expand=1)
+
+        tree = Tix.Tree(colist_frame, options='hlist.width 20')
+        tree.pack(expand=1, fill='both', side='top')
+        tree['opencmd'] = lambda dir=None, w=tree: opendir(w, dir)
+        tree.hlist['separator'] = '~' # Default is gray
+        tree.hlist.column_width(0, chars=35)
+
+        '''Show_branch fires after the opendir method runs'''
+        def show_branch(e):
+            path = tree.hlist.info_selection()[0]
+#            opendir(tree, path, load=True)
+            select_cogroup(path)
+            tree.hlist.selection_set(path)
+        tree.hlist.bind('<Double-ButtonRelease-1>', show_branch)
+
+        tds = lambda anchor, bg: Tix.DisplayStyle(
+            anchor=anchor,
+            bg=bg,
+            itemtype='text',
+            refwindow=tree.hlist,
+            font=_.font
+        )
+
+        tree.hlist.delete_all()
+        for cog in _.dbm.cogroups():
+            tree.hlist.add(cog.name,
+                           text=cog.name + _.loc(u" (group)", 1),
+                           itemtype=Tix.TEXT,
+                           style=tds('w', u'gold') )
+            tree.setmode(cog.name, 'open')
+
+    def opendir(tree, path, load=False):
+        if _.debug:
+            print 'HList path:', path
+        path = tree.hlist.info_selection()[0]
+        for each in tree.hlist.info_children(''):
+            tree.close(each)
+            for subeach in tree.hlist.info_children(each):
+                tree.hlist.hide_entry(subeach)
+            tree.setmode(each, 'open')
+        entries = tree.hlist.info_children(path)
+#        if load:
+        if entries: # Show previously loaded entries
+            for entry in entries:
+                tree.hlist.show_entry(entry)
+
+        else:
+            for br in _.dbm.get_cogroup(path).branches:
+                hid = path.decode("utf8")+u'~'+br.name
+                tree.hlist.add(hid,
+                               text=br.fullname if br.fullname else br.name,
+                               itemtype=Tix.TEXT)
+
+
+
+        """
         options = dict(variable="companybuttons", indicatoron=False,
                        font=(_.font, "12", "bold"), bg="burlywood",
                        selectcolor="gold",
@@ -151,10 +211,12 @@ def create(_):
             # Increment one more to add the "+" button.
             i += 1
         tr = Tix.Button(colist_frame, text=u"+",
-                        command=lambda *args:add_cogroup.main(_),
+                        command=lambda *args:fr_branch.add_new(_),
                         font=(_.font, "12", "bold"), bg="lawn green",
                         activebackground="lime green")
         tr.grid(row=i/cols,column=i%cols, sticky='ew')
+
+        """
 
     _.refresh_colist = refresh_colist
     _.refresh_colist()
@@ -233,7 +295,7 @@ def create(_):
     center_pane.pack(side=Tix.LEFT, fill=Tix.BOTH, expand=1)
 
     def branch_edit(name):
-        print 'branch edit'
+        fr_branch.edit(_, name)
 
     def load_company():
         try:
