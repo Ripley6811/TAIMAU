@@ -147,13 +147,12 @@ def create(_):
 
         '''Show_branch fires after the opendir method runs'''
         def show_branch(e):
-            path = tree.hlist.info_selection()[0]
-            branch_selected = True if u'~' in path.decode("utf8") else False
+            path = tree.hlist.info_selection()[0].decode("utf8")
+            branch_selected = True if u'~' in path else False
 
             if branch_selected:
                 '''Doubleclick on Branch name'''
-                #TODO: Add branch editing window here.
-                pass
+                branch_edit(path.split(u'~')[1])
             else:
                 '''Doubleclick on Company Group'''
                 select_cogroup(path)
@@ -197,6 +196,7 @@ def create(_):
                 tree.hlist.add(hid,
                                text=br.fullname if br.fullname else br.name,
                                itemtype=Tix.TEXT)
+
 
 
 

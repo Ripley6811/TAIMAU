@@ -121,11 +121,9 @@ def main(_):
         x = []
         y = []
         for each in sorted(qresults):
-            print each
             if each[0] != last_co:
                 #plot last batch if exists
                 if last_co and x:
-                    print len(x), len(y)
                     if last_co == _.curr.product.group:
                         lw=3.0
                     else:
@@ -141,7 +139,6 @@ def main(_):
                 y.append(each[2])
         else:
             if last_co and x:
-                print len(x), len(y)
                 if last_co == _.curr.product.group:
                     lw=3.0
                 else:

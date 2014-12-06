@@ -235,3 +235,4 @@ TM_excel_filter_converter.py
 data/settings
 settings.json
 *.ffs_db
+*.json

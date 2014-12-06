@@ -60,9 +60,16 @@ class db_manager:
         if js.get('dbpath', False) and exists(js.get('dbpath')):
             self.dbpath = js['dbpath']
 
-            engine = get_database( echo=False )
+            name = u'admin'
+            pw = u'admin'
+            db = u'taimau'
+            port = u'192.168.1.100:3306'
+            self.dbpath = u"{port}/{db}".format(db=db, port=port)
+            db_path = u"mysql+pymysql://{name}:{pw}@{port}/{db}?charset=utf8".format(
+                      name=name, pw=pw, db=db, port=port)
+
+            engine = get_database(db_path,  echo=False )
             self.session = sessionmaker(bind=engine)()
-            print "DB PATH:", self.dbpath
         else:
             self.change_db()
 
@@ -82,7 +89,6 @@ class db_manager:
 
         engine = get_database( echo=False )
         self.session = sessionmaker(bind=engine)()
-        print "DB PATH:", self.dbpath
 
         # Save db location for auto-loading next time.
         settings.update(dbpath=self.dbpath)

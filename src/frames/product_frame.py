@@ -67,7 +67,6 @@ def create(_):
     def refresh():
 
         try:
-            print len(top_pane.children)
             while len(top_pane.children) > 0:
                 top_pane.children.popitem()[1].destroy()
         except KeyError:

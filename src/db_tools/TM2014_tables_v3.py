@@ -510,12 +510,8 @@ class Vehicle(Base):
 #==============================================================================
 # Database loading method
 #==============================================================================
-def get_database(echo=False,
-                 name = u'admin', pw = u'admin',
-                 db = u'taimau', port = u'192.168.1.100:3306'):
+def get_database(db_path, echo=False):
     '''Opens a database and returns an 'engine' object.'''
-    db_path = u"mysql+pymysql://{name}:{pw}@{port}/{db}?charset=utf8".format(
-              name=name, pw=pw, db=db, port=port)
     database = sqla.create_engine(db_path, echo=echo)
     Base.metadata.create_all(database)   #FIRST TIME SETUP ONLY
     return database
