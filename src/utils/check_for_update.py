@@ -70,6 +70,9 @@ def update(_, settings):
             # Delete the temp repo folder.
             shutil.rmtree(os.path.join(os.getcwd(),"TAIMAU-master"))
 
+            # Update commit SHA in settings file.
+            settings.update(commit = SHA)
+
             # Prompt user to restart program.
             title = u'Restart required.'
             message = u'Restart the program for latest version.'
