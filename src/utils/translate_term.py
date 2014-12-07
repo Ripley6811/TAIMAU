@@ -103,6 +103,7 @@ worddict = {
     u'Clear fields' : u'刪除字段',
     u'Clear' : u'刪除',
     u'Save changes to product' : u'提交產品資料變更',
+    u'Save changes' : u'提交變更',
     u'Add to supply list' : u'添加到採購用品列表',
     u'Add to product list' : u'添加到銷售產品列表',
     u'Priced by...:' : u'價格由...:',
@@ -134,6 +135,20 @@ worddict = {
     u' (group)' : u' (組)',
     u'Expand All' : u'展开所有',
     u'Close All' : u'折叠所有',
+    u'Short Name:' : u'Short Name:',
+    u'Full Name:' : u'Full Name:',
+    u'English Name:' : u'English Name:',
+    u'Tax ID:' : u'Tax ID:',
+    u'Phone Number:' : u'Phone Number:',
+    u'Fax Number:' : u'Fax Number:',
+    u'Email Address:' : u'Email Address:',
+    u'Office Address:' : u'Office Address:',
+    u'Shipping Address:' : u'Shipping Address:',
+    u'Billing Address:' : u'Billing Address:',
+    u'Address (Extra):' : u'Address (Extra):',
+    u'Current Supplier/Customer?' : u'Current Supplier/Customer?',
+    u'Yes' : u'Yes',
+    u'No' : u'No',
 }
 # Storage of StringVar by the english text as keyword.
 labeldict = {}
