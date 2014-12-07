@@ -8,7 +8,7 @@ At the same time, try to keep the process simple with few buttons and least numb
 This is not intended as an financial accounting system but can be used to double-check figures.
 
 Main features:
-- SQLAlchemy database stores data on companies, products, shipments, invoices, and more.
+- A remote MySQL database accessed by SQLAlchemy stores data on companies, products, shipments, invoices, and more.
 - Simple main interface for doing the most common task of making a manifest.
 - Each "product" in the database is designed for a specific company. May be more than one of the 'same' product in database.
 - Add new companies and products or discontinue (cannot delete) a company or product (from showing in main interface).
@@ -19,6 +19,7 @@ Additional features:
 - Make PDF of product quality inspection results.
 - TSC TTP-243E Plus label printing.
 - View price changes for a product over time and compare with other companies.
+- Auto-updates to newest commits in github repo.
 
 
 This program was designed for TAIMAU's operation but could probably be used in many other setups.
