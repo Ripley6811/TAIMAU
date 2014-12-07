@@ -224,6 +224,8 @@ class TaimauApp(Tix.Tk):
         #--------- Set arrangement of notebook frames
         nb.pack(side='right', fill='both', expand='y', padx=2, pady=3)
 
+        check_for_update.update(self._, settings, silent=True)
+
 
     def endsession(self):
         settings.update(geometry=self.geometry())

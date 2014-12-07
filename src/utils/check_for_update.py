@@ -8,7 +8,10 @@ from StringIO import StringIO
 from zipfile import ZipFile
 from requests import get as urlopen
 
-def update(_, settings):
+'''
+param silent Check if a new version is available. Only notify if there is one.
+'''
+def update(_, settings, silent=False):
     response = urllib2.urlopen("https://github.com/Ripley6811/TAIMAU")
     html = response.read()
     prestring = 'commit/'
@@ -22,20 +25,23 @@ def update(_, settings):
     # Check if commit number is stored in settings.
     # Save and exit if it is not there.
     try:
-        print u"Settings SHA:"
-        print u"\t" + settings.load()['commit']
+        if not silent:
+            print u"Settings SHA:"
+            print u"\t" + settings.load()['commit']
     except KeyError:
         settings.update(commit = SHA)
         return
 
-    print u"Latest commit SHA:"
-    print "\t" + SHA
+    if not silent:
+        print u"Latest commit SHA:"
+        print "\t" + SHA
 #==============================================================================
 # Compare SHA in settings to web site latest
 #==============================================================================
     if SHA == settings.load()['commit']:
-        title = message = u'Program is up to date!'
-        tkMessageBox.showinfo(title, message)
+        if not silent:
+            title = message = u'Program is up to date!'
+            tkMessageBox.showinfo(title, message)
         return
     else:
         title = u'New version available!'

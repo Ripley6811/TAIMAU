@@ -10,12 +10,13 @@ def main(_, br_name):
 
     flengths = {}
     br_columns = _.dbm.Branch.__table__.columns
+
+    # Get lengths for all string variables
     for key in br_columns.keys():
         try:
             flengths[key] = br_columns[key].type.length
         except AttributeError:
             pass #Skip non string values
-    print flengths
 
     # Create new external window.
     if not _.getExtWin(_, co_name=branch.name,
