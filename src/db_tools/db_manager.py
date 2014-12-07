@@ -56,42 +56,44 @@ class db_manager:
     Stock = Stock
 
     def __init__(self):
-        js = settings.load()
-        if js.get('dbpath', False) and exists(js.get('dbpath')):
-            self.dbpath = js['dbpath']
+#        js = settings.load()
+#        if js.get('dbpath', False) and exists(js.get('dbpath')):
+#            self.dbpath = js['dbpath']
 
             name = u'admin'
             pw = u'admin'
             db = u'taimau'
             port = u'192.168.1.100:3306'
+            opt = u'?charset=utf8'
             self.dbpath = u"{port}/{db}".format(db=db, port=port)
-            db_path = u"mysql+pymysql://{name}:{pw}@{port}/{db}?charset=utf8".format(
-                      name=name, pw=pw, db=db, port=port)
+            db_path = u"mysql+pymysql://{name}:{pw}@{port}/{db}{opt}".format(
+                      name=name, pw=pw, db=db, port=port, opt=opt)
 
             engine = get_database(db_path,  echo=False )
             self.session = sessionmaker(bind=engine)()
-        else:
-            self.change_db()
+#        else:
+#            self.change_db()
 
-    def change_db(self):
-        try:
-            self.session.close()
-        except AttributeError:
-            pass
 
-        FILE_OPTS = dict(
-            title = u'Select Database',
-            defaultextension = '.db',
-            filetypes = [('database files', '.db')],
-            initialdir = os.getcwd() + '/data'
-        )
-        self.dbpath = normpath(tkFileDialog.askopenfilename(**FILE_OPTS))
-
-        engine = get_database( echo=False )
-        self.session = sessionmaker(bind=engine)()
-
-        # Save db location for auto-loading next time.
-        settings.update(dbpath=self.dbpath)
+#    def change_db(self):
+#        try:
+#            self.session.close()
+#        except AttributeError:
+#            pass
+#
+#        FILE_OPTS = dict(
+#            title = u'Select Database',
+#            defaultextension = '.db',
+#            filetypes = [('database files', '.db')],
+#            initialdir = os.getcwd() + '/data'
+#        )
+#        self.dbpath = normpath(tkFileDialog.askopenfilename(**FILE_OPTS))
+#
+#        engine = get_database( echo=False )
+#        self.session = sessionmaker(bind=engine)()
+#
+#        # Save db location for auto-loading next time.
+#        settings.update(dbpath=self.dbpath)
 
 
 

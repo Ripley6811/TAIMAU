@@ -7,7 +7,15 @@ import tkMessageBox
 def main(_, br_name):
     """Edit or view a branches information."""
     branch = _.dbm.session.query(_.dbm.Branch).get(br_name)
-#    fields = _.dbm.Branch.__table__.columns.keys()
+
+    flengths = {}
+    br_columns = _.dbm.Branch.__table__.columns
+    for key in br_columns.keys():
+        try:
+            flengths[key] = br_columns[key].type.length
+        except AttributeError:
+            pass #Skip non string values
+    print flengths
 
     # Create new external window.
     if not _.getExtWin(_, co_name=branch.name,
@@ -73,6 +81,9 @@ def main(_, br_name):
             tew.config(foreground=hint_color, font=(_.font, 14, ""))
         else:
             tew.config(foreground=type_color, font=(_.font, 14, "bold"))
+
+            # Limit the number of characters typed to database variable limit.
+            entrySVars[i][0].set(entrySVars[i][0].get()[:flengths[entryfields[i][1]]])
 
         update_product_info_line()
 
