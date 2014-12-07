@@ -60,7 +60,7 @@ from pdf_tools import activity_report, product_QC_report
 import frames.po_frame
 import frames.product_frame
 from utils.translate_term import localize, setLang
-from utils import settings
+from utils import settings, check_for_update
 #===============================================================================
 # METHODS
 #===============================================================================
@@ -116,7 +116,8 @@ class TaimauApp(Tix.Tk):
 
         # FILE MENU OPTIONS: LOAD, SAVE, EXIT...
         filemenu = Tix.Menu(menubar, tearoff=0)
-        filemenu.add_command(label=_.loc(u"Change Database", 1), command=self.change_db)
+#        filemenu.add_command(label=_.loc(u"Change Database", 1), command=self.change_db)
+        filemenu.add_command(label=_.loc(u"Check for program update", 1), command=self.version_update)
         filemenu.add_separator()
         filemenu.add_command(label=_.loc(u"Exit", 1), command=self.endsession)
         menubar.add_cascade(label=_.loc(u"File", 1), menu=filemenu)
@@ -244,6 +245,9 @@ class TaimauApp(Tix.Tk):
         # TODO: Bug in update. Suddenly not working...
         self.menubar.entryconfig(8, label=u'DATABASE={}'.format(self._.dbm.dbpath))
 
+
+    def version_update(self):
+        check_for_update.update(self._, settings)
 
 
 def getExtWin(_, co_name=u'', title=u'', width=700, destroy=False):

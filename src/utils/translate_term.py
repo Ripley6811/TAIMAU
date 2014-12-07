@@ -100,6 +100,7 @@ worddict = {
     u'SKU Description:' : u'SKU 描寫:',
     u'Note:' : u'備註:',
     u'Current Price:' : u'目前的價格:',
+    u"Check for program update" : u"上網更新",
     u'Clear fields' : u'刪除字段',
     u'Clear' : u'刪除',
     u'Save changes to product' : u'提交產品資料變更',
