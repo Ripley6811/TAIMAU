@@ -11,6 +11,7 @@
 - Add editable (autosaved) note under branch buttons. Large obvious letters for keeping PO/Manifest instructions.
 - Deleting 'parent' link in Branch might break something. Look to see where it is used.
 - Undo 'paid' command in case of mistake
+- All caps for all license, invoice #, check #, PO # fields.
 
 ***Requested:***
 - RT should match manifest order (and PO order). Check this.
@@ -25,4 +26,3 @@
 - Clean up/refactor and document code.
 - Learn to output matplotlib plot as PDF and transfer that image to another PDF. Use 'pdfrw' package. Another option is to integrate R somehow for generating reports.
 - Add popup balloon messages all over for more info.
-- Switch from sqlite3 database to a remote MySQL server.
