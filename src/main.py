@@ -338,7 +338,7 @@ def getExtWin(_, co_name=u'', title=u'', width=700, destroy=False):
 
 def setPOorder(_):
     cogroup = _.curr.cogroup
-    order_list = cogroup.purchases if _.sc_mode == "s" else cogroup.sales
+    order_list = cogroup.openpurchases if _.sc_mode == "s" else cogroup.opensales
 
     if not getExtWin(_, co_name=cogroup.name, title=u'PO ordering'):
         return

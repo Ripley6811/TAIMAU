@@ -39,7 +39,7 @@ worddict = {
     u"About" : u"關於",
     u"Help" : u"幫助",
     u"Supplier" : u"供應商",
-    u"Customer" : u"顧客",
+    u"Customer" : u'客戶',
     u"(NA)" : u"(沒有)",
     u"(Avail:" : u"(剩下:",
     u"Branch" : u"分公司",
