@@ -12,6 +12,7 @@
 - Deleting 'parent' link in Branch might break something. Look to see where it is used.
 - Undo 'paid' command in case of mistake
 - All caps for all license, invoice #, check #, PO # fields.
+- PO creation should only show the supplies or products and not both.
 
 ***Requested:***
 - RT should match manifest order (and PO order). Check this.

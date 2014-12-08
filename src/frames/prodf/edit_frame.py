@@ -135,9 +135,9 @@ def main(_):
                command=lambda:clear_fields(), **opts).grid(row=20, column=0)
     Tix.Button(textvariable=_.loc(u'Save changes to product'),
                command=lambda:save_update(), **opts).grid(row=20, column=2)
-    Tix.Button(textvariable=_.loc(u'Add to supply list'),
+    Tix.Button(textvariable=_.loc(u'Add to supply list (buy)'),
                command=lambda:save_new_supply(), **opts).grid(row=20, column=4)
-    Tix.Button(textvariable=_.loc(u'Add to product list'),
+    Tix.Button(textvariable=_.loc(u'Add to product list (sell)'),
                command=lambda:save_new_product(), **opts).grid(row=20, column=6)
 
     def clear_fields():
@@ -233,13 +233,14 @@ def main(_):
             if newDict:
                 newDict['is_supply'] = is_supply
                 newDict['cogroup'] = _.curr.cogroup
-                newDict['MPN'] = u' '.join([_.curr.cogroup.name,
+                newDict['MPN'] = u' '.join([str(len(_.curr.cogroup.products)),
+                                            _.curr.cogroup.name,
                                             newDict['inventory_name'],
                                             str(newDict['units']),
                                             newDict['UM'],
                                             newDict['SKU'],
                                             str(newDict['is_supply']),
-                        newDict[u'note'] if newDict.get(u'note') else u''])
+                                            newDict.get(u'note', u'')])
                 if _.debug:
                     print 'METHOD: save_new: newProduct'
                     for key, val in newDict.iteritems():

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import Tix
+import tkMessageBox
 
 import prodf
 from utils import settings
@@ -63,6 +64,29 @@ def create(_):
         else:
             _.product_price.pack_forget()
 
+    def del_prod(product):
+        nRecs = len(product.orders)
+        if nRecs == 0:
+            _.dbm.session.delete(product)
+            _.dbm.session.commit()
+            refresh()
+        else:
+            title = u'Cannot delete a used product record.'
+            message = u'This product is connected to {} order{}.'.format(
+                        nRecs, u's' if nRecs > 1 else u'')
+            message += u'\nAll related orders must be deleted first.'
+            tkMessageBox.showerror(title, message)
+
+    def prod_popup(btn, product):
+        orderPopMenu = Tix.Menu(btn, tearoff=0)
+
+        def orderoptions(event):
+            orderPopMenu.post(event.x_root, event.y_root)
+        btn.bind("<Button-3>", orderoptions)
+
+        orderPopMenu.add_command(label=_.loc(u'Delete product',1),
+                                 command=lambda x=product: del_prod(x))
+
 
     def refresh():
 
@@ -114,6 +138,9 @@ def create(_):
             if product.discontinued:
                 tb.config(bg="gray40", relief="flat")
             tb.grid(row=row/cols, column=row%cols, sticky='ew')
+
+            prod_popup(tb, product)
+
         for i in (0,1,2,3):
             supply_box.columnconfigure(i,weight=1)
 
@@ -128,6 +155,9 @@ def create(_):
             if product.discontinued:
                 tb.config(bg="gray30", relief="flat")
             tb.grid(row=row/cols, column=row%cols, sticky='ew')
+
+            prod_popup(tb, product)
+
         for i in (0,1,2,3):
             wesell_box.columnconfigure(i,weight=1)
 
