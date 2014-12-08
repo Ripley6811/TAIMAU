@@ -109,6 +109,26 @@ class TaimauApp(Tix.Tk):
         self._ = _
 
 
+        # SET LANGUAGE SELECTION
+        self.lang_select = Tix.StringVar()
+        def switch_language(*args):
+            new_lang = self.lang_select.get()
+            settings.update(language=new_lang)
+            setLang(new_lang)
+        self.lang_select.trace_variable('w', switch_language)
+        self.lang_select.set(settings.load().get(u'language', u'English'))
+
+
+        # SET AUTO UPDATE OPTION
+        self.auto_update_check = Tix.BooleanVar()
+        self.auto_update_check.set(settings.load().get(u'auto_update_check', True))
+        def switch_auto_update(*args):
+            new_bool = not settings.load()[u'auto_update_check']
+            settings.update(auto_update_check=new_bool)
+        self.auto_update_check.trace_variable('w', switch_auto_update)
+
+
+
         #
         # SET UP MENU BAR
         #
@@ -117,10 +137,8 @@ class TaimauApp(Tix.Tk):
         # FILE MENU OPTIONS: LOAD, SAVE, EXIT...
         filemenu = Tix.Menu(menubar, tearoff=0)
 #        filemenu.add_command(label=_.loc(u"Change Database", 1), command=self.change_db)
-        filemenu.add_command(label=_.loc(u"Check for program update", 1), command=self.version_update)
-        filemenu.add_separator()
         filemenu.add_command(label=_.loc(u"Exit", 1), command=self.endsession)
-        menubar.add_cascade(label=_.loc(u"File", 1), menu=filemenu)
+        menubar.add_cascade(label=_.loc(u"Main", 1), menu=filemenu)
 
         # REPORT MENU OPTIONS
         reportmenu = Tix.Menu(menubar, tearoff=0)
@@ -164,14 +182,27 @@ class TaimauApp(Tix.Tk):
 
         # SETTINGS MENU OPTIONS
         settingsmenu = Tix.Menu(menubar, tearoff=0)
-        settingsmenu.add_radiobutton(label=u'Chinese', variable='lang_select',
-            command=lambda: setLang(u"Chinese"), value=u'Chinese')
-        settingsmenu.add_radiobutton(label=u'English', variable='lang_select',
-            command=lambda: setLang(u"English"), value=u'English')
+        lang_menu = Tix.Menu(settingsmenu, tearoff=0)
+        settingsmenu.add_cascade(label=_.loc(u"Language", 1), menu=lang_menu)
+        update_menu = Tix.Menu(settingsmenu, tearoff=0)
+        settingsmenu.add_cascade(label=_.loc(u"Update", 1), menu=update_menu)
+        lang_menu.add_radiobutton(label=u'繁體中文', variable=self.lang_select,
+            value=u'Chinese',
+            selectcolor=u'black')
+        lang_menu.add_radiobutton(label=u'English', variable=self.lang_select,
+            value=u'English',
+            selectcolor=u'black')
+        update_menu.add_command(label=_.loc(u"Check for update", 1), command=self.version_update)
+        update_menu.add_separator()
+        update_menu.add_checkbutton(label=_.loc(u'Auto check for updates',1),
+            onvalue=True, offvalue=False, variable=self.auto_update_check,
+            selectcolor=u'black')
         settingsmenu.add_separator()
         settingsmenu.add_command(label=_.loc(u'PO List Ordering', 1),
             command=lambda: setPOorder(_))
         menubar.add_cascade(label=_.loc(u"Settings", 1), menu=settingsmenu)
+
+
 
         # HELP MENU OPTIONS
         helpmenu = Tix.Menu(menubar, tearoff=0)
@@ -224,7 +255,8 @@ class TaimauApp(Tix.Tk):
         #--------- Set arrangement of notebook frames
         nb.pack(side='right', fill='both', expand='y', padx=2, pady=3)
 
-        check_for_update.update(self._, settings, silent=True)
+        if self.auto_update_check.get():
+            check_for_update.update(self._, settings, silent=True)
 
 
     def endsession(self):

@@ -31,6 +31,7 @@ worddict = {
     u"Sales" : u"銷售",
     u"Manage List" : u"公司清單管理",
     u"File" : u"文件(F)",
+    u'Main' : u'主控制',
     u"Reports" : u"報告(R)",
     u"Open" : u"開資料庫",
     u"Exit" : u"關閉",
@@ -99,8 +100,11 @@ worddict = {
     u'Unit Measure:' : u'計量單位:',
     u'SKU Description:' : u'SKU 描寫:',
     u'Note:' : u'備註:',
+    u'Auto check for updates' : u'自動檢查更新存在',
     u'Current Price:' : u'目前的價格:',
-    u"Check for program update" : u"上網更新",
+    u"Check for update" : u"立刻上網更新",
+    u'Update' : u'更新',
+    u'Language' : u'語言選擇',
     u'Clear fields' : u'刪除字段',
     u'Clear' : u'刪除',
     u'Save changes to product' : u'提交產品資料變更',
@@ -136,18 +140,18 @@ worddict = {
     u' (group)' : u' (組)',
     u'Expand All' : u'展开所有',
     u'Close All' : u'折叠所有',
-    u'Short Name:' : u'Short Name:',
-    u'Full Name:' : u'Full Name:',
-    u'English Name:' : u'English Name:',
-    u'Tax ID:' : u'Tax ID:',
-    u'Phone Number:' : u'Phone Number:',
-    u'Fax Number:' : u'Fax Number:',
-    u'Email Address:' : u'Email Address:',
-    u'Office Address:' : u'Office Address:',
-    u'Shipping Address:' : u'Shipping Address:',
-    u'Billing Address:' : u'Billing Address:',
-    u'Address (Extra):' : u'Address (Extra):',
-    u'Current Supplier/Customer?' : u'Current Supplier/Customer?',
+    u'Short Name:' : u'名字縮寫:',
+    u'Full Name:' : u'名字:',
+    u'English Name:' : u'英名:',
+    u'Tax ID:' : u'統一編號:',
+    u'Phone Number:' : u'電話:',
+    u'Fax Number:' : u'傳真:',
+    u'Email Address:' : u'Email:',
+    u'Office Address:' : u'辦公室地址:',
+    u'Shipping Address:' : u'運輸地址:',
+    u'Billing Address:' : u'發票地址:',
+    u'Address (Extra):' : u'地址 (另外):',
+    u'Current Supplier/Customer?' : u'還在聯絡?',
     u'Yes' : u'Yes',
     u'No' : u'No',
 }
@@ -158,15 +162,22 @@ labeldict = {}
 #===============================================================================
 # MAIN METHOD AND TESTING AREA
 #===============================================================================
-def translate_word(word):
-    """Translate words to Chinese"""
-    if word in worddict:
-        return worddict[word] if toChinese else word
+def translate_word(word, showError=True):
+    """Translate words to Chinese.
+    If string (word) is not present in translation dict (worddict)
+    then returns the original string."""
+    global toChinese
+
+
+    if showError:
+        if word in worddict:
+            return worddict[word] if toChinese else word
+        else:
+            raise Warning, u'"{}" not found in translation dictionary.'.format(word)
     else:
-        raise Warning, u'"{}" not found in translation dictionary.'.format(word)
+        return worddict.get(word, word) if toChinese else word
 
-
-def localize(word, asText=False):
+def localize(word, asText=False, showError=True):
     '''Return a StringVar object to use in labels.
 
     Can easily change between English and Chinese by pushing changes to
@@ -180,27 +191,26 @@ def localize(word, asText=False):
         return labeldict[word]
     else:
         labeldict[word] = StringVar()
-        labeldict[word].set(translate_word(word))
+        labeldict[word].set(translate_word(word, showError=True))
         return labeldict[word]
 
 
 def setLang(lang):
     '''Set language to 'lang' or acts as a switch if lang is None.
 
-    Only accepts "Chinese", any other word will set to English.
-    If no parameter than alternates between Chinese and English.
+    Only looks for u"Chinese", any other word will set to English.
+    Changes all Tix.StringVars registered in the global labeldict.
     '''
     global toChinese
+    global labeldict
 
+    # Set global option for future translation requests.
     toChinese = lang.capitalize() == u'Chinese'
 
-    # Change all StringVar labels
+    # Change all StringVar labels that are registered already.
     for key in labeldict:
         labeldict[key].set(translate_word(key))
 
-    settings.update(language=lang)
-
-setLang(settings.load().get(u'language', u'Chinese'))
 
 
 
