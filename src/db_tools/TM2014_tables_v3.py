@@ -313,8 +313,8 @@ class CoGroup(Base):
 
     purchases = rel('Order', primaryjoin="and_(CoGroup.name==Order.group, Order.is_sale==False)") #Purchases FROM this company
     sales = rel('Order', primaryjoin="and_(CoGroup.name==Order.group, Order.is_sale==True)") #Sales TO this company
-#    purchases = rel('Order', primaryjoin="and_(CoGroup.name==Order.group, Order.is_sale==False, Order.is_open==True)") #Purchases FROM this company
-#    sales = rel('Order', primaryjoin="and_(CoGroup.name==Order.group, Order.is_sale==True, Order.is_open==True)") #Sales TO this company
+    openpurchases = rel('Order', primaryjoin="and_(CoGroup.name==Order.group, Order.is_sale==False, Order.is_open==True)") #Purchases FROM this company
+    opensales = rel('Order', primaryjoin="and_(CoGroup.name==Order.group, Order.is_sale==True, Order.is_open==True)") #Sales TO this company
 
 
 
