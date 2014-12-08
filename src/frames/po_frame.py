@@ -378,7 +378,7 @@ def create(_):
         def fill_qty(i, amount):
             _qtyVars[i].set(amount)
 
-        order_list = cogroup.purchases if _.sc_mode == "s" else cogroup.sales
+        order_list = cogroup.openpurchases if _.sc_mode == "s" else cogroup.opensales
         TB = lambda _text, **kwargs: Tix.Button(pobox, text=_text, anchor='w',
                                       bg="moccasin", font=(_.font, 13, 'bold'),
                                       activebackground="moccasin", **kwargs)
