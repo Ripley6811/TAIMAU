@@ -120,10 +120,10 @@ def create(_):
                    activebackground="gold")
     smodeRB = Tix.Radiobutton(modebox, value="s", textvariable=_.loc("Supplier"),
                          command=lambda:sc_switch("s"), **options)
-    smodeRB.pack(side='top', expand=True, fill='x')
+    smodeRB.pack(side='top', expand=True, fill='both')
     cmodeRB = Tix.Radiobutton(modebox, value="c", textvariable=_.loc("Customer"),
                          command=lambda:sc_switch("c"), **options)
-    cmodeRB.pack(side='top', expand=True, fill='x')
+    cmodeRB.pack(side='top', expand=True, fill='both')
 
 
     # Set up company switching buttons
@@ -322,7 +322,7 @@ def create(_):
         except KeyError:
             pass
         branchbox_inner = Tix.Frame(branchbox)
-        branchbox_inner.pack(side=Tix.TOP, fill=Tix.X)
+        branchbox_inner.pack(side='left', fill='x')
 
         options = dict(variable=_.curr.branchSV, indicatoron=False,
                        font=(_.font, "20", "bold"), bg="NavajoWhite4",
@@ -337,7 +337,9 @@ def create(_):
             if branch.fax:
                 text += u'  \u213B {}'.format(branch.fax)
             text += u'\n\u2709 {}'.format(branch.email)
+            text += u'\n\u24D8 {}'.format(branch.note)
             branch_info.set(text)
+
         _.curr.branchSV.trace('w', lambda a,b,c,: set_branch_info())
         for i, branch in enumerate(cogroup.branches):
             tr = Tix.Radiobutton(branchbox_inner, text=branch.name,
@@ -346,7 +348,7 @@ def create(_):
             if i==0:
                 tr.invoke()
             tr.bind('<Double-Button-1>', lambda e, bn=branch.name: branch_edit(bn))
-        Tix.Label(branchbox_inner, textvariable=branch_info, justify='left',
+        Tix.Label(branchbox_inner, textvariable=branch_info, anchor='w', justify='left',
                   font=(_.font, 14, 'bold')).pack(side='left')
 
 
