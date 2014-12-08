@@ -161,9 +161,8 @@ def create(_):
         '''Show_branch fires after the opendir method runs'''
         def show_branch(e):
             path = tree.hlist.info_selection()[0].decode("utf8")
-            branch_selected = True if u'~' in path else False
 
-            if branch_selected:
+            if u'~' in path:
                 '''Doubleclick on Branch name'''
                 branch_edit(path.split(u'~')[1])
             else:
@@ -171,6 +170,12 @@ def create(_):
                 select_cogroup(path)
                 tree.hlist.selection_set(path)
         tree.hlist.bind('<Double-ButtonRelease-1>', show_branch)
+
+        def show_br_info(e):
+            path = tree.hlist.info_selection()[0].decode("utf8")
+            if u'~' in path and _.curr.cogroup.name in path:
+                _.curr.branchSV.set(path.split('~')[1])
+        tree.hlist.bind('<ButtonRelease-1>', show_br_info)
 
         tds = lambda anchor, bg: Tix.DisplayStyle(
             anchor=anchor,
@@ -325,7 +330,7 @@ def create(_):
         branchbox_inner.pack(side='left', fill='x')
 
         options = dict(variable=_.curr.branchSV, indicatoron=False,
-                       font=(_.font, "20", "bold"), bg="NavajoWhite4",
+                       font=(_.font, "14", "bold"), bg="NavajoWhite4",
                        selectcolor="gold",
                        activebackground="gold")
         Tix.Label(branchbox_inner, textvariable=_.loc(u"Branch")).pack(side="left")
@@ -340,16 +345,17 @@ def create(_):
             text += u'\n\u24D8 {}'.format(branch.note)
             branch_info.set(text)
 
+        Tix.Label(branchbox_inner, textvariable=branch_info,
+                  anchor='w', justify='left',
+                  font=(_.font, 14, 'bold')).pack(side='right')
         _.curr.branchSV.trace('w', lambda a,b,c,: set_branch_info())
         for i, branch in enumerate(cogroup.branches):
             tr = Tix.Radiobutton(branchbox_inner, text=branch.name,
                                  value=branch.name, **options)
-            tr.pack(side="left", fill='y')
+            tr.pack(side="top", fill='both', expand=1)
             if i==0:
                 tr.invoke()
             tr.bind('<Double-Button-1>', lambda e, bn=branch.name: branch_edit(bn))
-        Tix.Label(branchbox_inner, textvariable=branch_info, anchor='w', justify='left',
-                  font=(_.font, 14, 'bold')).pack(side='left')
 
 
         #TODO: Load entry fields with company info for viewing/editing
