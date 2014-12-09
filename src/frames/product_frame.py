@@ -71,10 +71,10 @@ def create(_):
             _.dbm.session.commit()
             refresh()
         else:
-            title = u'Cannot delete a used product record.'
-            message = u'This product is connected to {} order{}.'.format(
+            title = _.loc(u'Cannot delete a used product record.',1)
+            message = _.loc(u'This product is connected to {} order{}.',1).format(
                         nRecs, u's' if nRecs > 1 else u'')
-            message += u'\nAll related orders must be deleted first.'
+            message += _.loc(u'\nAll related orders must be deleted first.',1)
             tkMessageBox.showerror(title, message)
 
     def prod_popup(btn, product):

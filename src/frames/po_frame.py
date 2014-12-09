@@ -260,26 +260,32 @@ def create(_):
                    font=(_.font, "16", "bold"), bg="medium purple",
                    selectcolor="plum", padx=40,
                    activebackground="plum")
-    tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'Active POs'),
+    tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'Manage POs'),
                     command=lambda x='po new':change_view(x),
                     value='po new', **options)
-    tr.grid(row=0, column=0)
+    tr.grid(row=0, column=1)
     tr.select()
     _.view_mode = 'po new'
+    tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'Order Products'),
+                    command=lambda x='prod pick':change_view(x),
+                    value='prod pick', **options)
+    tr.grid(row=0, column=0)
     tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'Manifests & Invoices'),
                     command=lambda x='shipped':change_view(x),
                     value='shipped', **options)
-    tr.grid(row=0, column=1)
+    tr.grid(row=0, column=2)
     tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'All POs'),
                     command=lambda x='po all':change_view(x),
                     value='po all', **options)
-    tr.grid(row=0, column=2)
+    tr.grid(row=0, column=3)
     page_buttons.columnconfigure(0,weight=1)
     page_buttons.columnconfigure(1,weight=1)
     page_buttons.columnconfigure(2,weight=1)
+    page_buttons.columnconfigure(3,weight=1)
 
     po.all_frame(_)
     po.mi_frame(_)
+    po.prodselectf(_)
 
     def change_view(mode):
         if _.view_mode == mode:
@@ -288,6 +294,12 @@ def create(_):
             print 'VIEW MODE:', mode
 
         _.view_mode = mode
+
+        if mode == 'prod pick':
+            _.prodselectf.pack(side='left', fill='both', expand=1)
+            _.prodselectf.refresh()
+        else:
+            _.prodselectf.pack_forget()
 
         if mode == 'po new':
             _.po_center.pack(side='left', fill='both', expand=1)

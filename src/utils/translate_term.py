@@ -67,8 +67,10 @@ worddict = {
     u"Edit PO" : u"編輯訂單",
     u"Product" : u"產品",
     u'Active POs' : u'主動訂單',
-    u'All POs' : u'全部訂單',
-    u'Manifests & Invoices' : u'出貨單 & 發票',
+    u'Manage POs' : u'管理訂單',
+    u'Order Products' : u'訂購產品',
+    u'All POs' : u'所有訂單',
+    u'Manifests & Invoices' : u'管理出貨單&發票',
     u"Maximum exceeded" : u"最大突破",
     u"Only a maximum of five items allowed." : u"最多只有5個項目.",
     u"\u2713 Submit" : u"\u2713 提交",
@@ -155,6 +157,12 @@ worddict = {
     u'Current Supplier/Customer?' : u'還在聯絡?',
     u'Yes' : u'Yes',
     u'No' : u'No',
+    u'This product is connected to {} order{}.' : \
+        u'本產品已經有{}個訂單.',
+    u'\nAll related orders must be deleted first.' : \
+        u'\n要先刪除本產品所有的訂單.',
+    u'Cannot delete a used product record.' : \
+        u'不能刪掉.'
 }
 # Storage of StringVar by the english text as keyword.
 labeldict = {}

@@ -399,6 +399,14 @@ class Product(Base): # Information for each unique product (including packaging)
     orders = rel('Order', primaryjoin="Product.MPN==Order.MPN")
 
 
+    @property
+    def price(self):
+        if self.curr_price.is_integer():
+            return int(self.curr_price)
+        return self.curr_price
+
+
+
     def qty_available(self):
         available = dict(
             units = 0.0,

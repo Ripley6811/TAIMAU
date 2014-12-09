@@ -67,6 +67,7 @@ from utils import settings, check_for_update
 
 # Container for passing state parameters
 Info = type('struct', (), {})
+# Better version where "." and keyword access overlap
 Info = type('adict', (dict,), {'__getattr__': dict.__getitem__, '__setattr__': dict.__setitem__})
 #NOTE: Create another internal Info type like this: var = Info(); var.x = type(var)()
 
