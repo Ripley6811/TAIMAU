@@ -29,8 +29,6 @@ def main(_):
     vcmd_float = frame.register(lambda x: is_float(x))
     vcmd_int = frame.register(lambda x: x.isdigit())
 
-    cog = None # Current cogroup
-    scm = None # Current 's' or 'c' mode (supplier or customer view)
     prodrecs = []
     _priceSV = [] # Store stringvar for entered prices
     _qtySV = [] # Store stringvar for entered quantity
@@ -44,8 +42,11 @@ def main(_):
         except KeyError:
             pass
 
-        _priceSV = [] # Store stringvar for entered prices
-        _qtySV = [] # Store stringvar for entered quantity
+        prodrecs.__delslice__(0,1000) # Store product records
+        _priceSV.__delslice__(0,1000) # Store stringvar for entered prices
+        _qtySV.__delslice__(0,1000) # Store stringvar for entered quantity
+        cog = None # Current cogroup
+        scm = None # Current 's' or 'c' mode (supplier or customer view)
         try:
             cog = _.curr.cogroup
             scm = _.sc_mode
@@ -65,7 +66,7 @@ def main(_):
         query = query.filter_by(discontinued = False)
         query = query.filter_by(is_supply=True if scm == u's' else False)
         query = query.order_by('inventory_name')
-        prodrecs = query.all()
+        [prodrecs.append(p) for p in query.all()]
 
         # Set default options for all widgets.
         OPTS = dict(master=prodf, justify="right")#, font=font)
@@ -135,11 +136,94 @@ def main(_):
     ponEntry = Tix.Entry(longPOf, textvariable=manSV, bg=u"moccasin")
     ponEntry.grid(row=3, column=1, sticky='ew')
 
+    def createOrder(PROD, PRICE, QTY, is_open=True):
+        '''
+        PROD : string Product object MPN identifier
+        PRICE : float
+        QTY : integer
+        '''
+        PRICE = float(PRICE.replace('$',''))
+        QTY = int(QTY)
+        ins = dict(MPN=PROD,
+                       qty=QTY,
+                       price=PRICE,
+                       orderID=ponSV.get().upper(),
+                       orderdate=cal.selection,
+                       is_open=is_open,
+                       ordernote=u'', #TODO:
+                       applytax=True) #TODO:
+        ins['is_sale'] = True if _.sc_mode == 'c' else False
+        ins['is_purchase'] = True if _.sc_mode == 's' else False
+        ins['group'] = _.curr.cogroup.name
+        ins['seller'] = u'台茂' if _.sc_mode == 'c' else _.curr.branchSV.get()
+        ins['buyer'] = u'台茂' if _.sc_mode == 's' else _.curr.branchSV.get()
+
+        if _.debug:
+            print ins
+
+        return _.dbm.Order(**ins)
+
+    def createShipmentItem(order, manifest, QTY):
+        '''
+        new_order : Order object
+        manifest : Shipment object
+        QTY : integer
+        '''
+        QTY = int(QTY)
+        return _.dbm.ShipmentItem(
+            order = order,
+            shipment = manifest,
+            qty = QTY,
+        )
+
     def submitPO(*args):
-        print cal.selection
+        '''Add new POs for each item with user defined quantities.'''
+        if confirm_entries():
+            for PROD, PRICE, QTY in zip(prodrecs, _priceSV, _qtySV):
+                if QTY.get().isdigit() and len(PRICE.get()) > 1:
+                    new_order = createOrder(PROD.MPN, PRICE.get(), QTY.get())
+
+                    _.dbm.session.add(new_order)
+            _.dbm.session.commit()
+            refresh()
+            try:
+                for ref in _.refresh:
+                    ref()
+            except AttributeError:
+                pass
 
     def submitMF(*args):
-        print args
+        '''Add new POs and manifest for all items with defined quantities.
+        Set POs as inactive (single-use).'''
+        if len([1 for Q in _qtySV if Q.get().isdigit()]) > 5 and _.sc_mode == 'c':
+            title = u'Too many items.'
+            message = u'Each manifest can only have five items.'
+            tkMessageBox.showerror(title, message)
+            return
+        if confirm_entries():
+            manifest = _.dbm.existing_shipment(manSV.get(),
+                                               cal.selection,
+                                               _.curr.cogroup.name)
+            if not manifest:
+                manifest = _.dbm.Shipment(
+                    shipmentdate = cal.selection,
+                    shipment_no = manSV.get().upper(),
+#                    shipmentnote = ,
+#                    driver = ,
+#                    truck = ,
+                )
+
+            for PROD, PRICE, QTY in zip(prodrecs, _priceSV, _qtySV):
+                if QTY.get().isdigit() and len(PRICE.get()) > 1:
+                    new_order = createOrder(PROD.MPN, PRICE.get(), QTY.get(), is_open=False)
+                    item = createShipmentItem(new_order, manifest, QTY.get())
+                    _.dbm.session.add(item)
+            _.dbm.session.commit()
+            try:
+                for ref in _.refresh:
+                    ref()
+            except AttributeError:
+                pass
 
     Tix.Button(longPOf, textvariable=_.loc(u"\u2692 Create Product Order (PO)"),
                pady=12, bg=u'lawngreen', command=submitPO).grid(row=4, columnspan=2)
@@ -147,7 +231,22 @@ def main(_):
     Tix.Button(longPOf, textvariable=_.loc(u"\u26DF Create Manifest"),
                pady=12, bg=u'lawngreen', command=submitMF).grid(row=5, columnspan=2)
 
+    def confirm_entries():
+        title = u'Confirm entries'
+        message = _.loc(u'Verify these entries:',1)
+        message += u'\n\n日期 : {}'.format(cal.selection)
+        message += u'\n分司 : {}'.format(_.curr.branchSV.get())
+        message += u'\n訂單#: {}'.format(ponSV.get())
+        message += u'\n出貨#: {}'.format(manSV.get())
+        for PROD, PRICE, QTY in zip(prodrecs, _priceSV, _qtySV):
+            if len(QTY.get()) > 0:
+                message += u'\n\t{}{}   {}  @  {}/{}'.format(
+                    QTY.get(), PROD.UM if PROD.SKU==u'槽車' else PROD.SKU,
+                    PROD.name,
+                    PRICE.get(), PROD.PrMeas,
+                )
 
+        return tkMessageBox.askokcancel(title, message)
 
 
     _.prodselectf = frame

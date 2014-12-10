@@ -405,6 +405,12 @@ class Product(Base): # Information for each unique product (including packaging)
             return int(self.curr_price)
         return self.curr_price
 
+    @property
+    def PrMeas(self):
+        '''Return the unit measure associated with the price.
+        PrMeas = pricing measure
+        '''
+        return self.UM if self.unitpriced or self.SKU == u'槽車' else self.SKU
 
 
     def qty_available(self):

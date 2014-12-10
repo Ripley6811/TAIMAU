@@ -66,6 +66,7 @@ worddict = {
     u"Apply tax?" : u"收稅？",
     u"\u26D4 Cancel" : u"\u26D4 取消",
     u"NOTE:" : u"備註:",
+    u'Verify these entries:' : u'確認下面:',
     u"Edit PO" : u"編輯訂單",
     u"Product" : u"產品",
     u'Active POs' : u'主動訂單',

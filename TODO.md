@@ -13,6 +13,7 @@
 - Undo 'paid' command in case of mistake
 - All caps for all license, invoice #, check #, PO # fields.
 - PO creation should only show the supplies or products and not both.
+- BUG: Deleting PO will sometimes say it is already deleted or not present.
 
 ***Requested:***
 - RT should match manifest order (and PO order). Check this.
