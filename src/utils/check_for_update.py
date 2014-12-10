@@ -12,7 +12,15 @@ from requests import get as urlopen
 param silent Check if a new version is available. Only notify if there is one.
 '''
 def update(_, settings, silent=False):
-    response = urllib2.urlopen("https://github.com/Ripley6811/TAIMAU")
+    try:
+        response = urllib2.urlopen("https://github.com/Ripley6811/TAIMAU")
+    except urllib2.URLError:
+        if not silent:
+            title = u'Can not connect to GitHub.'
+            message = title + u'\nTry again later.'
+            tkMessageBox.showerror(title, message)
+            return
+
     html = response.read()
     prestring = 'commit/'
     start = html.find(prestring) + len(prestring)

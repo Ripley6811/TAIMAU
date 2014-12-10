@@ -256,28 +256,33 @@ def create(_):
     page_buttons = Tix.Frame(top_pane, bg=u'SteelBlue3', pady=4)
     page_buttons.pack(side='top', fill='x', expand=True)
 
-    options = dict(variable="pagebuttons", indicatoron=False,
-                   font=(_.font, "16", "bold"), bg="medium purple",
-                   selectcolor="plum", padx=40,
-                   activebackground="plum")
-    tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'Manage POs'),
-                    command=lambda x='po new':change_view(x),
-                    value='po new', **options)
+
+    def Radiobutton(value, textvariable):
+        '''Pre-define a new radiobutton for reuse.'''
+        return Tix.Radiobutton(
+            master=page_buttons,
+            variable="pagebuttons",
+            indicatoron=False,
+            font=(_.font, "16", "bold"),
+            bg="medium purple",
+            selectcolor="plum",
+            padx=40,
+            activebackground="plum",
+            textvariable=textvariable,
+            command=lambda x=value:change_view(x),
+            value=value,
+        )
+
+    tr = Radiobutton('prod pick', _.loc(u'Order Products'))
+    tr.grid(row=0, column=0)
+    tr = Radiobutton('shipped', _.loc(u'Manifests & Invoices'))
+    tr.grid(row=0, column=2)
+    tr = Radiobutton('po all', _.loc(u'All POs'))
+    tr.grid(row=0, column=3)
+    tr = Radiobutton('po new', _.loc(u'Manage POs'))
     tr.grid(row=0, column=1)
     tr.select()
     _.view_mode = 'po new'
-    tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'Order Products'),
-                    command=lambda x='prod pick':change_view(x),
-                    value='prod pick', **options)
-    tr.grid(row=0, column=0)
-    tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'Manifests & Invoices'),
-                    command=lambda x='shipped':change_view(x),
-                    value='shipped', **options)
-    tr.grid(row=0, column=2)
-    tr = Tix.Radiobutton(page_buttons, textvariable=_.loc(u'All POs'),
-                    command=lambda x='po all':change_view(x),
-                    value='po all', **options)
-    tr.grid(row=0, column=3)
     page_buttons.columnconfigure(0,weight=1)
     page_buttons.columnconfigure(1,weight=1)
     page_buttons.columnconfigure(2,weight=1)
