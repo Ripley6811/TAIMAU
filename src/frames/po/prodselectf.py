@@ -138,13 +138,16 @@ def main(_):
 
     def createOrder(PROD, PRICE, QTY, is_open=True):
         '''
-        PROD : string Product object MPN identifier
+        PROD : Product object
         PRICE : float
         QTY : integer
         '''
+        MPN = PROD.MPN
         PRICE = float(PRICE.replace('$',''))
         QTY = int(QTY)
-        ins = dict(MPN=PROD,
+        if PRICE != PROD.curr_price:
+            PROD.curr_price = PRICE
+        ins = dict(MPN=MPN,
                        qty=QTY,
                        price=PRICE,
                        orderID=ponSV.get().upper(),
@@ -181,7 +184,7 @@ def main(_):
         if confirm_entries():
             for PROD, PRICE, QTY in zip(prodrecs, _priceSV, _qtySV):
                 if QTY.get().isdigit() and len(PRICE.get()) > 1:
-                    new_order = createOrder(PROD.MPN, PRICE.get(), QTY.get())
+                    new_order = createOrder(PROD, PRICE.get(), QTY.get())
 
                     _.dbm.session.add(new_order)
             _.dbm.session.commit()
@@ -215,7 +218,7 @@ def main(_):
 
             for PROD, PRICE, QTY in zip(prodrecs, _priceSV, _qtySV):
                 if QTY.get().isdigit() and len(PRICE.get()) > 1:
-                    new_order = createOrder(PROD.MPN, PRICE.get(), QTY.get(), is_open=False)
+                    new_order = createOrder(PROD, PRICE.get(), QTY.get(), is_open=False)
                     item = createShipmentItem(new_order, manifest, QTY.get())
                     _.dbm.session.add(item)
             _.dbm.session.commit()
