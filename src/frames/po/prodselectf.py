@@ -34,6 +34,7 @@ def main(_):
     _qtySV = [] # Store stringvar for entered quantity
 
     font = (_.font, 12, 'bold')
+    col_default = frame.cget("bg")
 
     def refresh():
         try:
@@ -61,6 +62,7 @@ def main(_):
         if len(rows) < minlen:
             rows = rows + range(max(rows)+1, max(rows)+minlen-len(rows))
 
+        # Get list of product records.
         query = _.dbm.session.query(_.dbm.Product)
         query = query.filter_by(group = cog.name)
         query = query.filter_by(discontinued = False)
@@ -77,43 +79,52 @@ def main(_):
         for row, PR in zip(rows, prodrecs):
             col = 0
             PrU = PR.UM if PR.unitpriced else PR.SKU
+            w = [] # Container for one line of widgets
 
             # Product name and specs
-            lw = Tix.Label(text=PR.name, **OPTS)
-            lw.grid(row=row, column=col, sticky='nsw'); col += 1
-            lw = Tix.Label(text=PR.specs, padx=20, **OPTS)
-            lw.grid(row=row, column=col, sticky='nsw'); col += 1
+            w.append(Tix.Label(text=PR.name, **OPTS))
+            w[-1].grid(row=row, column=col, sticky='nsw'); col += 1
+            w.append(Tix.Label(text=PR.specs, padx=20, **OPTS))
+            w[-1].grid(row=row, column=col, sticky='nsw'); col += 1
 
             # Price entry
             _priceSV.append(Tix.StringVar())
             _priceSV[-1].set(u'{}{}'.format(prefix, PR.price))
-            ew = Tix.Entry(textvariable=_priceSV[-1],
-                           validatecommand=(vcmd_float, '%P'), **Eopts)
-            ew.grid(row=row, column=col); col += 1
+            w.append(Tix.Entry(textvariable=_priceSV[-1],
+                           validatecommand=(vcmd_float, '%P'), **Eopts))
+            w[-1].grid(row=row, column=col); col += 1
 
             # TWD per sku/unit
-            lw = Tix.Label(text=u'/{}'.format(PrU), padx=10, **OPTS)
-            lw.grid(row=row, column=col, sticky='nsw'); col += 1
+            w.append(Tix.Label(text=u'/{}'.format(PrU), padx=10, **OPTS))
+            w[-1].grid(row=row, column=col, sticky='nsw'); col += 1
 
             # Number of units entry
             _qtySV.append(Tix.StringVar())
-            ew = Tix.Entry(textvariable=_qtySV[-1],
-                           validatecommand=(vcmd_int, '%S'), **Eopts)
-            ew.grid(row=row, column=col); col += 1
+            w.append(Tix.Entry(textvariable=_qtySV[-1],
+                           validatecommand=(vcmd_int, '%S'), **Eopts))
+            w[-1].grid(row=row, column=col); col += 1
 
             # Show SKU after quantity number
-            lw = Tix.Label(text=PR.SKU, padx=10, **OPTS)
-            lw.grid(row=row, column=col, sticky='nsw'); col += 1
+            w.append(Tix.Label(text=PR.SKU, padx=10, **OPTS))
+            w[-1].grid(row=row, column=col, sticky='nsw'); col += 1
+
+            def highlightrow(qtyi, widgets):
+                val = _qtySV[qtyi].get()
+                new_color = u'PaleTurquoise1' if len(val) else u'moccasin'
+                for widget in widgets:
+                    if isinstance(widget, Tix.Entry):
+                        widget.config(bg=new_color)
+                widgets[0].config(relief='raised' if len(val) else 'flat',
+                                  bg='lawngreen' if len(val) else col_default)
+
+
+            _qtySV[-1].trace('w', lambda a,b,c,i=len(_qtySV)-1, w=w:
+                                      highlightrow(i, w))
 
 
     # Form creation panel. Make different types of POs.
     formf = Tix.Frame(frame)
     formf.pack(side='top', anchor='n')
-
-    longPOf = Tix.Frame(formf)
-    longPOf.pack(side='top')
-    shortPOf = Tix.Frame(formf)
-    shortPOf.pack(side='top')
 
     ponSV = Tix.StringVar() # PO number
     manSV = Tix.StringVar() # Manifest number
@@ -121,19 +132,19 @@ def main(_):
     #TODO: Add Taimau branch selection
 
     # Order date: preselect today
-    tl = Tix.Label(longPOf, textvariable=_.loc(u"Date of order/shipment"))
+    tl = Tix.Label(formf, textvariable=_.loc(u"Date of order/shipment"))
     tl.grid(row=0, columnspan=2)
-    cal = date_picker.Calendar(longPOf)
+    cal = date_picker.Calendar(formf)
     cal.grid(row=1, columnspan=2)
 
-    Tix.Label(longPOf, textvariable=_.loc(u'Order (PO) #:'), pady=10)\
+    Tix.Label(formf, textvariable=_.loc(u'Order (PO) #:'), pady=10)\
         .grid(row=2, column=0, sticky='nsew')
-    ponEntry = Tix.Entry(longPOf, textvariable=ponSV, bg=u"moccasin")
+    ponEntry = Tix.Entry(formf, textvariable=ponSV, bg=u"moccasin")
     ponEntry.grid(row=2, column=1, sticky='ew')
 
-    Tix.Label(longPOf, textvariable=_.loc(u'Manifest #:'), pady=10)\
+    Tix.Label(formf, textvariable=_.loc(u'Manifest #:'), pady=10)\
         .grid(row=3, column=0, sticky='nsew')
-    ponEntry = Tix.Entry(longPOf, textvariable=manSV, bg=u"moccasin")
+    ponEntry = Tix.Entry(formf, textvariable=manSV, bg=u"moccasin")
     ponEntry.grid(row=3, column=1, sticky='ew')
 
     def createOrder(PROD, PRICE, QTY, is_open=True):
@@ -228,10 +239,10 @@ def main(_):
             except AttributeError:
                 pass
 
-    Tix.Button(longPOf, textvariable=_.loc(u"\u2692 Create Product Order (PO)"),
+    Tix.Button(formf, textvariable=_.loc(u"\u2692 Create Product Order (PO)"),
                pady=12, bg=u'lawngreen', command=submitPO).grid(row=4, columnspan=2)
 
-    Tix.Button(longPOf, textvariable=_.loc(u"\u26DF Create Manifest"),
+    Tix.Button(formf, textvariable=_.loc(u"\u26DF Create Manifest"),
                pady=12, bg=u'lawngreen', command=submitMF).grid(row=5, columnspan=2)
 
     def confirm_entries():

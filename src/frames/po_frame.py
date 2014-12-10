@@ -332,6 +332,8 @@ def create(_):
     def branch_edit(name):
         fr_branch.edit(_, name)
 
+
+    vcmd_int = center_pane.register(lambda x: x.isdigit())
     def load_company():
         try:
             cogroup = _.curr.cogroup
@@ -516,9 +518,11 @@ def create(_):
                     else:
                         _poBs[row].config(bg=u'moccasin')
                         _unitsVars[row].set(u"{}".format(0))
+
                 _qtyVars.append(Tix.StringVar())
                 ew = Tix.Entry(pobox, textvariable=_qtyVars[-1], width=7,
-                               justify="center", bg=u"moccasin")
+                               justify="center", bg=u"moccasin",
+                               validate='key', validatecommand=(vcmd_int, '%S'))
                 ew.grid(row=row*2, column=6)
                 _qtyVars[-1].trace('w', lambda a,b,c,ew=ew,capamt=amt,row=len(_poIDs)-1: highlight_entry(row,ew,capamt) )
 
