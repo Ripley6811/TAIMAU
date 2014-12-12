@@ -165,7 +165,14 @@ worddict = {
     u'\nAll related orders must be deleted first.' : \
         u'\n要先刪除本產品所有的訂單.',
     u'Cannot delete a used product record.' : \
-        u'不能刪掉.'
+        u'不能刪掉.',
+    u"Create new long-term PO's or one-time shipment (with one-time PO)." : \
+        u"創造新的長期訂單或者一次出貨單(一次訂單).",
+    u"Manage manifests and invoices." : \
+        u"管理出貨單跟發票.",
+    u"Ship items from open POs." : u"運送長期訂單的一部分.",
+    u"Manage current and archived POs." : u"管理所有的訂單歷史.",
+    u"+ Add Company/Branch" : u"+ 加上公司/分司",
 }
 # Storage of StringVar by the english text as keyword.
 labeldict = {}

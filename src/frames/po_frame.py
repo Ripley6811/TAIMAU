@@ -62,23 +62,29 @@ def create(_):
     left_pane.pack_propagate(0)
     left_pane.pack(side='left', fill='y', padx=2, pady=3)
 
+    expandbox = Tix.Frame(left_pane)
+    expandbox.pack(side='top', fill='x')
+
     #### Set up right pane containing company info and POs ####
     ###########################################################
     top_pane = Tix.Frame(_.po_frame)
     top_pane.pack(side='top', fill='x', padx=4, pady=5)
 
     right_top = Tix.Frame(top_pane)
-    right_top.pack(side='top', fill=Tix.X)
-
-    expandbox = Tix.Frame(left_pane)
-    expandbox.pack(side='top', fill='x')
+    right_top.pack(side='top', fill='x')
 
     modebox = Tix.Frame(right_top)
     modebox.pack(side='left', fill='y')
 
     # Add branch selection buttons across top
     branchbox = Tix.Frame(right_top)
-    branchbox.pack(side='left', fill=Tix.X)
+    branchbox.pack(side='left', fill='x')
+
+    # Status bar at the bottom
+    _.status = Tix.StringVar()
+    Tix.Label(_.po_frame, textvariable=_.status)\
+       .pack(side='bottom', fill='x', anchor='s')
+
 
 
     # Set up mode switching buttons: Purchases, Sales
@@ -136,6 +142,13 @@ def create(_):
             print(cogroup)
         load_company()
 
+
+    tr = Tix.Button(left_pane, textvariable=_.loc(u"+ Add Company/Branch"),
+#                    command=lambda *args:add_cogroup.main(_),
+                    command=lambda *args:fr_branch.add_new(_),
+                    font=(_.font, "12", "bold"), bg="lawn green",
+                    activebackground="lime green")
+    tr.pack(side='bottom', fill='x')
 
 
     if _.debug:
@@ -273,14 +286,23 @@ def create(_):
             value=value,
         )
 
+
     tr = Radiobutton('prod pick', _.loc(u'Order Products'))
     tr.grid(row=0, column=0)
+    text = u"Create new long-term PO's or one-time shipment (with one-time PO)."
+    tr.bind('<Enter>', lambda a, t=text: _.status.set(_.loc(t,1)))
     tr = Radiobutton('shipped', _.loc(u'Manifests & Invoices'))
     tr.grid(row=0, column=2)
+    text = u"Manage manifests and invoices."
+    tr.bind('<Enter>', lambda a, t=text: _.status.set(_.loc(t,1)))
     tr = Radiobutton('po all', _.loc(u'All POs'))
     tr.grid(row=0, column=3)
+    text = u"Manage current and archived POs."
+    tr.bind('<Enter>', lambda a, t=text: _.status.set(_.loc(t,1)))
     tr = Radiobutton('po new', _.loc(u'Manage POs'))
     tr.grid(row=0, column=1)
+    text = u"Ship items from open POs."
+    tr.bind('<Enter>', lambda a, t=text: _.status.set(_.loc(t,1)))
     tr.select()
     _.view_mode = 'po new'
     page_buttons.columnconfigure(0,weight=1)
@@ -327,7 +349,9 @@ def create(_):
 
     # Add center pane for PO listing
     center_pane = _.po_center = Tix.Frame(_.po_frame)
-    center_pane.pack(side=Tix.LEFT, fill=Tix.BOTH, expand=1)
+    center_pane.pack(side='top', fill='both', expand=1)
+
+
 
     def branch_edit(name):
         fr_branch.edit(_, name)

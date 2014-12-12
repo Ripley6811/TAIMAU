@@ -226,7 +226,6 @@ class TaimauApp(Tix.Tk):
             #Default geometry
             self.geometry('1240x800')
 
-
         # SET MAIN NOTEBOOK
         nb = ttk.Notebook()
         #---------- Add PO (main) frame
@@ -254,7 +253,7 @@ class TaimauApp(Tix.Tk):
 
 
         #--------- Set arrangement of notebook frames
-        nb.pack(side='right', fill='both', expand='y', padx=2, pady=3)
+        nb.pack(side='right', fill='both', expand=1, padx=2, pady=3)
 
         if self.auto_update_check.get():
             check_for_update.update(self._, settings, silent=True)
