@@ -3,7 +3,7 @@
 import Tix
 import datetime
 
-from utils import date_picker
+from utils import calendar_tixradiobutton as date_picker
 
 
 def main(_, order, refresh=None):
@@ -28,6 +28,7 @@ def main(_, order, refresh=None):
     _tax = Tix.BooleanVar()
 
     _date = Tix.StringVar()
+    _datedue = Tix.StringVar()
 
 
 
@@ -40,27 +41,28 @@ def main(_, order, refresh=None):
     pogrid = Tix.Frame(center_pane)
     pogrid.pack(side='top')
     ### DATE SELECTION ###
-    # Order date: preselect today
+    # Order date
     tl = Tix.Label(pogrid, textvariable=_.loc(u"Date of PO"))
     tl.grid(row=0, column=2, columnspan=2)
 
+    cal = date_picker.Calendar(pogrid,
+                               textvariable=_date,
+                               month=order.orderdate.month,
+                               year=order.orderdate.year,
+                               day=order.orderdate.day,
+                               padx=5)
+    cal.grid(row=1, rowspan=6, column=2, columnspan=2)
 
-    b = Tix.Button(pogrid, textvariable=_date, bg='DarkGoldenrod1',
-                   font=(_.font, 18))
-    b['command'] = lambda curr_date=order.orderdate: pick_date(curr_date)
-    b.grid(row=1, rowspan=2, column=2, columnspan=2, sticky='nsew')
+    # Due date
+    tl = Tix.Label(pogrid, textvariable=_.loc(u"Order due date"))
+    tl.grid(row=0, column=4, columnspan=2)
 
-    _date.set(order.orderdate)
-
-    def pick_date(curr_date):
-        cal = date_picker.Calendar(pogrid,
-                                   textvariable=_date,
-                                   destroy=True,
-                                   month=curr_date.month,
-                                   year=curr_date.year,
-                                   day=curr_date.day)
-        cal.grid(row=1, rowspan=6, column=2, columnspan=2)
-
+    caldue = date_picker.Calendar(pogrid,
+                               textvariable=_datedue,
+                               padx=5)
+    if isinstance(order.duedate, datetime.date):
+        caldue.selection_set(order.duedate)
+    caldue.grid(row=1, rowspan=6, column=4, columnspan=2)
 
 
     ### SHOW PRODUCT ###
@@ -173,6 +175,8 @@ def main(_, order, refresh=None):
                    ordernote=_note.get(),
                    applytax=_tax.get(),
                    orderdate=datetime.date(*[int(x) for x in _date.get().split(u'-')]))
+        if _datedue.get():
+            ins['duedate'] = datetime.date(*[int(x) for x in _datedue.get().split(u'-')])
         if _qty.get() == u"\u221E":
             ins['qty'] = 1e10
         if tm['value'] != u'' and br['value'] != u'':

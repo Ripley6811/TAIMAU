@@ -57,6 +57,7 @@ worddict = {
     u"PO #" : u"訂單編號",
     u"Order (PO) #:" : "訂單編號:",
     u"Date of PO" : u"訂單創建日期",
+    u"Order due date" : u"到貨日期",
     u"Date of order/shipment" : u"訂單或出貨日期",
     u"Select one product" : u"選一個產品",
     u"Qty" : u"數量",

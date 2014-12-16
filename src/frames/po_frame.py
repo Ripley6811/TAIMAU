@@ -347,6 +347,7 @@ def create(_):
 
 
 
+
     # Add center pane for PO listing
     center_pane = _.po_center = Tix.Frame(_.po_frame)
     center_pane.pack(side='top', fill='both', expand=1)

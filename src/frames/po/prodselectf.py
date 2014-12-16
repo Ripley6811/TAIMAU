@@ -3,7 +3,8 @@
 import Tix
 import tkMessageBox
 
-from utils import settings, date_picker
+from utils import settings
+from utils import calendar_tixradiobutton as date_picker
 
 
 def main(_):
@@ -37,11 +38,8 @@ def main(_):
     col_default = frame.cget("bg")
 
     def refresh():
-        try:
-            while True:
-                prodf.children.popitem()[1].destroy()
-        except KeyError:
-            pass
+        for child in prodf.winfo_children():
+            child.destroy()
 
         prodrecs.__delslice__(0,1000) # Store product records
         _priceSV.__delslice__(0,1000) # Store stringvar for entered prices
@@ -133,9 +131,16 @@ def main(_):
 
     # Order date: preselect today
     tl = Tix.Label(formf, textvariable=_.loc(u"Date of order/shipment"))
-    tl.grid(row=0, columnspan=2)
-    cal = date_picker.Calendar(formf)
-    cal.grid(row=1, columnspan=2)
+    tl.grid(row=0, columnspan=1)
+    cal = date_picker.Calendar(formf, padx=5,
+                               preweeks=2, postweeks=2, settoday=True)
+    cal.grid(row=1, columnspan=1, sticky='n')
+
+    # Order date: preselect today
+    tl = Tix.Label(formf, textvariable=_.loc(u"Order due date"))
+    tl.grid(row=0, column=1)
+    caldue = date_picker.Calendar(formf, padx=5, preweeks=2, postweeks=2)
+    caldue.grid(row=1, column=1, sticky='n')
 
     Tix.Label(formf, textvariable=_.loc(u'Order (PO) #:'), pady=10)\
         .grid(row=2, column=0, sticky='nsew')
@@ -166,6 +171,8 @@ def main(_):
                        is_open=is_open,
                        ordernote=u'', #TODO:
                        applytax=True) #TODO:
+        if caldue.selection:
+            ins['duedate'] = caldue.selection
         ins['is_sale'] = True if _.sc_mode == 'c' else False
         ins['is_purchase'] = True if _.sc_mode == 's' else False
         ins['group'] = _.curr.cogroup.name
@@ -265,6 +272,7 @@ def main(_):
 
     _.prodselectf = frame
     _.prodselectf.refresh = refresh
+
 
     try:
         _.refresh.append(refresh)
