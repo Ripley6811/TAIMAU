@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import Tix
-from utils import date_picker, settings
-import tkFileDialog, tkMessageBox
+from utils import settings
+from utils import calendar_tixradiobutton as date_picker
+import tkFileDialog
 import os
 import subprocess
 import shutil
@@ -16,12 +17,12 @@ def main(_, records=[]):
 
     tl = Tix.Label(pdfwin, textvariable=_.loc(u"Start date"))
     tl.grid(row=0, column=0, columnspan=2)
-    startdate = date_picker.Calendar(pdfwin)
+    startdate = date_picker.Calendar(pdfwin, padx=4, preweeks=4)
     startdate.grid(row=1, rowspan=6, column=0, columnspan=2)
 
     tl = Tix.Label(pdfwin, textvariable=_.loc(u"End date"))
     tl.grid(row=0, column=2, columnspan=2)
-    enddate = date_picker.Calendar(pdfwin)
+    enddate = date_picker.Calendar(pdfwin, padx=4, preweeks=4)
     enddate.grid(row=1, rowspan=6, column=2, columnspan=2)
 
     #NOTE: StringVar must be a persistant variable to work properly.
@@ -45,8 +46,8 @@ def main(_, records=[]):
     tb = Tix.Button(pdfwin, textvariable=_.loc(u"\u2713 Submit"), bg=u'light salmon')
 #    tb['command'] = lambda: submit() # FPDF
     tb['command'] = lambda: submit_RLab(_,  # Report Lab
-                                        start=startdate.selection,
-                                        end=enddate.selection,
+                                        start=startdate.date_obj,
+                                        end=enddate.date_obj,
                                         summary=include_sum.get())
     tb.grid(row=100, column=0, columnspan=4, sticky='ew')
 

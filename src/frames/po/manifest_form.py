@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 import Tix
 import tkMessageBox
-import datetime
 
-from utils import date_picker
+from utils import calendar_tixradiobutton as date_picker
 
 
 
@@ -47,8 +46,6 @@ def main(_, orders=[], qtyVars=[], unitVars=[], numbSVar=None, manifest=None, re
     _truck = Tix.StringVar()
     _truck.trace('w', lambda *args: _truck.set(_truck.get().upper().replace('-','')[:8]))
     _note = Tix.StringVar()
-
-    _date = Tix.StringVar()
 
 
     #####################################
@@ -126,21 +123,13 @@ def main(_, orders=[], qtyVars=[], unitVars=[], numbSVar=None, manifest=None, re
         cell_config.update(anchor='w')
 
     if manifest:
-        b = Tix.Button(main_frame, textvariable=_date, bg='DarkGoldenrod1',
-                       font=(_.font, 20))
-        b['command'] = lambda curr_date=manifest.shipmentdate: pick_date(curr_date)
-        b.grid(row=0, rowspan=3, column=8, columnspan=4, sticky='nsew')
+        sdate = manifest.shipmentdate
 
-        _date.set(manifest.shipmentdate)
-
-        def pick_date(curr_date):
-            cal = date_picker.Calendar(main_frame,
-                                       textvariable=_date,
-                                       destroy=True,
-                                       month=curr_date.month,
-                                       year=curr_date.year,
-                                       day=curr_date.day)
-            cal.grid(row=0, rowspan=3, column=8, columnspan=4, sticky='nsew')
+        cal = date_picker.Calendar(main_frame,
+                                   month=sdate.month,
+                                   year=sdate.year,
+                                   day=sdate.day)
+        cal.grid(row=0, rowspan=3, column=8, columnspan=4, sticky='nsew')
     else:
         cal = date_picker.Calendar(main_frame)
         cal.grid(row=0, rowspan=3, column=8, columnspan=4, sticky='nsew')
@@ -257,10 +246,10 @@ def main(_, orders=[], qtyVars=[], unitVars=[], numbSVar=None, manifest=None, re
 
     def submit(manifest):
         if manifest == None:
-            if cal.selection in (None, u''):
+            if cal.date_str in (None, u''):
                 return
             manifest = _.dbm.existing_shipment(_shipment_no.get(),
-                                               cal.selection,
+                                               cal.date_str,
                                                _.curr.cogroup.name)
             if manifest:
                 confirm = tkMessageBox.askyesno(u'Manifest number exists.',
@@ -278,7 +267,7 @@ def main(_, orders=[], qtyVars=[], unitVars=[], numbSVar=None, manifest=None, re
                     return
             if manifest == None:
                 manifest = _.dbm.Shipment(
-                    shipmentdate = cal.selection,
+                    shipmentdate = cal.date_obj,
                     shipment_no = _shipment_no.get().upper(),
                     shipmentnote = _note.get(),
                     driver = _driver.get(),
@@ -296,7 +285,7 @@ def main(_, orders=[], qtyVars=[], unitVars=[], numbSVar=None, manifest=None, re
             for order in orders:
                 check_order_qty(order)
         else: #if editing manifest
-            manifest.shipmentdate = datetime.date(*[int(z) for z in _date.get().split(u'-')])
+            manifest.shipmentdate = cal.date_obj
             manifest.shipment_no = _shipment_no.get().upper()
             manifest.shipmentnote = _note.get()
             manifest.driver = _driver.get()

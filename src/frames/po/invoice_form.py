@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 import Tix
 import tkMessageBox
-import datetime
 
-from utils import date_picker
+
+from utils import calendar_tixradiobutton as date_picker
 
 
 def main(_, shipment_ids=None, invoice=None):
@@ -50,8 +50,6 @@ def main(_, shipment_ids=None, invoice=None):
     _note = Tix.StringVar()
     _company_no = Tix.StringVar()
 
-    _date = Tix.StringVar()
-
 
     if invoice:
         _invoice_no.set(invoice.invoice_no)
@@ -70,21 +68,13 @@ def main(_, shipment_ids=None, invoice=None):
 
 
     if invoice:
-        b = Tix.Button(head_frame, textvariable=_date, bg='DarkGoldenrod1',
-                       font=(_.font, 20))
-        b['command'] = lambda curr_date=invoice.invoicedate: pick_date(curr_date)
-        b.grid(row=0, rowspan=3, column=4, columnspan=4, sticky='nsew')
+        idate = invoice.invoicedate
 
-        _date.set(invoice.invoicedate)
-
-        def pick_date(curr_date):
-            cal = date_picker.Calendar(head_frame,
-                                       textvariable=_date,
-                                       destroy=True,
-                                       month=curr_date.month,
-                                       year=curr_date.year,
-                                       day=curr_date.day)
-            cal.grid(row=0, rowspan=3, column=4, columnspan=4, sticky='nsew')
+        cal = date_picker.Calendar(head_frame,
+                                   month=idate.month,
+                                   year=idate.year,
+                                   day=idate.day)
+        cal.grid(row=0, rowspan=3, column=4, columnspan=4, sticky='nsew')
     else:
         cal = date_picker.Calendar(head_frame)
         cal.grid(row=0, rowspan=3, column=4, columnspan=4, sticky='nsew')
@@ -268,10 +258,10 @@ def main(_, shipment_ids=None, invoice=None):
                 _.extwin.focus_set()
                 return
         if invoice == None:
-            if cal.selection in (None, u''):
+            if cal.date_str in (None, u''):
                 return
             invoice = _.dbm.existing_invoice(_invoice_no.get(),
-                                             cal.selection,
+                                             cal.date_str,
                                              _.curr.cogroup.name)
             if invoice:
                 confirm = tkMessageBox.askyesno(u'Invoice number exists.',
@@ -281,7 +271,7 @@ def main(_, shipment_ids=None, invoice=None):
                     return
             if invoice == None:
                 invoice = _.dbm.Invoice(
-                    invoicedate = cal.selection,
+                    invoicedate = cal.date_obj,
                     invoice_no = _invoice_no.get().upper(),
                     invoicenote = _note.get(),
                     seller = seller.get(),
@@ -297,7 +287,7 @@ def main(_, shipment_ids=None, invoice=None):
                 _.dbm.session.add(item)
             _.dbm.session.commit()
         else: #if invoice
-            invoice.invoicedate = datetime.date(*[int(z) for z in _date.get().split(u'-')])
+            invoice.invoicedate = cal.date_obj
             invoice.invoice_no = _invoice_no.get().upper()
             invoice.invoicenote = _note.get()
             invoice.seller = seller.get()

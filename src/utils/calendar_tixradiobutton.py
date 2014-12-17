@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Calendar widget build with Tix Buttons.
+Calendar widget build with Tix (or Tk) Buttons.
 
 Based on ttk Treeview calendar but with improvements in pre-setting date and
-integration into other applications.
+integration into other applications. Uses Tix if available for import or else
+uses Tkinter.
 
 :REQUIRES:
+    - Tix or Tkinter
 
 :TODO:
+    - Solve Chinese localization month name encoding problem.
 
 :AUTHOR: Ripley6811
-:ORGANIZATION: None
-:CONTACT: python@boun.cr
 :SINCE: Tue Dec 16 16:29:56 2014
 :VERSION: 0.1
 """
@@ -20,7 +21,6 @@ integration into other applications.
 # PROGRAM METADATA
 #===============================================================================
 __author__ = 'Ripley6811'
-__contact__ = 'python@boun.cr'
 __copyright__ = ''
 __license__ = ''
 __date__ = 'Tue Dec 16 16:29:56 2014'
@@ -29,14 +29,19 @@ __version__ = '0.1'
 #===============================================================================
 # IMPORT STATEMENTS
 #===============================================================================
-import Tix
+try:
+    import Tix as TKx
+except ImportError:
+    import Tkinter as TKx
 import calendar
-import locale
-locale.setlocale(locale.LC_ALL, '')
+#XXX: Encoding problem on Chinese system. Will not display Chinese months.
+#XXX: Using English of numbered months for now.
+#import locale
+#locale.setlocale(locale.LC_ALL, '')
 
 
 
-class Calendar(Tix.Frame):
+class Calendar(TKx.Frame):
     datetime = calendar.datetime.date
     timedelta = calendar.datetime.timedelta
     today = datetime.today()
@@ -44,15 +49,14 @@ class Calendar(Tix.Frame):
     def __init__(self, master=None, **kw):
         """Setup.
 
-        Date defaults to system current date.
+        Display defaults to system current month and year.
 
         Kwargs:
-            year (int): Year integer.
-            month (int): Month integer.
-            day (int): Day integer.
-            today (bool): Select today's date.
-            selectbackground (str): Color string for background.
-            selectforeground (str): Color string for text.
+            year (int): Year integer for displaying year.
+            month (int): Month integer for displaying month.
+            day (int): Day integer used for preselecting date.
+            settoday (bool): Set selection to today.
+            selectbackground (str): Color string for selection background.
             textvariable (StringVar): Tk.StringVar for storing selection date.
             preweeks (int): Number of weeks to include before month.
             postweeks (int): Number of weeks to include after month.
@@ -65,14 +69,14 @@ class Calendar(Tix.Frame):
         self.day = kw.pop('day', None)
         self.settoday = kw.pop('settoday', False)
         self.sel_bg = kw.pop('selectbackground', 'gold')
-        self.sel_fg = kw.pop('selectforeground', 'gold')
+#        self.sel_fg = kw.pop('selectforeground', 'gold')
         self.preweeks = kw.pop('preweeks', 0)
         self.postweeks = kw.pop('postweeks', 0)
 
         # StringVar parameter for returning a date selection.
-        self.strvar = kw.pop('textvariable', Tix.StringVar())
+        self.strvar = kw.pop('textvariable', TKx.StringVar())
 
-        Tix.Frame.__init__(self, master, **kw)
+        TKx.Frame.__init__(self, master, **kw)
 
         self._cal = calendar.Calendar(calendar.SUNDAY)
 
@@ -81,35 +85,33 @@ class Calendar(Tix.Frame):
         self._build_calendar()
 
         if self.settoday:
-            self.selection_set(today)
+            self.date_set(today)
         elif self.day:
-            self.selection_set(self.year, self.month, self.day)
+            self.date_set(self.year, self.month, self.day)
 
         self._build_dategrid()
-
 
 
     def _build_calendar(self):
         # Create frame and widgets.
         # Add header.
-        hframe = Tix.Frame(self)
+        hframe = TKx.Frame(self)
         hframe.pack(fill='x', expand=1)
-        self.month_str = Tix.StringVar()
-        lbtn = Tix.Button(hframe, text=u'\u25c0', command=self._prev_month)
-        rbtn = Tix.Button(hframe, text=u'\u25b6', command=self._next_month)
+        self.month_str = TKx.StringVar()
+        lbtn = TKx.Button(hframe, text=u'\u25c0', command=self._prev_month)
+        rbtn = TKx.Button(hframe, text=u'\u25b6', command=self._next_month)
         lbtn.pack(side='left')
         rbtn.pack(side='right')
-        tl = Tix.Label(hframe, textvariable=self.month_str)
+        tl = TKx.Label(hframe, textvariable=self.month_str)
         tl.pack(side='top')
         self._set_month_str()
-        self.days_frame = Tix.Frame(self)
+        self.days_frame = TKx.Frame(self)
         self.days_frame.pack(fill='x', expand=1)
 
     def _set_month_str(self):
+        #TODO: Fix month name encoding error on Chinese system when localizing.
         text = u'{} {}'.format(calendar.month_name[self.month], self.year)
         self.month_str.set(text)
-
-
 
     def _build_dategrid(self):
         self._set_month_str()
@@ -132,11 +134,11 @@ class Calendar(Tix.Frame):
 
         # Add day headers and day radiobuttons.
         for col, text in enumerate(calendar.day_abbr):
-            tl = Tix.Label(self.days_frame, text=text[:2])
+            tl = TKx.Label(self.days_frame, text=text[:2])
             tl.grid(row=0, column=(col+1)%7, sticky='nsew')
         for row, week in enumerate(datematrix):
             for col, day in enumerate(week):
-                trb = Tix.Radiobutton(self.days_frame,
+                trb = TKx.Radiobutton(self.days_frame,
                                       text=day.day,
                                       padx=4,
                                       indicator=False,
@@ -144,16 +146,29 @@ class Calendar(Tix.Frame):
                                       value=day)
                 trb.grid(row=row + 1, column=col, sticky='nsew')
                 self.days_frame.columnconfigure(col, weight=1)
-                if day.month != self.month:
+                if 1 <= abs(day.month - self.month) <= 11:
                     trb.config(bg='grey')
+                if 2 <= abs(day.month - self.month) <= 10:
+                    trb.config(bg='grey40')
                 if self.sel_bg:
                     trb.config(selectcolor=self.sel_bg)
 
-    @property
-    def selection(self):
-        return self.strvar.get()
 
-    def selection_set(self, *args):
+    def _prev_month(self):
+        tmp = self.datetime(self.year, self.month, 1)
+        prev_month = tmp - self.timedelta(1)
+        self.year = prev_month.year
+        self.month = prev_month.month
+        self._build_dategrid()
+
+    def _next_month(self):
+        tmp = self.datetime(self.year, self.month, 25)
+        next_month = tmp + self.timedelta(10)
+        self.year = next_month.year
+        self.month = next_month.month
+        self._build_dategrid()
+
+    def date_set(self, *args):
         """Set the current selected date.
 
         Args should either be a single datetime.date object or a
@@ -161,7 +176,9 @@ class Calendar(Tix.Frame):
         No args sets current date to None.
 
         Args:
-            dt (datetime.date) A date to set as selected.
+            datetime.date: A date to set as selected.
+            [int, int, int]: Three integers for year, month and day.
+
         """
         if len(args) == 0:
             """
@@ -194,33 +211,46 @@ class Calendar(Tix.Frame):
                 pass
             return
 
-    def _prev_month(self):
-        tmp = self.datetime(self.year, self.month, 1)
-        prev_month = tmp - self.timedelta(1)
-        self.year = prev_month.year
-        self.month = prev_month.month
-        self._build_dategrid()
+    @property
+    def date_str(self):
+        """Get string representation of selected date.
 
-    def _next_month(self):
-        tmp = self.datetime(self.year, self.month, 25)
-        next_month = tmp + self.timedelta(10)
-        self.year = next_month.year
-        self.month = next_month.month
-        self._build_dategrid()
+        Format is YYYY-MM-DD or an empty string if nothing is selected.
+        """
+        return self.strvar.get()
 
+    @property
+    def date_obj(self):
+        """Get a datetime.date object of selected date.
+
+        Returns a datetime.date object or None if nothing is selected.
+        """
+        try:
+            return self.datetime(*[int(x) for x in self.date_str.split(u'-')])
+        except ValueError:
+            return None
 
 def test():
     import sys
-    root = Tix.Tk()
-    root.title('Tix Calendar')
-    tixcal = Calendar(preweeks=3, postweeks=3)
+    root = TKx.Tk()
+    root.title('Calendar')
+    tixcal = Calendar(preweeks=6, postweeks=8, day=23)
     tixcal.pack(expand=1, fill='both')
 
     if 'win' not in sys.platform:
-        style = Tix.Style()
+        style = TKx.Style()
         style.theme_use('clam')
 
+    print type(tixcal.date_str), tixcal.date_str
+    print type(tixcal.date_obj), tixcal.date_obj
+
+
+    tixcal = Calendar(preweeks=6, postweeks=8)
+
+    print type(tixcal.date_str), tixcal.date_str
+    print type(tixcal.date_obj), tixcal.date_obj
     root.mainloop()
+
 
 if __name__ == '__main__':
     test()

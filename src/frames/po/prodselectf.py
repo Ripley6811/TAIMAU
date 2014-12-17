@@ -133,13 +133,13 @@ def main(_):
     tl = Tix.Label(formf, textvariable=_.loc(u"Date of order/shipment"))
     tl.grid(row=0, columnspan=1)
     cal = date_picker.Calendar(formf, padx=5,
-                               preweeks=2, postweeks=2, settoday=True)
+                               preweeks=3, postweeks=2, settoday=True)
     cal.grid(row=1, columnspan=1, sticky='n')
 
     # Order date: preselect today
     tl = Tix.Label(formf, textvariable=_.loc(u"Order due date"))
     tl.grid(row=0, column=1)
-    caldue = date_picker.Calendar(formf, padx=5, preweeks=2, postweeks=2)
+    caldue = date_picker.Calendar(formf, padx=5, preweeks=3, postweeks=2)
     caldue.grid(row=1, column=1, sticky='n')
 
     Tix.Label(formf, textvariable=_.loc(u'Order (PO) #:'), pady=10)\
@@ -167,12 +167,12 @@ def main(_):
                        qty=QTY,
                        price=PRICE,
                        orderID=ponSV.get().upper(),
-                       orderdate=cal.selection,
+                       orderdate=cal.date_obj,
                        is_open=is_open,
                        ordernote=u'', #TODO:
                        applytax=True) #TODO:
-        if caldue.selection:
-            ins['duedate'] = caldue.selection
+        if caldue.date_str:
+            ins['duedate'] = caldue.date_obj
         ins['is_sale'] = True if _.sc_mode == 'c' else False
         ins['is_purchase'] = True if _.sc_mode == 's' else False
         ins['group'] = _.curr.cogroup.name
@@ -223,11 +223,11 @@ def main(_):
             return
         if confirm_entries():
             manifest = _.dbm.existing_shipment(manSV.get(),
-                                               cal.selection,
+                                               cal.date_obj,
                                                _.curr.cogroup.name)
             if not manifest:
                 manifest = _.dbm.Shipment(
-                    shipmentdate = cal.selection,
+                    shipmentdate = cal.date_obj,
                     shipment_no = manSV.get().upper(),
 #                    shipmentnote = ,
 #                    driver = ,
@@ -255,7 +255,7 @@ def main(_):
     def confirm_entries():
         title = u'Confirm entries'
         message = _.loc(u'Verify these entries:',1)
-        message += u'\n\n日期 : {}'.format(cal.selection)
+        message += u'\n\n日期 : {}'.format(cal.date_str)
         message += u'\n分司 : {}'.format(_.curr.branchSV.get())
         message += u'\n訂單#: {}'.format(ponSV.get())
         message += u'\n出貨#: {}'.format(manSV.get())

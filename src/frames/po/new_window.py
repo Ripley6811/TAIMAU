@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import Tix
-from utils import date_picker
+from utils import calendar_tixradiobutton as date_picker
 
 
 def main(_, refresh):
@@ -162,7 +162,7 @@ def main(_, refresh):
                        qty=_qty.get(),
                        price=_price.get(),
                        orderID=_ponumber.get(),
-                       orderdate=cal.selection,
+                       orderdate=cal.date_obj,
                        ordernote=_note.get(),
                        applytax=_tax.get())
         if _qty.get() == u"\u221E":
@@ -199,7 +199,7 @@ def main(_, refresh):
             return False
         if not _price.get().replace('.','',1).isdigit():
             return False
-        if not cal.selection:
+        if not cal.date_str:
             return False
         if not tm['value']:
             return False

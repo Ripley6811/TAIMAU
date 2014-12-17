@@ -61,7 +61,7 @@ def main(_, order, refresh=None):
                                textvariable=_datedue,
                                padx=5)
     if isinstance(order.duedate, datetime.date):
-        caldue.selection_set(order.duedate)
+        caldue.date_set(order.duedate)
     caldue.grid(row=1, rowspan=6, column=4, columnspan=2)
 
 
@@ -174,9 +174,9 @@ def main(_, order, refresh=None):
                    orderID=_ponumber.get(),
                    ordernote=_note.get(),
                    applytax=_tax.get(),
-                   orderdate=datetime.date(*[int(x) for x in _date.get().split(u'-')]))
+                   orderdate=cal.date_obj)
         if _datedue.get():
-            ins['duedate'] = datetime.date(*[int(x) for x in _datedue.get().split(u'-')])
+            ins['duedate'] = caldue.date_obj
         if _qty.get() == u"\u221E":
             ins['qty'] = 1e10
         if tm['value'] != u'' and br['value'] != u'':
