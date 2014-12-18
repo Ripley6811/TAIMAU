@@ -82,7 +82,7 @@ worddict = {
     u'Truck:' : u'車號:',
     u'Note:' : u'備註:',
     u'Number of records to show:' : u'顯示數量:',
-    u'PO Closed?' : u'訂單是否已關畢?',
+    u'PO Closed?' : u'訂單是否已關閉?',
     u'Create Invoice' : u'開立發票',
     u'Activity Report' : u'記錄報告',
     u'Mark as Paid' : u'標記為已付款',
