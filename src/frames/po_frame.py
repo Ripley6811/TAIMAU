@@ -9,19 +9,12 @@ description
 
 :TODO:
 
-:AUTHOR: Ripley6811
-:ORGANIZATION: None
-:CONTACT: python@boun.cr
 :SINCE: Tue Aug 26 19:02:13 2014
 :VERSION: 0.1
 """
 #===============================================================================
 # PROGRAM METADATA
 #===============================================================================
-__author__ = 'Ripley6811'
-__contact__ = 'python@boun.cr'
-__copyright__ = ''
-__license__ = ''
 __date__ = 'Tue Aug 26 19:02:13 2014'
 __version__ = '0.1'
 
@@ -585,11 +578,11 @@ def create(_):
 
         # Button for adding another product order.
         #TODO: Add command
-        tb = Tix.Button(pobox, textvariable=_.loc("+ PO"),
-                        bg="lawn green",
-                        command=lambda:po.new(_, load_company),
-                        activebackground="lime green")
-        tb.grid(row=1000, column=1, sticky='ew')
+#        tb = Tix.Button(pobox, textvariable=_.loc("+ PO"),
+#                        bg="lawn green",
+#                        command=lambda:po.new(_, load_company),
+#                        activebackground="lime green")
+#        tb.grid(row=1000, column=1, sticky='ew')
 
         # Button for submitting new manifest. Goto date selection, etc.
         #TODO: Add command
