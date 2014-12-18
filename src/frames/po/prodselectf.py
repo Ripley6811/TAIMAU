@@ -247,10 +247,10 @@ def main(_):
                 pass
 
     Tix.Button(formf, textvariable=_.loc(u"\u2692 Create Product Order (PO)"),
-               pady=12, bg=u'lawngreen', command=submitPO).grid(row=4, columnspan=2)
+               pady=12, bg=u'lawngreen', command=submitPO).grid(row=4, column=0, sticky='nsew')
 
-    Tix.Button(formf, textvariable=_.loc(u"\u26DF Create Manifest"),
-               pady=12, bg=u'lawngreen', command=submitMF).grid(row=5, columnspan=2)
+    Tix.Button(formf, textvariable=_.loc(u"\u26DF Create Single Shipment PO"),
+               pady=12, bg=u'lawngreen', command=submitMF).grid(row=4, column=1, sticky='nsew')
 
     def confirm_entries():
         title = u'Confirm entries'
