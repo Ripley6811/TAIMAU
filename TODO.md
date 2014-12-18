@@ -14,12 +14,15 @@
 - All caps for all license, invoice #, check #, PO # fields.
 - PO creation should only show the supplies or products and not both.
 - BUG: Deleting PO will sometimes say it is already deleted or not present.
+- Remove create button on PO management frame. Deactivate PO management button if there are no active PO's.
 
 ***Requested:***
 - RT should match manifest order (and PO order). Check this.
 - Add destinations list to CoGroups and make selectable in manifest (and PO optional).
 - Add destinations option/buttons to manifest.
 - Add vehicle radiobuttons
+- Help directions. List of questions and focuses program on the related page and gives instructions.
+- Show total kg/L etc. when typing number of barrels/bags in PO creation frame.
 
 ***Extra:***
 - Command line method for updating database from outputed Excel of companies and products.
@@ -27,4 +30,6 @@
 - Use ReportLab for QC report instead of FPDF.
 - Clean up/refactor and document code.
 - Learn to output matplotlib plot as PDF and transfer that image to another PDF. Use 'pdfrw' package. Another option is to integrate R somehow for generating reports.
-- Add popup balloon messages all over for more info.
+- Add popup balloon messages all over for more info. Turn off and on in options.
+- Fix translations to be more obvious about function.
+- Show deactivated products in gray at bottom of PO creation frame.
