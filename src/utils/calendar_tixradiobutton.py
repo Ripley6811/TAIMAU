@@ -7,6 +7,9 @@ Based on ttk Treeview calendar but with improvements in pre-setting date and
 integration into other applications. Uses Tix if available for import or else
 uses Tkinter.
 
+If selectrange is set to True then a range of dates can be selected by holding
+ctrl or shift or the right mouse button while clicking the left mouse button.
+
 :REQUIRES:
     - Tix or Tkinter
 
@@ -45,6 +48,7 @@ class Calendar(TKx.Frame):
     datetime = calendar.datetime.date
     timedelta = calendar.datetime.timedelta
     today = datetime.today()
+    range = []
 
     def __init__(self, master=None, **kw):
         """Setup.
@@ -60,6 +64,7 @@ class Calendar(TKx.Frame):
             textvariable (StringVar): Tk.StringVar for storing selection date.
             preweeks (int): Number of weeks to include before month.
             postweeks (int): Number of weeks to include after month.
+            selectrange (bool): True to return dates as a range pair.
         """
 
         # remove custom options from kw before initializating ttk.Frame
@@ -69,9 +74,9 @@ class Calendar(TKx.Frame):
         self.day = kw.pop('day', None)
         self.settoday = kw.pop('settoday', False)
         self.sel_bg = kw.pop('selectbackground', 'gold')
-#        self.sel_fg = kw.pop('selectforeground', 'gold')
         self.preweeks = kw.pop('preweeks', 0)
         self.postweeks = kw.pop('postweeks', 0)
+        self.userange = kw.pop('selectrange', False)
 
         # StringVar parameter for returning a date selection.
         self.strvar = kw.pop('textvariable', TKx.StringVar())
@@ -113,6 +118,21 @@ class Calendar(TKx.Frame):
         text = u'{} {}'.format(calendar.month_name[self.month], self.year)
         self.month_str.set(text)
 
+    def _edit_range(self, event, date):
+        #8 normal, 12 held ctrl, 1032 held B3
+        if len(self.range) < 2:
+            self.range = date, date
+            return
+        if event.state in (9, 12, 1032):
+            self.range = self.range[1], date
+        else:
+            self.range = date, date
+#        start, end = [str(d) for d in sorted(self.range)]
+        self._color_buttons()
+#        for child in self.days_frame.winfo_children()[7:]:
+#            if start <= child['value'] <= end:
+#                child['bg'] = self.sel_bg
+
     def _build_dategrid(self):
         self._set_month_str()
         # Prepare data.
@@ -146,12 +166,30 @@ class Calendar(TKx.Frame):
                                       value=day)
                 trb.grid(row=row + 1, column=col, sticky='nsew')
                 self.days_frame.columnconfigure(col, weight=1)
-                if 1 <= abs(day.month - self.month) <= 11:
-                    trb.config(bg='grey')
-                if 2 <= abs(day.month - self.month) <= 10:
-                    trb.config(bg='grey40')
                 if self.sel_bg:
                     trb.config(selectcolor=self.sel_bg)
+                if self.userange:
+                    trb.bind('<1>', lambda e,x=day: self._edit_range(e,x))
+        self._color_buttons()
+
+    def _color_buttons(self):
+        try:
+            start, end = [str(d) for d in sorted(self.range)]
+        except:
+            start, end = 0,0
+
+        for child in self.days_frame.winfo_children()[7:]:
+            month = int(child['value'].split('-')[1])
+            if abs(month - self.month) == 0:
+                child.config(bg='grey99')
+            if abs(month - self.month) in (1,11):
+                child.config(bg='grey77')
+            if abs(month - self.month) in (2,10):
+                child.config(bg='grey55')
+            if 3 <= abs(month - self.month) <= 9:
+                child.config(bg='grey33')
+            if start <= child['value'] <= end:
+                child['bg'] = self.sel_bg
 
 
     def _prev_month(self):
@@ -190,6 +228,7 @@ class Calendar(TKx.Frame):
             """
             Date entered as datetime.date object.
             """
+            self.range = args[0], args[0]
             self.strvar.set(args[0])
             if args[0].month != self.month or args[0].year != self.year:
                 self.year = args[0].year
@@ -202,6 +241,7 @@ class Calendar(TKx.Frame):
             """
             try:
                 tmpdate = self.datetime(args[0], args[1], args[2])
+                self.range = tmpdate, tmpdate
                 self.strvar.set(tmpdate)
                 if args[1] != self.month or args[0] != self.year:
                     self.year = args[0]
@@ -217,6 +257,8 @@ class Calendar(TKx.Frame):
 
         Format is YYYY-MM-DD or an empty string if nothing is selected.
         """
+        if self.userange:
+            return [str(d) for d in sorted(self.range)]
         return self.strvar.get()
 
     @property
@@ -225,6 +267,8 @@ class Calendar(TKx.Frame):
 
         Returns a datetime.date object or None if nothing is selected.
         """
+        if self.userange:
+            return sorted(self.range)
         try:
             return self.datetime(*[int(x) for x in self.date_str.split(u'-')])
         except ValueError:
