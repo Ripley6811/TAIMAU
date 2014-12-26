@@ -640,6 +640,8 @@ def create(_):
                     pass
         except TypeError:
             pass
+        except AttributeError:
+            pass
 
         if js['sc_mode'] == 'c':
             cmodeRB.invoke()

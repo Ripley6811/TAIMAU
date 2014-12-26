@@ -28,11 +28,10 @@ __version__ = '0.1'
 #===============================================================================
 # IMPORT STATEMENTS
 #===============================================================================
-import os
-from os.path import normpath, exists
 import datetime
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
-import tkFileDialog
+import tkMessageBox
 
 from utils import settings
 from TM2014_tables_v3 import (get_database, CoGroup, Branch, Product,
@@ -55,48 +54,66 @@ class db_manager:
     Branch = Branch
     Stock = Stock
 
+
+    """
+    Attempts to make a connection to a database.
+
+    Will not exit loop unless a connection is made. Ensure that the server
+    is set up and database is created.
+    """
     def __init__(self):
-#        js = settings.load()
-#        if js.get('dbpath', False) and exists(js.get('dbpath')):
-#            self.dbpath = js['dbpath']
 
-            name = u'admin'
-            pw = u'admin'
-            db = u'taimau'
-            port = u'192.168.1.100:3306'
-            opt = u'?charset=utf8'
-            self.dbpath = u"{port}/{db}".format(db=db, port=port)
-            db_path = u"mysql+pymysql://{name}:{pw}@{port}/{db}{opt}".format(
-                      name=name, pw=pw, db=db, port=port, opt=opt)
-
-            engine = get_database(db_path,  echo=False )
-            self.session = sessionmaker(bind=engine)()
-#        else:
-#            self.change_db()
+        while True:
+            try:
+                self.open_session()
+                break
+            except OperationalError:
+                title = u"Connection Failed!"
+                message = u"Check server ip-address and enter in console."
+                message += u"\n"
+                message += u"Run application in console mode to enter new ip."
+                tkMessageBox.showerror(title, message)
+                self.set_ip()
 
 
-#    def change_db(self):
-#        try:
-#            self.session.close()
-#        except AttributeError:
-#            pass
-#
-#        FILE_OPTS = dict(
-#            title = u'Select Database',
-#            defaultextension = '.db',
-#            filetypes = [('database files', '.db')],
-#            initialdir = os.getcwd() + '/data'
-#        )
-#        self.dbpath = normpath(tkFileDialog.askopenfilename(**FILE_OPTS))
-#
-#        engine = get_database( echo=False )
-#        self.session = sessionmaker(bind=engine)()
-#
-#        # Save db location for auto-loading next time.
-#        settings.update(dbpath=self.dbpath)
+    def set_ip(self):
+        '''Change server ip address.
 
+        Interaction is done through the console. Stores the server ip address
+        in the settings.json file.
+        '''
+        json  = settings.load(u'database')
+        json.setdefault('ip', u'None')
 
+        print u"Current ip address:{ip}".format(**json)
+        retval = raw_input(u'Enter new server ip address:')
 
+        json.update(ip=retval)
+
+        settings.update(database=json)
+        return True
+
+    def open_session(self):
+        """Open a new database session.
+
+        Uses default values for any not stored in the local settings.json file.
+        """
+        json  = settings.load(subdir=u'database')
+        json.setdefault('name', u'admin')
+        json.setdefault('pw', u'admin')
+        json.setdefault('api', u'mysql+pymysql')
+        json.setdefault('ip', u'000.0.0.000')
+        json.setdefault('opt', u'?charset=utf8')
+        json.setdefault('port', u':3306')
+        json.setdefault('db', u'taimau')
+
+        self.dbpath = u"{ip}{port}/{db}".format(**json)
+
+        db_path = u"{api}://{name}:{pw}@{ip}{port}/{db}{opt}"
+        db_path = db_path.format(**json)
+
+        engine = get_database(db_path,  echo=False )
+        self.session = sessionmaker(bind=engine)()
 
 
     #==============================================================================
@@ -196,13 +213,19 @@ class db_manager:
     # CoGroup table methods
     #==============================================================================
     def cogroups(self):
-        cogroups = self.session.query(CoGroup).filter(CoGroup.name != u'台茂').all()
-        recNumbers = sorted([(len(cg.orders), cg) for cg in cogroups], reverse=True)
-        return [each[1] for each in recNumbers]
+        try:
+            cogroups = self.session.query(CoGroup).filter(CoGroup.name != u'台茂').all()
+            recNumbers = sorted([(len(cg.orders), cg) for cg in cogroups], reverse=True)
+            return [each[1] for each in recNumbers]
+        except AttributeError:
+            return []
 
 
     def get_cogroup(self, name):
-        return self.session.query(CoGroup).get(name)
+        try:
+            return self.session.query(CoGroup).get(name)
+        except AttributeError:
+            return None
 
     def active_POs(self, name):
         query = self.session.query(Order)
