@@ -55,8 +55,7 @@ class db_manager:
     Stock = Stock
 
 
-    """
-    Attempts to make a connection to a database.
+    """Attempts to make a connection to a database.
 
     Will not exit loop unless a connection is made. Ensure that the server
     is set up and database is created.

@@ -34,7 +34,7 @@ def main(_):
         u'價格' : (8, 8),
         u'規格' : (9, 8),
         u'總價' : (10, 10),
-        u'已付' : (11, 5),
+        u'已付' : (11, 13),
     }
 
     tree_box = Tix.Frame(frame)
@@ -351,7 +351,7 @@ def main(_):
                 tree.hlist.item_create(hid, col=H[u'價格'][0], text=invi.order.price, itemtype=Tix.TEXT, style=tds('e', inv_color))
                 tree.hlist.item_create(hid, col=H[u'規格'][0], text=invi.order.product.units if invi.order.product.unitpriced else u'', itemtype=Tix.TEXT, style=tds('e', inv_color))
                 tree.hlist.item_create(hid, col=H[u'總價'][0], text=u'{:,}'.format(invi.total()), itemtype=Tix.TEXT, style=tds('e',inv_color))
-                tree.hlist.item_create(hid, col=H[u'已付'][0], text=u'\u2713' if invi.invoice.paid else u'\u203C', itemtype=Tix.TEXT, style=tds('w',inv_color if invi.invoice.paid else 'tomato'))
+                tree.hlist.item_create(hid, col=H[u'已付'][0], text=invi.invoice.check_no if invi.invoice.paid else u'\u203C', itemtype=Tix.TEXT, style=tds('w',inv_color if invi.invoice.paid else 'tomato'))
 
             if len(rec.invoiceitem) > 1:
                 tree.setmode(hid, 'open')
