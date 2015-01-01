@@ -188,7 +188,7 @@ class Calendar(TKx.Frame):
                 child.config(bg='grey55')
             if 3 <= abs(month - self.month) <= 9:
                 child.config(bg='grey33')
-            if start <= child['value'] <= end:
+            if self.userange and start <= child['value'] <= end:
                 child['bg'] = self.sel_bg
 
 
@@ -278,7 +278,7 @@ def test():
     import sys
     root = TKx.Tk()
     root.title('Calendar')
-    tixcal = Calendar(preweeks=6, postweeks=8, day=23)
+    tixcal = Calendar(preweeks=6, postweeks=8, day=23, selectrange=True)
     tixcal.pack(expand=1, fill='both')
 
     if 'win' not in sys.platform:
