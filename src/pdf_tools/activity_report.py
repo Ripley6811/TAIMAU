@@ -100,14 +100,14 @@ def submit_RLab(_, start, end, summary=False):
     q = q.all()
 
     # Create dictionary
-    dfkeys = [u'日期',u'出貨單號',u'品名',u'數量',u'單位',u'SKU',u'單價',u'總價',u'發票號碼']
+    dfkeys = [u'日期',u'出貨單號',u'品名',u'數量',u'單位',u'包裝',u'單價',u'總價',u'發票號碼']
     df = dict()
     df[u'日期'] = [rec.shipment.shipmentdate for rec in q]
     df[u'出貨單號'] = [rec.shipment.shipment_no for rec in q]
     df[u'品名'] = [rec.order.product.label() for rec in q]
     df[u'數量'] = [rec.qty*(rec.order.product.units if rec.order.product.unitpriced else 1) for rec in q]
     df[u'單位'] = [rec.order.product.UM if rec.order.product.unitpriced else rec.order.product.SKU for rec in q]
-    df[u'SKU']  = [u'({} {})'.format(rec.qty,rec.order.product.SKU) if (rec.order.product.unitpriced and rec.order.product.SKU != u'槽車') else u'' for rec in q]
+    df[u'包裝'] = [u'({} {})'.format(rec.qty,rec.order.product.SKU) if (rec.order.product.unitpriced and rec.order.product.SKU != u'槽車') else u'' for rec in q]
     df[u'單價'] = [rec.order.price for rec in q]
     df[u'總價'] = [u'{:,}'.format(rec.order.qty_quote(rec.qty)) for rec in q]
     df[u'發票號碼'] = [rec.invoiceitem[0].invoice.invoice_no if len(rec.invoiceitem) else u'' for rec in q]
@@ -231,20 +231,25 @@ def submit_RLab(_, start, end, summary=False):
 
     # GROUP ITEMS THAT ARE SHIPPED TOGETHER
     continued = False
+    groupSpacing = True
+    groupBracket = False
     for i in range(len(df[dfkeys[0]])-1, 0, -1):
         if cells[i][1] != u'' and cells[i][1] == cells[i-1][1]:
             cells[i][0] = u''
             if continued:
-                cells[i][1] = u'\u2560'
-                cellstyles.append(('BOTTOMPADDING', (0,i), (-1,i), 0))
+                cells[i][1] = u'\u2560' if groupBracket else u''
+                if groupSpacing:
+                    cellstyles.append(('BOTTOMPADDING', (0,i), (-1,i), 0))
             else:
-                cells[i][1] = u'\u255A'
+                cells[i][1] = u'\u255A' if groupBracket else u''
                 continued = True
             cellstyles.append(('FONTSIZE', (1,i), (1,i), 12))
-            cellstyles.append(('TOPPADDING', (0,i), (-1,i), 0))
+            if groupSpacing:
+                cellstyles.append(('TOPPADDING', (0,i), (-1,i), 0))
         else:
             if continued:
-                cellstyles.append(('BOTTOMPADDING', (0,i), (-1,i), 0))
+                if groupSpacing:
+                    cellstyles.append(('BOTTOMPADDING', (0,i), (-1,i), 0))
                 continued = False
 
 

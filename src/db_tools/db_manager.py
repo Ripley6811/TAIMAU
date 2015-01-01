@@ -532,131 +532,38 @@ def adj_stock(mpn, units=0.0, value=None, SKUs=0.0, date=None, note=u''):
 # Testing and debugging
 #==============================================================================
 if __name__ == '__main__':
-    import subprocess
-    with open('DEBUG_db_manager_v2.txt', 'w') as wf:
-        wf.write(u'METHOD:cogroups()\n    ')
-        wf.write(u' '.join([c.name for c in cogroups()]).encode('utf8'))
-
-        wf.write(u'\n\nMETHOD:company_list()\n    ')
-        wf.write(u' '.join(company_list()).encode('utf8'))
-
-        wf.write(u'\n\nMETHOD:company_list_from_sales()\n    ')
-        wf.write(u' '.join(company_list_from_sales()).encode('utf8'))
-
-        wf.write(u'\n\nMETHOD:company_list_from_purchases()\n    ')
-        wf.write(u' '.join(company_list_from_purchases()).encode('utf8'))
+    pass
 
 
 
-        wf.write(u'\n\nMETHOD:branches()\n    ')
-        wf.write(u' '.join([c.name + c.tax_id for c in branches()]).encode('utf8'))
 
-#        wf.write(u'\n\nMETHOD:purchases()\n    ')
-#        wf.write(u' '.join([str(int(float(rec.MPN))) for rec in purchases()]).encode('utf8'))
+"""PASTE INTO PYTHON SESSION
+os.chdir('C:\\Users\\Jay\\Dropbox\\github\\taimau\\src\\db_tools')
+json  = {}
+json.setdefault('name', u'admin')
+json.setdefault('api', u'mysql+pymysql')
+json.setdefault('opt', u'?charset=utf8')
+json.setdefault('port', u':3306')
+json.setdefault('db', u'taimau')
 
-        wf.write(u'\n\nMETHOD:products()\n')
-        wf.write(u', '.join([rec.MPN for rec in products()]).encode('utf8'))
+json['ip'] = #Fill in ip
+json['pw'] = #Fill in password
 
-#        wf.write(u'\n\nMETHOD:products(group param)\n')
-#        for co in company_list():
-#            wf.write(co.encode('utf8'))
-#            wf.write(u'{{{0}}}'.format(u', '.join([rec.MPN for rec in products(co)])).encode('utf8'))
-#            wf.write(u'\n')
+db_path = u"{api}://{name}:{pw}@{ip}{port}/{db}{opt}"
+db_path = db_path.format(**json)
 
-
-        wf.write(u'\n\nMETHOD:insert_purchase()\n')
-        fake_order = dict(
-                        id=99999,
-                        group=cogroup_names()[0],
-                        seller=cogroup_names()[0],
-                        buyer=cogroup_names()[0],
-                        MPN=666,
-                        duedate=datetime.date.today(),
-                    )
-        insert_purchase(fake_order)
-        wf.write(repr(purchases(id=99999)))
-
-        wf.write(u'\n\nMETHOD:update_order() with subtotal\n')
-        update_order(99999, dict(subtotal=12345))
-        try:
-            wf.write(repr(purchases(id=99999)))
-        except:
-            wf.write(u'Deleted record 99999 was not found! NOT GOOD!')
-
-        wf.write(u'\n\nMETHOD:delete_order()\n')
-        delete_order(99999)
-        try:
-            wf.write(repr(purchases(id=99999)))
-        except:
-            wf.write(u'Deleted record 99999 was not found! Great!')
-
-        wf.write(u'\n\nTEST ORDER.PRODUCT (SALES) RELATIONSHIP\n')
-        for rec in orders(True):
-            if rec.product == None:
-                wf.write(repr(rec.id))
-                wf.write(u'  ')
-                wf.write(repr(rec.MPN))
-                wf.write(u'  ')
-                wf.write(repr(rec.product))
-                wf.write(u'\n')
-            else:
-                wf.write(u'y')
-        wf.write(u'\n\nTEST ORDER.PRODUCT (PURCHASE) RELATIONSHIP\n')
-        for rec in orders(False):
-            if rec.product == None:
-                wf.write(repr(rec.id))
-                wf.write(u'  ')
-                wf.write(repr(rec.MPN))
-                wf.write(u'  ')
-                wf.write(repr(rec.product))
-                wf.write(u'\n')
-            else:
-                wf.write(u'y')
+engine = get_database(db_path,  echo=False )
+session = sessionmaker(bind=engine)()
 
 
-        wf.write(u'\n\nMETHOD:product_listing()\n')
-        for co in company_list()[:10]:
-            wf.write(co.encode('utf8'))
-            li, ids = product_listing(co, True)
-            wf.write(u'{{{0}}}'.format(u', '.join(li)).encode('utf8'))
-            wf.write(u'\n')
-            wf.write(u'{{{0}}}'.format(u', '.join(ids)).encode('utf8'))
-            wf.write(u'\n')
+#### Useful SQL lines. ####
+
+# Get list of table names.
+session.execute('Show tables').fetchall()
 
 
-        wf.write(u'\n\nMETHOD:cogroups() and purchases/sales\n')
-        for group in cogroups():
-            wf.write(group.name.encode('utf8'))
-
-            wf.write(u'  orders={}'.format(len(group.orders)))
-            wf.write(u'  purchases={}'.format(len(group.purchases)))
-            wf.write(u'  sales={}'.format(len(group.sales)))
-            wf.write(u'\n')
 
 
-        wf.write(u'\n\nMETHOD:branches() and purchases/sales\n')
-        for group in branches():
-            wf.write(u'{}:{}'.format(group.group, group.name).encode('utf8'))
-
-            wf.write(u'  purchases={}'.format(len(group.purchases)))
-            wf.write(u'  sales={}'.format(len(group.sales)))
-            wf.write(u'\n')
 
 
-        wf.write(u'\n\nMETHOD:adj_stock()\n')
-#        for val in [222,123,453]:
-#            adj_stock(u'100',val)
-        wf.write(repr(get_product(u'100').qty_available()))
-        for rec in get_product(u'100').stock:
-            wf.write(u'\n{} {} {}'.format(rec.date, rec.adj_unit, rec.adj_value))
-
-        wf.write(u'\n\nMETHOD:products().order\n')
-        outlist = []
-        for rec in products()[:20]:
-            try:
-                outlist.append(rec.order.all())
-            except:
-                pass
-        wf.write(repr(outlist).encode('utf8'))
-
-    subprocess.call(['Notepad.exe', 'DEBUG_db_manager_v2.txt'])
+"""
