@@ -311,6 +311,12 @@ class ActivityReport(object):
         return function
 
     def _shipments_table_get(self):
+        """Shipments table
+
+        The main table that contains shipment information. Date, manifest
+        number, quantity, pricing and invoice numbers. Also a total cost and
+        tax calculation.
+        """
         MIDDLE = 0
         START = 1
         END = 2
@@ -400,6 +406,9 @@ class ActivityReport(object):
 
 
         def _add_group_spacing():
+            """Items belonging to the same manifest are positioned closer
+            together.
+            """
             for i in range(1, len(cells)):
                 if self.brackets[i] in (MIDDLE, END, START+END):
                     cellstyles.append(('TOPPADDING', (0,i), (-1,i), 0))
@@ -408,6 +417,9 @@ class ActivityReport(object):
 
 
         def _add_group_brackets():
+            """Items belonging to the same manifest will have a bracket
+            extending down from the manifest number on the first item of group.
+            """
             MID_CHAR = u' \u2502' #u'\u2560' # Double lined T-junction character.
             END_CHAR = u' \u2515' #u'\u255A' # Double lined L-junction character.
             for i in range(1, len(cells)):
@@ -432,6 +444,8 @@ class ActivityReport(object):
 
 
     def _summary_table_get(self):
+        """Table of each product with total quantities and value added up.
+        """
         aggregated = dict()
         for i, product in enumerate(self.df[u'品名']):
             if product not in aggregated:
