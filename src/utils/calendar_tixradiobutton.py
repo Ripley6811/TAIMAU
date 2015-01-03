@@ -48,7 +48,6 @@ class Calendar(TKx.Frame):
     datetime = calendar.datetime.date
     timedelta = calendar.datetime.timedelta
     today = datetime.today()
-    range = []
 
     def __init__(self, master=None, **kw):
         """Setup.
@@ -77,6 +76,7 @@ class Calendar(TKx.Frame):
         self.preweeks = kw.pop('preweeks', 0)
         self.postweeks = kw.pop('postweeks', 0)
         self.userange = kw.pop('selectrange', False)
+        self.range = []
 
         # StringVar parameter for returning a date selection.
         self.strvar = kw.pop('textvariable', TKx.StringVar())
