@@ -1,3 +1,8 @@
+***Bugs:***
+- Deleting PO will sometimes say it is already deleted or not present.
+- Multiple users not all showing changes after commit. 
+- Apply tax set to false does not affect invoice.
+
 ***Do Soon:***
 - Add functions for editing branches.
 - New frame that consolidates the PO, manifest, invoice, and payment.
@@ -13,8 +18,16 @@
 - Undo 'paid' command in case of mistake
 - All caps for all license, invoice #, check #, PO # fields.
 - PO creation should only show the supplies or products and not both.
-- BUG: Deleting PO will sometimes say it is already deleted or not present.
 - Remove create button on PO management frame. Deactivate PO management button if there are no active PO's.
+- Add infinity sign for closed PO's that need it.
+- Show more info on PO confirmation and before by showing total kg for bags, etc.
+- Add validation rules. Such as checking dates that are not recent or near future.
+    - Maybe a decorator function for validation.
+    - All caps for PO number and manifest number on first Order frame.
+- Add calendar balloon tooltip with month name over buttons.
+- If no open POs when company selected then switch to Order window. Likewise, if there are PO's on company select then switch to Manage window.
+- Allow disconnected invoices and checks (not attached to manifest/order)
+- Capitalize check number entry
 
 ***Requested:***
 - RT should match manifest order (and PO order). Check this.
@@ -33,3 +46,4 @@
 - Add popup balloon messages all over for more info. Turn off and on in options.
 - Fix translations to be more obvious about function.
 - Show deactivated products in gray at bottom of PO creation frame.
+- Create PO button turns off if manifest number is entered.
