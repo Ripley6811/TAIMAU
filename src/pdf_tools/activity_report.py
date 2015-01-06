@@ -153,22 +153,25 @@ def submit_RLab(_, start, end, summary=False):
 
     tmpd = {u'台茂': u'台茂化工儀器原料行',
             u'富茂': u'富茂工業原料行',
-            u'永茂': u'永茂企業行' }
+            u'永茂': u'永茂企業行'}
 
     ActivityReport(savepath=outfile, scMode=_.sc_mode, tableValues=df,
                    dateStart=start, dateEnd=end, useSummary=summary,
-                   coName=_.curr.cogroup.name, tmBranch=tmpd[_.co.get()])
+                   coName=_.curr.cogroup.name, tmBranch=tmpd.get(_.co.get(),u''))
 
     display_pdf(outfile)
     print 'pdf displayed'
 
-#--- NEW! ActivityReport Class
 
+#--- NEW! ActivityReport Class
 
 fonts = ('simHei', 'KAIU')
 
-
 def register_font(font):
+    """Simplified font registration.
+
+    :raises TTFError: Font name must be an installed ttf font.
+    """
     registerFont(TTFont(font, font+'.ttf'))
 [register_font(f) for f in fonts]
 
@@ -346,21 +349,6 @@ class ActivityReport(object):
         for i in range(len(self.df[COL_NAMES[0]])):
             cells.append([self.df[key][i] for key in COL_NAMES])
 
-        # ADD PERIOD TOTALS AND TAX.
-        sub_amt = int(round(sum([a*b for a,b in zip(self.df[u'數量'], self.df[u'單價'])])))
-        cells.append([u'']*len(COL_NAMES))
-        cells[-1][5] = u'合 計:'
-        cells[-1][7] = u'{:,}'.format(sub_amt)
-
-        tax_amt = int(round(sub_amt * 0.05))
-        cells.append([u'']*len(COL_NAMES))
-        cells[-1][5] = u'稅 捐:'
-        cells[-1][7] = u'{:,}'.format(tax_amt)
-
-        tot_amt = int(sub_amt + tax_amt)
-        cells.append([u'']*len(COL_NAMES))
-        cells[-1][5] = u'總 計:'
-        cells[-1][7] = u'{:,}'.format(tot_amt)
 
         # GROUP ITEMS THAT ARE SHIPPED TOGETHER.
         # The following adds/changes the cell formatting by adding format rules.
@@ -399,7 +387,7 @@ class ActivityReport(object):
             When a manifest number repeats then both the date and number are
             made blank.
             """
-            for i in range(1, len(cells)):
+            for i in range(1, len(self.brackets)):
                 if self.brackets[i] in (MIDDLE,END):
                     cells[i][0] = u''
                     cells[i][1] = u''
@@ -409,7 +397,7 @@ class ActivityReport(object):
             """Items belonging to the same manifest are positioned closer
             together.
             """
-            for i in range(1, len(cells)):
+            for i in range(1, len(self.brackets)):
                 if self.brackets[i] in (MIDDLE, END, START+END):
                     cellstyles.append(('TOPPADDING', (0,i), (-1,i), 0))
                 if self.brackets[i] in (MIDDLE, START, START+END):
@@ -422,7 +410,7 @@ class ActivityReport(object):
             """
             MID_CHAR = u' \u2502' #u'\u2560' # Double lined T-junction character.
             END_CHAR = u' \u2515' #u'\u255A' # Double lined L-junction character.
-            for i in range(1, len(cells)):
+            for i in range(1, len(self.brackets)):
                 if self.brackets[i] == MIDDLE:
                     cells[i][1] = MID_CHAR
                 elif self.brackets[i] == END:
@@ -431,11 +419,29 @@ class ActivityReport(object):
                     continue
                 cellstyles.append(('FONTSIZE', (1,i), (1,i), 12))
 
+        def _append_taxtotal():
+            # ADD PERIOD TOTALS AND TAX.
+            sub_amt = int(round(sum([a*b for a,b in zip(self.df[u'數量'], self.df[u'單價'])])))
+            cells.append([u'']*len(COL_NAMES))
+            cells[-1][5] = u'合 計:'
+            cells[-1][7] = u'{:,}'.format(sub_amt)
+
+            tax_amt = int(round(sub_amt * 0.05))
+            cells.append([u'']*len(COL_NAMES))
+            cells[-1][5] = u'稅 捐:'
+            cells[-1][7] = u'{:,}'.format(tax_amt)
+
+            tot_amt = int(sub_amt + tax_amt)
+            cells.append([u'']*len(COL_NAMES))
+            cells[-1][5] = u'總 計:'
+            cells[-1][7] = u'{:,}'.format(tot_amt)
+
         # Adjust manifest item groups for spacing and optional bracketing.
         _find_manifest_groups()
         _del_repeated_manifest_numbers()
         if self.groupSpacing: _add_group_spacing()
         if self.groupBracket: _add_group_brackets()
+        _append_taxtotal()
 
 
         table = rlab.Table(cells, colWidths=WIDTHS, repeatRows=1)
@@ -487,30 +493,8 @@ class ActivityReport(object):
 #==============================================================================
 def test():
     import datetime
-    df = {
-        u'\u55ae\u4f4d': [ # 單位
-            u'kg', u'kg', u'kg', u'kg', u'kg', u'kg'],
-        u'\u7e3d\u50f9': [ # 總價
-            u'8,862', u'9,240', u'8,736', u'8,694', u'9,114', u'8,610'],
-        u'\u54c1\u540d': [ #品名
-            u'HCL', u'HCL', u'HCL', u'HCL', u'HCL', u'HCL'],
-        u'\u51fa\u8ca8\u55ae\u865f': [ # 出貨單號
-            u'14.46.44', u'15.58.32', u'14.28.42', u'09.40.11', u'12.01.39', u'14.28.03'],
-        u'\u5305\u88dd': [ # 包裝
-            u'', u'', u'', u'', u'', u''],
-        u'\u55ae\u50f9': [ # 價格
-            2.1, 2.1, 2.1, 2.1, 2.1, 2.1],
-        u'\u65e5\u671f': [ # 日期
-            datetime.date(2014, 11, 26), datetime.date(2014, 11, 27),
-            datetime.date(2014, 11, 29), datetime.date(2014, 12, 1),
-            datetime.date(2014, 12, 6), datetime.date(2014, 12, 6)],
-        u'\u767c\u7968\u865f\u78bc': [ # 發票號碼
-            u'CZ03164969', u'CZ03164969', u'CZ03164969', u'', u'', u''],
-        u'\u6578\u91cf': [ # 數量
-            4220, 4400, 4160, 4140, 4340, 4100]
-    }
+    # Sample data for test
     df = {u'\u55ae\u4f4d': [u'kg', u'kg', u'kg', u'kg', u'kg', u'kg', u'kg', u'kg', u'kg', u'kg', u'kg', u'kg', u'kg', u'kg', u'kg'], u'\u7e3d\u50f9': [u'5,400', u'1,920', u'750', u'3,000', u'4,350', u'1,750', u'800', u'500', u'500', u'14,400', u'10,800', u'4,800', u'4,800', u'14,400', u'10,800'], u'\u54c1\u540d': [u'\u4e9e\u786b\u9178\u6c2b\u9209', u'\u9e7d\u917820%', u'\u6c2b\u6c27\u5316\u9209', u'\u6b21\u6c2f\u9178\u9209', u'\u6ab8\u6aac\u9178', u'\u78f7\u9178\u6c2b\u4e8c\u9240', u'\u6c2e\u78f7', u'\u5c3f\u7d20', u'\u78b3\u9178\u6c2b\u9209', u'\u6db2\u9e7c45%', u'\u6b21\u6c2f\u9178\u9209', u'\u786b\u917850%', u'\u786b\u917850%', u'\u6db2\u9e7c45%', u'\u6b21\u6c2f\u9178\u9209'], u'\u51fa\u8ca8\u55ae\u865f': [u'004381', u'004381', u'004381', u'004381', u'004381', u'004392', u'004392', u'004392', u'004392', u'004399', u'004399', u'004399', u'004409', u'004409', u'004409'], u'\u5305\u88dd': [u'(1 \u6876)', u'(10 \u6876)', u'(1 \u5305)', u'(10 \u6876)', u'(4 \u5305)', u'(1 \u6876)', u'(1 \u6876)', u'(1 \u6876)', u'(1 \u5305)', u'(4 \u6876)', u'(4 \u6876)', u'(4 \u6876)', u'(4 \u6876)', u'(4 \u6876)', u'(4 \u6876)'], u'\u55ae\u50f9': [18, 8, 30, 12, 43.5, 70, 32, 20, 20, 12, 10, 4, 4, 12, 10], u'\u65e5\u671f': [datetime.date(2014, 12, 25), datetime.date(2014, 12, 25), datetime.date(2014, 12, 25), datetime.date(2014, 12, 25), datetime.date(2014, 12, 25), datetime.date(2014, 12, 27), datetime.date(2014, 12, 27), datetime.date(2014, 12, 27), datetime.date(2014, 12, 27), datetime.date(2014, 12, 31), datetime.date(2014, 12, 31), datetime.date(2014, 12, 31), datetime.date(2015, 1, 2), datetime.date(2015, 1, 2), datetime.date(2015, 1, 2)], u'\u767c\u7968\u865f\u78bc': [u'CZ00984031', u'CZ00984031', u'CZ00984031', u'CZ00984031', u'CZ00984031', u'CZ00984038', u'CZ00984038', u'CZ00984038', u'CZ00984038', u'CZ00984041', u'CZ00984041', u'CZ00984041', u'NN01011953', u'NN01011953', u'NN01011953'], u'\u6578\u91cf': [300, 240, 25, 250, 100, 25, 25, 25, 25, 1200, 1080, 1200, 1200, 1200, 1080]}
-
 
     print 'total', map(lambda a,b: a*b, df[u'\u55ae\u50f9'], df[u'\u6578\u91cf'])
     print sum(map(lambda a,b: a*b, df[u'\u55ae\u50f9'], df[u'\u6578\u91cf']))

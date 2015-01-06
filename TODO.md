@@ -4,7 +4,6 @@
 - Apply tax set to false does not affect invoice.
 
 ***Do Soon:***
-- Add functions for editing branches.
 - New frame that consolidates the PO, manifest, invoice, and payment.
 - Option to output entire list of companies to Excel for reference.
 - Save editing in excel to database with password and notes on double-checking, and backup.
@@ -28,6 +27,7 @@
 - If no open POs when company selected then switch to Order window. Likewise, if there are PO's on company select then switch to Manage window.
 - Allow disconnected invoices and checks (not attached to manifest/order)
 - Capitalize check number entry
+- Add new rows as needed in the multiple shipment entry form.
 
 ***Requested:***
 - RT should match manifest order (and PO order). Check this.

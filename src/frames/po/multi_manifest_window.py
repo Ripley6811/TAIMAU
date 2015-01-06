@@ -3,7 +3,8 @@
 
 import Tix
 import tkMessageBox
-from datetime import date
+from datetime import date as date, timedelta as td
+today = date.today
 
 
 def main(_, order, refresh):
@@ -17,6 +18,25 @@ def main(_, order, refresh):
         return
 
     xwin = _.extwin
+
+
+    def _check_date(val):
+        print "_check_date", val
+        vlist = val.split(u'-')
+        if all([a.isdigit() or a == u'' for a in vlist]):
+            # Validate entered date is within nine months of today's date.
+            if len(vlist) == 3 and all([a.isdigit() for a in vlist]):
+                try:
+                    d = date(*[int(a) for a in val.split('-')])
+                except ValueError:
+                    return False
+                if d < today() - td(270) or d > today() + td(270):
+                    return False
+            return True
+        else:
+            return False
+
+    vcmd_check_date = xwin.register(lambda x: _check_date(x))
 
     """
     http://stackoverflow.com/questions/1450180/how-can-i-change-the-focus-from-one-text-box-to-another-in-python-tkinter
@@ -73,7 +93,8 @@ def main(_, order, refresh):
     )
     for i in range(nRecs):
         dates.append(Tix.StringVar())
-        Tix.Entry(xwin, textvariable=dates[i], **cc).grid(row=i+1, column=0, sticky='nsew')
+        Tix.Entry(xwin, textvariable=dates[i], validate='key',
+                  validatecommand=(vcmd_check_date, '%P'), **cc).grid(row=i+1, column=0, sticky='nsew')
         dates[i].set(u'{0.year}-{0.month}-'.format(date.today()))
 
         number.append(Tix.StringVar())
