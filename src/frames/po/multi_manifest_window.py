@@ -3,7 +3,7 @@
 
 import Tix
 import tkMessageBox
-from datetime import date as date, timedelta as td
+from datetime import date, timedelta as td
 today = date.today
 
 

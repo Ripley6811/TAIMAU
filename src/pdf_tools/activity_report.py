@@ -170,7 +170,9 @@ fonts = ('simHei', 'KAIU')
 def register_font(font):
     """Simplified font registration.
 
-    :raises TTFError: Font name must be an installed ttf font.
+    :param font: The font name.
+    :type font: str
+    :raises: TTFError -- Font name is not an installed ttf font.
     """
     registerFont(TTFont(font, font+'.ttf'))
 [register_font(f) for f in fonts]

@@ -21,21 +21,25 @@ def main(_):
     nRecords.trace('w', lambda a,b,c: refresh())
 
     # Headers and (column number, col width)
-    H = {
-        u'出貨編號'  : (0, 13),
-        u'日期' : (1, 9),
-        u'品名' : (2, 20),
-        u'數量' : (3, 8),
-        u'單位' : (4, 5),
+    Hwidths = [
+        (u'訂單編號', 15),
+        (u'出貨編號', 13),
+        (u'日期', 9),
+        (u'品名', 20),
+        (u'數量', 8),
+        (u'單位', 5),
 
-        u'發票號碼' : (5, 13),
-        u'發票日期' : (6, 9),
-        u'發票數量' : (7, 8),
-        u'價格' : (8, 8),
-        u'規格' : (9, 8),
-        u'總價' : (10, 10),
-        u'已付' : (11, 13),
-    }
+        (u'發票號碼', 13),
+        (u'發票日期', 9),
+        (u'發票數量', 8),
+        (u'價格', 8),
+        (u'規格', 8),
+        (u'總價', 10),
+        (u'已付', 13),
+    ]
+    H = dict()
+    for i, each in enumerate(Hwidths):
+        H[each[0]] = (i, each[1])
 
     tree_box = Tix.Frame(frame)
     tree_box.pack(side='top', fill='both', expand=1)
@@ -337,7 +341,8 @@ def main(_):
         tree.hlist.delete_all()
         for rec in shipments:
             hid = str(rec.id)
-            tree.hlist.add(hid, text=rec.shipment.shipment_no, itemtype=Tix.TEXT, style=tds('w',po_color))
+            tree.hlist.add(hid, text=rec.order.orderID, itemtype=Tix.TEXT, style=tds('w', 'cyan'))
+            tree.hlist.item_create(hid, col=H[u'出貨編號'][0], text=rec.shipment.shipment_no, itemtype=Tix.TEXT, style=tds('w',po_color))
             tree.hlist.item_create(hid, col=H[u'日期'][0], text=u'{0.month}月{0.day}日'.format(rec.shipment.shipmentdate), itemtype=Tix.TEXT, style=tds('w',po_color))
             tree.hlist.item_create(hid, col=H[u'品名'][0], text=u'{} ({})'.format(rec.order.product.label(), rec.order.product.specs), itemtype=Tix.TEXT, style=tds('w',po_color))
             tree.hlist.item_create(hid, col=H[u'數量'][0], text=rec.qty, itemtype=Tix.TEXT, style=tds('e',po_color))
