@@ -7,6 +7,20 @@ from manifest_form import main as manifest
 import label_prep_frame
 #print 'invoice', type(frames.po.invoice)
 
+U_PENCIL = u'\u270e'
+U_TRUCK = u'\u26df'
+U_DOLLAR = u'\uff04'
+U_EXCLAMATION = u'\u203c'
+U_CHECKMARK = u'\u2713'
+U_STOPSIGN = u'\u26d4'
+U_EYES = u'\U0001F440'
+U_MONEYBAG = u'\U0001F4B0'
+
+COL_PO = u'cyan'
+COL_MANIFEST = u'PeachPuff2'
+COL_INVOICE_PAID = u'gold'
+COL_INVOICE_NOT_PAID = u'tomato'
+
 def main(_):
     """Set up the comprehensive view for all records.
 
@@ -22,24 +36,26 @@ def main(_):
 
     # Headers and (column number, col width)
     Hwidths = [
-        (u'訂單編號', 15),
-        (u'出貨編號', 13),
-        (u'日期', 9),
-        (u'品名', 20),
-        (u'數量', 8),
-        (u'單位', 5),
-
-        (u'發票號碼', 13),
-        (u'發票日期', 9),
-        (u'發票數量', 8),
-        (u'價格', 8),
-        (u'規格', 8),
-        (u'總價', 10),
-        (u'已付', 13),
+        (U_PENCIL, 3, COL_PO),
+        (u'訂單編號', 15, COL_PO),
+        (u'品名', 22, COL_PO),
+        (U_TRUCK, 3, COL_MANIFEST),
+        (u'出貨編號', 13, COL_MANIFEST),
+        (u'日期', 9, COL_MANIFEST),
+        (u'數量', 8, COL_MANIFEST),
+        (u'單位', 5, COL_MANIFEST),
+        (U_DOLLAR, 3, COL_INVOICE_PAID),
+        (u'發票號碼', 13, COL_INVOICE_PAID),
+        (u'發票日期', 9, COL_INVOICE_PAID),
+        (u'發票數量', 8, COL_INVOICE_PAID),
+        (u'價格', 8, COL_INVOICE_PAID),
+        (u'規格', 8, COL_INVOICE_PAID),
+        (u'總價', 10, COL_INVOICE_PAID),
+        (u'已付', 13, COL_INVOICE_PAID),
     ]
     H = dict()
     for i, each in enumerate(Hwidths):
-        H[each[0]] = (i, each[1])
+        H[each[0]] = (i, each[1], each[2])
 
     tree_box = Tix.Frame(frame)
     tree_box.pack(side='top', fill='both', expand=1)
@@ -127,7 +143,7 @@ def main(_):
             pass
 
         _.extwin = Tix.Toplevel(width=700)
-        _.extwin.title(u"{} {}".format(_.curr.cogroup.name, _.loc(u"\u26DF Create Manifest", asText=True)))
+        _.extwin.title(u"{} {}".format(_.curr.cogroup.name, _.loc(U_TRUCK+u" Create Manifest", asText=True)))
         _.extwin.focus_set()
 
         _check_no = Tix.StringVar()
@@ -137,13 +153,13 @@ def main(_):
         te.grid(row=0,column=2, columnspan=2, sticky='nsew')
 
         # SUBMIT BUTTON
-        tb = Tix.Button(_.extwin, textvariable=_.loc(u"\u2713 Submit"),
+        tb = Tix.Button(_.extwin, textvariable=_.loc(U_CHECKMARK+u" Submit"),
                         bg="lawn green",
                         command=lambda:submit(),
                         activebackground="lime green")
         tb.grid(row=100, column=0, columnspan=2, sticky='ew')
         # CANCEL BUTTON
-        tb = Tix.Button(_.extwin, textvariable=_.loc(u"\u26D4 Cancel"),
+        tb = Tix.Button(_.extwin, textvariable=_.loc(U_STOPSIGN+u" Cancel"),
                         bg="tomato",
                         command=lambda:_.extwin.destroy(),
                         activebackground="tomato")
@@ -163,9 +179,9 @@ def main(_):
             except AttributeError:
                 pass
 
-
+    #--- ADD BUTTONS TO BOTTOM OF PANE.
     Tix.Button(
-        rb_box, text=u'\U0001F440', bg=u'lawn green',
+        rb_box, text=U_EYES, bg=u'lawn green',
         command=view_totals, font=(_.font, 18, 'bold'),
     ).pack(side='left', fill='x')
     Tix.Button(
@@ -182,7 +198,7 @@ def main(_):
     ).pack(side=u'left', fill='x')
 
 
-    rb_vals = (25, 50, 100, 1000)
+    rb_vals = (25, 50, 100, 500, 1000)
     options = dict(variable=nRecords, indicatoron=False)
     for val in rb_vals[::-1]:
         Tix.Radiobutton(rb_box, text=val, value=val, **options)\
@@ -194,10 +210,12 @@ def main(_):
     Tix.Label(rb_box, textvariable=totalvalue)
     totalvalue.set(u'$0')
 
-    for key, (col, width) in H.iteritems():
-        tree.hlist.header_create(col, text=key, headerbackground='cyan')
-        tree.hlist.column_width(col, chars=width)
+    #--- ADD HEADER LABELS TO TREE (TABLE) VIEW
+    for key, (column, width, color) in H.iteritems():
+        tree.hlist.header_create(column, text=key, headerbackground=color)
+        tree.hlist.column_width(column, chars=width)
 
+    #--- SET TREE (TABLE) CONFIGURATION OPTIONS
 #    tree['opencmd'] = lambda dir=None, w=tree: opendir(w, dir)
     tree.hlist['header'] = True
     tree.hlist['separator'] = '~' # Default is gray
@@ -309,16 +327,29 @@ def main(_):
     orderPopMenu.add_command(label=_.loc(u'Delete invoice item',1),
                              command=lambda: delete_invoiceitem())
 
-    tds = lambda anchor, bg: Tix.DisplayStyle(
-        anchor=anchor,
-        bg=bg,
-        itemtype='text',
-        refwindow=tree.hlist,
-        font=_.font
-    )
+    #--- WRAPPER FOR MAKING TREE LIST ITEM STYLE
+#    tds = lambda anchor, bg: Tix.DisplayStyle(
+#        anchor=anchor,
+#        bg=bg,
+#        itemtype='text',
+#        refwindow=tree.hlist,
+#        font=_.font
+#    )
+    def _item_opts(hid, anchor=u'w', bg=u'grey'):
+        _retval = dict(
+            entry=hid,
+            itemtype= Tix.TEXT,
+            style= Tix.DisplayStyle(
+                anchor=anchor,
+                bg=bg,
+                itemtype='text',
+                refwindow=tree.hlist,
+                font=_.font,
+            )
+        )
+        return _retval
 
-    po_color = u'PeachPuff2'
-    inv_color = u'gold'
+    mani_color = u'PeachPuff2'
     def refresh():
         try:
             _.curr.cogroup
@@ -341,23 +372,35 @@ def main(_):
         tree.hlist.delete_all()
         for rec in shipments:
             hid = str(rec.id)
-            tree.hlist.add(hid, text=rec.order.orderID, itemtype=Tix.TEXT, style=tds('w', 'cyan'))
-            tree.hlist.item_create(hid, col=H[u'出貨編號'][0], text=rec.shipment.shipment_no, itemtype=Tix.TEXT, style=tds('w',po_color))
-            tree.hlist.item_create(hid, col=H[u'日期'][0], text=u'{0.month}月{0.day}日'.format(rec.shipment.shipmentdate), itemtype=Tix.TEXT, style=tds('w',po_color))
-            tree.hlist.item_create(hid, col=H[u'品名'][0], text=u'{} ({})'.format(rec.order.product.label(), rec.order.product.specs), itemtype=Tix.TEXT, style=tds('w',po_color))
-            tree.hlist.item_create(hid, col=H[u'數量'][0], text=rec.qty, itemtype=Tix.TEXT, style=tds('e',po_color))
-            tree.hlist.item_create(hid, col=H[u'單位'][0], text=rec.order.product.SKU, itemtype=Tix.TEXT, style=tds('w',po_color))
+            tree.hlist.add(text=u'', **_item_opts(hid, 'w', COL_PO))
+            tree.hlist.item_create(col=H[u'訂單編號'][0], text=rec.order.orderID, **_item_opts(hid, 'w', COL_PO))
+            tree.hlist.item_create(col=H[u'品名'][0], text=u'{} ({})'.format(rec.order.product.label(), rec.order.product.specs), **_item_opts(hid, 'w', COL_PO))
+
+            tree.hlist.item_create(col=3, text=u'', **_item_opts(hid, 'w', COL_MANIFEST))
+            tree.hlist.item_create(col=H[u'出貨編號'][0], text=rec.shipment.shipment_no, **_item_opts(hid, 'w', COL_MANIFEST))
+            tree.hlist.item_create(col=H[u'日期'][0], text=u'{0.month}月{0.day}日'.format(rec.shipment.shipmentdate), **_item_opts(hid, 'w', COL_MANIFEST))
+            tree.hlist.item_create(col=H[u'數量'][0], text=rec.qty, **_item_opts(hid, 'e', COL_MANIFEST))
+            tree.hlist.item_create(col=H[u'單位'][0], text=rec.order.product.SKU, **_item_opts(hid, 'w', COL_MANIFEST))
 
             if rec.invoiceitem:
                 invi = rec.invoiceitem[0] #alias
-                tree.hlist.item_create(hid, col=H[u'發票號碼'][0], text=invi.invoice.invoice_no, itemtype=Tix.TEXT, style=tds('w',inv_color))
-                tree.hlist.item_create(hid, col=H[u'發票日期'][0], text=u'{0.month}月{0.day}日'.format(invi.invoice.invoicedate), itemtype=Tix.TEXT, style=tds('w',inv_color))
-                tree.hlist.item_create(hid, col=H[u'發票數量'][0], text=invi.qty, itemtype=Tix.TEXT, style=tds('e',inv_color if rec.qty == invi.qty else u'tomato'))
-                tree.hlist.item_create(hid, col=H[u'價格'][0], text=invi.order.price, itemtype=Tix.TEXT, style=tds('e', inv_color))
-                tree.hlist.item_create(hid, col=H[u'規格'][0], text=invi.order.product.units if invi.order.product.unitpriced else u'', itemtype=Tix.TEXT, style=tds('e', inv_color))
-                tree.hlist.item_create(hid, col=H[u'總價'][0], text=u'{:,}'.format(invi.total()), itemtype=Tix.TEXT, style=tds('e',inv_color))
-                tree.hlist.item_create(hid, col=H[u'已付'][0], text=invi.invoice.check_no if invi.invoice.paid else u'\u203C', itemtype=Tix.TEXT, style=tds('w',inv_color if invi.invoice.paid else 'tomato'))
+                # SET INVOICE LINE COLOR BASED ON PAYMENT RECORDED OR NOT.
+                invi_color = COL_INVOICE_PAID if invi.invoice.paid else COL_INVOICE_NOT_PAID
+                # SET CHECK PAID TEXT. EITHER CHECK NUMBER OR SYMBOL.
+                check_text = invi.invoice.check_no if invi.invoice.paid else U_EXCLAMATION
+                if not check_text:
+                    check_text = U_CHECKMARK
 
+                tree.hlist.item_create(col=8, text=u'', **_item_opts(hid, 'w', invi_color))
+                tree.hlist.item_create(col=H[u'發票號碼'][0], text=invi.invoice.invoice_no, **_item_opts(hid, 'w',invi_color))
+                tree.hlist.item_create(col=H[u'發票日期'][0], text=u'{0.month}月{0.day}日'.format(invi.invoice.invoicedate), **_item_opts(hid, 'w',invi_color))
+                tree.hlist.item_create(col=H[u'發票數量'][0], text=invi.qty, **_item_opts(hid, 'e',invi_color))
+                tree.hlist.item_create(col=H[u'價格'][0], text=invi.order.price, **_item_opts(hid, 'e', invi_color))
+                tree.hlist.item_create(col=H[u'規格'][0], text=invi.order.product.units if invi.order.product.unitpriced else u'', **_item_opts(hid, 'e', invi_color))
+                tree.hlist.item_create(col=H[u'總價'][0], text=u'{:,}'.format(invi.total()), **_item_opts(hid, 'e', invi_color))
+                tree.hlist.item_create(col=H[u'已付'][0], text=check_text, **_item_opts(hid, 'w', invi_color))
+
+            #XXX: What does this for?...
             if len(rec.invoiceitem) > 1:
                 tree.setmode(hid, 'open')
 
