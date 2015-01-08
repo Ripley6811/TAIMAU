@@ -49,6 +49,9 @@ class Calendar(TKx.Frame):
     timedelta = calendar.datetime.timedelta
     today = datetime.today()
 
+    # Use 3 or 4 different light colors for best results.
+    MONTH_COLORS = ['grey92', 'thistle2', 'white', 'lightblue']
+
     def __init__(self, master=None, **kw):
         """Setup.
 
@@ -103,20 +106,35 @@ class Calendar(TKx.Frame):
         hframe = TKx.Frame(self)
         hframe.pack(fill='x', expand=1)
         self.month_str = TKx.StringVar()
-        lbtn = TKx.Button(hframe, text=u'\u25c0', command=self._prev_month)
-        rbtn = TKx.Button(hframe, text=u'\u25b6', command=self._next_month)
+        lbtn = TKx.Button(hframe, text=u'\u25b2', command=self._prev_month)
+        rbtn = TKx.Button(hframe, text=u'\u25bc', command=self._next_month)
         lbtn.pack(side='left')
         rbtn.pack(side='right')
         tl = TKx.Label(hframe, textvariable=self.month_str)
         tl.pack(side='top')
+        self.top_label = tl
         self._set_month_str()
         self.days_frame = TKx.Frame(self)
         self.days_frame.pack(fill='x', expand=1)
 
     def _set_month_str(self):
-        #TODO: Fix month name encoding error on Chinese system when localizing.
-        text = u'{} {}'.format(calendar.month_name[self.month], self.year)
-        self.month_str.set(text)
+        if self.date_obj:
+            if self.userange:
+                self.month_str.set(u' \u25c0\u25b6 '.join([unicode(d) for d in self.date_obj]))
+            else:
+                text = u'{}-{}-{}'.format(self.date_obj.year, calendar.month_name[self.date_obj.month], self.date_obj.day)
+                self.month_str.set(text)
+        else:
+            #TODO: Fix month name encoding error on Chinese system.
+            text = u'{}-{}'.format(self.year, calendar.month_name[self.month])
+            self.month_str.set(text)
+
+        if self.userange:
+            try:
+                self._color_date_range()
+            except AttributeError:
+                pass
+
 
     def _edit_range(self, event, date):
         #8 normal, 12 held ctrl, 1032 held B3
@@ -127,14 +145,12 @@ class Calendar(TKx.Frame):
             self.range = self.range[1], date
         else:
             self.range = date, date
-#        start, end = [str(d) for d in sorted(self.range)]
+
         self._color_buttons()
-#        for child in self.days_frame.winfo_children()[7:]:
-#            if start <= child['value'] <= end:
-#                child['bg'] = self.sel_bg
+        self._set_month_str()
+#        self._color_date_range()
 
     def _build_dategrid(self):
-        self._set_month_str()
         # Prepare data.
         datematrix = self._cal.monthdatescalendar(self.year, self.month)
         for i in range(self.postweeks + 6 - len(datematrix)):
@@ -158,41 +174,64 @@ class Calendar(TKx.Frame):
             tl.grid(row=0, column=(col+1)%7, sticky='nsew')
         for row, week in enumerate(datematrix):
             for col, day in enumerate(week):
-                trb = TKx.Radiobutton(self.days_frame,
+                if self.userange:
+                    trb = TKx.Checkbutton(self.days_frame,
+                                      text=day.day,
+                                      padx=4,
+                                      indicator=False,
+                                      onvalue=day,
+                                      )
+                else:
+                    trb = TKx.Radiobutton(self.days_frame,
                                       text=day.day,
                                       padx=4,
                                       indicator=False,
                                       variable=self.strvar,
-                                      value=day)
+                                      value=day,
+                                      )
+                trb['command'] = self._set_month_str
                 trb.grid(row=row + 1, column=col, sticky='nsew')
                 self.days_frame.columnconfigure(col, weight=1)
                 if self.sel_bg:
                     trb.config(selectcolor=self.sel_bg)
                 if self.userange:
                     trb.bind('<1>', lambda e,x=day: self._edit_range(e,x))
+
+        self._set_month_str()
         self._color_buttons()
+        self._color_date_range()
+
 
     def _color_buttons(self):
-        try:
-            start, end = [str(d) for d in sorted(self.range)]
-        except:
-            start, end = 0,0
-
+        """
+        Fill the background colors to distinguish months.
+        """
+        value = 'onvalue' if self.userange else 'value'
         for child in self.days_frame.winfo_children()[7:]:
-            month = int(child['value'].split('-')[1])
-            if abs(month - self.month) == 0:
-                child.config(bg='grey99')
-            if abs(month - self.month) in (1,11):
-                child.config(bg='grey77')
-            if abs(month - self.month) in (2,10):
-                child.config(bg='grey55')
-            if 3 <= abs(month - self.month) <= 9:
-                child.config(bg='grey33')
-            if self.userange and start <= child['value'] <= end:
-                child['bg'] = self.sel_bg
+            month = int(child[value].split('-')[1])
+            child.config(bg=self.MONTH_COLORS[month%len(self.MONTH_COLORS)])
+
+    def _color_date_range(self):
+        """
+        Color the selected date range if using range mode.
+        """
+        if self.userange:
+            try:
+                start, end = [str(d) for d in sorted(self.range)]
+            except:
+                start, end = 0,0
+
+            for child in self.days_frame.winfo_children()[7:]:
+                if start <= child['onvalue'] <= end:
+                    child.select()
+                else:
+                    child.deselect()
 
 
     def _prev_month(self):
+        """
+        Shift month focus to the previous month and redraw radiobuttons.
+        """
         tmp = self.datetime(self.year, self.month, 1)
         prev_month = tmp - self.timedelta(1)
         self.year = prev_month.year
@@ -200,6 +239,9 @@ class Calendar(TKx.Frame):
         self._build_dategrid()
 
     def _next_month(self):
+        """
+        Shift month focus to the following month and redraw radiobuttons.
+        """
         tmp = self.datetime(self.year, self.month, 25)
         next_month = tmp + self.timedelta(10)
         self.year = next_month.year
@@ -278,7 +320,11 @@ def test():
     import sys
     root = TKx.Tk()
     root.title('Calendar')
-    tixcal = Calendar(preweeks=6, postweeks=8, day=23, selectrange=True)
+    tixcal = Calendar(preweeks=2, postweeks=3,
+#                      day=12,
+                      selectrange=False,
+#                      selectrange=True,
+                      )
     tixcal.pack(expand=1, fill='both')
 
     if 'win' not in sys.platform:
@@ -289,10 +335,10 @@ def test():
     print type(tixcal.date_obj), tixcal.date_obj
 
 
-    tixcal = Calendar(preweeks=6, postweeks=8)
-
-    print type(tixcal.date_str), tixcal.date_str
-    print type(tixcal.date_obj), tixcal.date_obj
+#    tixcal = Calendar(preweeks=6, postweeks=8)
+#
+#    print type(tixcal.date_str), tixcal.date_str
+#    print type(tixcal.date_obj), tixcal.date_obj
     root.mainloop()
 
 
