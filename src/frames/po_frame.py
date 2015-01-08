@@ -27,6 +27,9 @@ import tkMessageBox
 import po #package
 import fr_branch
 from utils import settings
+from utils.symbols import (
+    U_No, U_INFO, U_FAX, U_ENVELOPE, U_PHONE,
+    U_INFINITE, U_TRUCK)
 
 #===============================================================================
 # METHODS
@@ -374,12 +377,12 @@ def create(_):
         branch_info = Tix.StringVar()
         def set_branch_info():
             branch = _.dbm.get_branch(_.curr.branchSV.get())
-            text = u'\u2116 {} : {}'.format(branch.tax_id, branch.fullname)
-            text += u'\n\u260E {}'.format(branch.phone)
+            text = u'{} {} : {}'.format(U_No, branch.tax_id, branch.fullname)
+            text += u'\n{} {}'.format(U_PHONE, branch.phone)
             if branch.fax:
-                text += u'  \u213B {}'.format(branch.fax)
-            text += u'\n\u2709 {}'.format(branch.email)
-            text += u'\n\u24D8 {}'.format(branch.note)
+                text += u'  {} {}'.format(U_FAX, branch.fax)
+            text += u'\n{} {}'.format(U_ENVELOPE, branch.email)
+            text += u'\n{} {}'.format(U_INFO, branch.note)
             branch_info.set(text)
 
         Tix.Label(branchbox_inner, textvariable=branch_info,
@@ -487,7 +490,7 @@ def create(_):
                 # PO remaining QTY
                 amt = order.qty_remaining()
                 if amt >= 1e9:
-                    amt = u'\u221E' # Infinity symbol for unlimited POs.
+                    amt = U_INFINITE # Infinity symbol for unlimited POs.
                 _textvar = _.loc(u"(Avail:")
                 lw = Tix.Label(pobox, textvariable=_textvar, anchor='w')
                 lw.grid(row=row*2, column=3, sticky='ew')
@@ -508,7 +511,7 @@ def create(_):
                     lw2.config(bg=u'tomato')
 
                 # Multiple entry option button
-                tb = Tix.Button(pobox, text=u'\u26DF \u26DF',
+                tb = Tix.Button(pobox, text=u'{t} {t}'.format(t=U_TRUCK),
                                 font=(_.font, 11), bg="lawn green",
                                 activebackground="lime green")
                 tb['command'] = lambda o=order: po.add_many(_,o,load_company)
@@ -593,7 +596,7 @@ def create(_):
             te = Tix.Entry(pobox, textvariable=numbSVar, width=9,
                                justify="center", bg=u"moccasin")
             te.grid(row=1000, column=4, columnspan=2, sticky='ew')
-            tb = Tix.Button(pobox, textvariable=_.loc(u"\u26DF Create Manifest"),
+            tb = Tix.Button(pobox, textvariable=_.loc(U_TRUCK+u" Create Manifest"),
                             bg="lawn green",
                             command=lambda:make_manifest(),
                             activebackground="lime green")

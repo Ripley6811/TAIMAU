@@ -5,16 +5,16 @@ import tkMessageBox
 from invoice_form import main as invoice
 from manifest_form import main as manifest
 import label_prep_frame
-#print 'invoice', type(frames.po.invoice)
-
-U_PENCIL = u'\u270e'
-U_TRUCK = u'\u26df'
-U_DOLLAR = u'\uff04'
-U_EXCLAMATION = u'\u203c'
-U_CHECKMARK = u'\u2713'
-U_STOPSIGN = u'\u26d4'
-U_EYES = u'\U0001F440'
-U_MONEYBAG = u'\U0001F4B0'
+from utils.symbols import (
+    U_PENCIL,
+    U_TRUCK,
+    U_DOLLAR,
+    U_EXCLAMATION,
+    U_CHECKMARK,
+    U_NOENTRY,
+    U_EYES,
+    U_MONEYBAG,
+)
 
 COL_PO = u'cyan'
 COL_MANIFEST = u'PeachPuff2'
@@ -26,9 +26,7 @@ def main(_):
 
     Button to set number of records to load. Default to 25."""
 
-
     frame = Tix.Frame(_.po_frame)
-
 
     nRecords = Tix.StringVar()
     nRecords.set(25)
@@ -159,7 +157,7 @@ def main(_):
                         activebackground="lime green")
         tb.grid(row=100, column=0, columnspan=2, sticky='ew')
         # CANCEL BUTTON
-        tb = Tix.Button(_.extwin, textvariable=_.loc(U_STOPSIGN+u" Cancel"),
+        tb = Tix.Button(_.extwin, textvariable=_.loc(U_NOENTRY+u" Cancel"),
                         bg="tomato",
                         command=lambda:_.extwin.destroy(),
                         activebackground="tomato")
@@ -349,7 +347,6 @@ def main(_):
         )
         return _retval
 
-    mani_color = u'PeachPuff2'
     def refresh():
         try:
             _.curr.cogroup
