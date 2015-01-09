@@ -23,12 +23,12 @@
 - Add validation rules. Such as checking dates that are not recent or near future.
     - Maybe a decorator function for validation.
     - All caps for PO number and manifest number on first Order frame.
-- Add calendar balloon tooltip with month name over buttons.
-- If no open POs when company selected then switch to Order window. Likewise, if there are PO's on company select then switch to Manage window.
+* If no open POs when company selected then switch to Order window. Likewise, if there are PO's on company select then switch to Manage window.
 - Allow disconnected invoices and checks (not attached to manifest/order)
 - Capitalize check number entry
 - Add new rows as needed in the multiple shipment entry form.
 - Clickable product name for adding product related notes that show below. Use dropdown arrow symbol
+- Consolidate "Manage POs" and "All POs" into one frame. Can switch inside frame from showing all or just open POs.
 
 ***Requested:***
 - RT should match manifest order (and PO order). Check this.
@@ -37,7 +37,7 @@
 - Add vehicle radiobuttons
 - Help directions. List of questions and focuses program on the related page and gives instructions.
 - Show total kg/L etc. when typing number of barrels/bags in PO creation frame.
-- Dropdown menu filters for product ("All" or one item) and # of records (25,50,100,...).
+* Dropdown menu filters for product ("All" or one item) and # of records (25,50,100,...).
 
 ***Extra:***
 - Command line method for updating database from outputed Excel of companies and products.
