@@ -28,6 +28,7 @@
 - Allow disconnected invoices and checks (not attached to manifest/order)
 - Capitalize check number entry
 - Add new rows as needed in the multiple shipment entry form.
+- Clickable product name for adding product related notes that show below. Use dropdown arrow symbol
 
 ***Requested:***
 - RT should match manifest order (and PO order). Check this.
@@ -36,6 +37,7 @@
 - Add vehicle radiobuttons
 - Help directions. List of questions and focuses program on the related page and gives instructions.
 - Show total kg/L etc. when typing number of barrels/bags in PO creation frame.
+- Dropdown menu filters for product ("All" or one item) and # of records (25,50,100,...).
 
 ***Extra:***
 - Command line method for updating database from outputed Excel of companies and products.

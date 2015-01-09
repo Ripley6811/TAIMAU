@@ -67,6 +67,7 @@ class Calendar(TKx.Frame):
             preweeks (int): Number of weeks to include before month.
             postweeks (int): Number of weeks to include after month.
             selectrange (bool): True to return dates as a range pair.
+            monthsoncalendar (bool): True (default) shows month name on 1st.
         """
 
         # remove custom options from kw before initializating ttk.Frame
@@ -79,6 +80,8 @@ class Calendar(TKx.Frame):
         self.preweeks = kw.pop('preweeks', 0)
         self.postweeks = kw.pop('postweeks', 0)
         self.userange = kw.pop('selectrange', False)
+        self.months_on_calendar = kw.pop('monthsoncalendar', True)
+
         self.range = []
 
         # StringVar parameter for returning a date selection.
@@ -174,16 +177,19 @@ class Calendar(TKx.Frame):
             tl.grid(row=0, column=(col+1)%7, sticky='nsew')
         for row, week in enumerate(datematrix):
             for col, day in enumerate(week):
+                text = str(day.day)
+                if text == '1' and self.months_on_calendar:
+                    text = calendar.month_name[day.month][:3]# + u'\n1'
                 if self.userange:
                     trb = TKx.Checkbutton(self.days_frame,
-                                      text=day.day,
+                                      text=text,
                                       padx=4,
                                       indicator=False,
                                       onvalue=day,
                                       )
                 else:
                     trb = TKx.Radiobutton(self.days_frame,
-                                      text=day.day,
+                                      text=text,
                                       padx=4,
                                       indicator=False,
                                       variable=self.strvar,
