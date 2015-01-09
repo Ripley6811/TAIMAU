@@ -297,6 +297,7 @@ def create(_):
     tr.bind('<Enter>', lambda a, t=text: _.status.set(_.loc(t,1)))
     tr = Radiobutton('po new', _.loc(u'Manage POs'))
     tr.grid(row=0, column=1)
+    _.btn_manage_po = tr
     text = u"Ship items from open POs."
     tr.bind('<Enter>', lambda a, t=text: _.status.set(_.loc(t,1)))
     tr.select()
@@ -534,7 +535,7 @@ def create(_):
                         _int = int(_qtyVars[row].get())*_multiplier[row]
                         _poBs[row].config(bg=u'PaleTurquoise1')
                         if _int.is_integer():
-                            _int = int(_int)
+                                _int = int(_int)
                         _unitsVars[row].set(u"{}".format(_int))
                     else:
                         _poBs[row].config(bg=u'moccasin')
@@ -626,7 +627,7 @@ def create(_):
             each_method()
 
 
-    # Load cogroup and mode from previous session.
+    # Load cogroup and mode from previous session on init.
     js = settings.load()
     if js.get('sc_mode'):
         try:

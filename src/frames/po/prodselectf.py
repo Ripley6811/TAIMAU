@@ -150,8 +150,8 @@ def main(_):
 
     Tix.Label(formf, textvariable=_.loc(u'Manifest #:'), pady=10)\
         .grid(row=3, column=0, sticky='nsew')
-    ponEntry = Tix.Entry(formf, textvariable=manSV, bg=u"moccasin")
-    ponEntry.grid(row=3, column=1, sticky='ew')
+    manEntry = Tix.Entry(formf, textvariable=manSV, bg=u"moccasin")
+    manEntry.grid(row=3, column=1, sticky='ew')
 
     def createOrder(PROD, PRICE, QTY, is_open=True):
         '''
@@ -247,8 +247,15 @@ def main(_):
             except AttributeError:
                 pass
 
-    Tix.Button(formf, textvariable=_.loc(U_TOOLS+u" Create Product Order (PO)"),
-               pady=12, bg=u'lawngreen', command=submitPO).grid(row=4, column=0, sticky='nsew')
+    po_button = Tix.Button(formf, textvariable=_.loc(U_TOOLS+u" Create Product Order (PO)"),
+               pady=12, bg=u'lawngreen', command=submitPO)
+    po_button.grid(row=4, column=0, sticky='nsew')
+    def toggle_po_button(*args):
+        if manSV.get():
+            po_button['state'] = 'disabled'
+        else:
+            po_button['state'] = 'normal'
+    manSV.trace('w', toggle_po_button)
 
     Tix.Button(formf, textvariable=_.loc(U_TRUCK+u" Create Single Shipment PO"),
                pady=12, bg=u'lawngreen', command=submitMF).grid(row=4, column=1, sticky='nsew')
