@@ -30,7 +30,13 @@ def main(_):
 
     nRecords = Tix.StringVar()
     nRecords.set(25)
-    nRecords.trace('w', lambda a,b,c: refresh())
+    nRecords_last = Tix.StringVar()
+
+    # Store filter term (product name) for records. Command in combobox.
+    search_term = Tix.StringVar()
+    search_term.set(u'')
+    search_term_last = Tix.StringVar()
+
 
     # Headers and (column number, col width)
     Hwidths = [
@@ -55,8 +61,12 @@ def main(_):
     for i, each in enumerate(Hwidths):
         H[each[0]] = (i, each[1], each[2])
 
+    tree_filters = Tix.Frame(frame)
+    tree_filters.pack(side='top', fill='x')
+
     tree_box = Tix.Frame(frame)
     tree_box.pack(side='top', fill='both', expand=1)
+
     tree = Tix.Tree(tree_box, options='columns {}'.format(len(H)))
     tree.pack(expand=1, fill='both', side='top')
 
@@ -65,6 +75,7 @@ def main(_):
 
     def view_totals():
         '''Total up the columns of selected rows.'''
+        #TODO: Needs lots of work and more results to status bar.
         totaldict = {}
         totalshipped = 0
         totalinvoiced = 0
@@ -196,14 +207,6 @@ def main(_):
         command=mark_paid, font=(_.font, 18, 'bold'),
     ).pack(side=u'left', fill='x')
 
-
-    rb_vals = (25, 50, 100, 500, 1000)
-    options = dict(variable=nRecords, indicatoron=False)
-    for val in rb_vals[::-1]:
-        Tix.Radiobutton(rb_box, text=val, value=val, **options)\
-            .pack(side='right')
-    Tix.Label(rb_box, textvariable=_.loc(u'Number of records to show:'))\
-        .pack(side='right')
 
     totalvalue = Tix.StringVar()
     Tix.Label(rb_box, textvariable=totalvalue)
@@ -348,11 +351,30 @@ def main(_):
         )
         return _retval
 
-    def refresh():
+    def refresh(clear_search_term=True):
         try:
             _.curr.cogroup
         except KeyError:
             return
+
+        # Fill product filter combobox with product names
+        if clear_search_term:
+            search_term.set(u'')
+            pfilter.entry.delete(0, 'end')
+
+        try:
+            query = _.dbm.session.query(_.dbm.Product)
+            if _.sc_mode == u's':
+                query = query.filter_by(is_supply=True, group=_.curr.cogroup.name)
+            elif _.sc_mode == u'c':
+                query = query.filter_by(is_supply=False, group=_.curr.cogroup.name)
+            product_names = query.all()
+            pfilter.slistbox.listbox.delete(0, 'end')
+            pfilter.insert('end', u'All')
+            [pfilter.insert('end', val.name) for val in product_names]
+        except KeyError:
+            return # Mode not set during initialization. Skip this
+
         # SQL query for shipments (items)
         query = _.dbm.session.query(_.dbm.ShipmentItem)
         query = query.join(_.dbm.Shipment)
@@ -362,6 +384,11 @@ def main(_):
             query = query.filter_by(is_purchase=True)
         elif _.sc_mode == u'c':
             query = query.filter_by(is_sale=True)
+        filterterm = u'%' + search_term.get() + u'%'
+        if filterterm.upper() not in (u'%%', u'%ALL%'):
+            query = query.join(_.dbm.Product)
+            query = query.filter((_.dbm.Product.product_label.like(filterterm)) |
+                                 (_.dbm.Product.inventory_name.like(filterterm)) )
         query = query.join(_.dbm.Order.parent)
         query = query.filter_by(name=_.curr.cogroup.name)
         query = query.limit(nRecords.get())
@@ -402,7 +429,30 @@ def main(_):
             if len(rec.invoiceitem) > 1:
                 tree.setmode(hid, 'open')
 
+    def pre_refresh(*args):
+        if search_term_last.get() != search_term.get() or nRecords_last.get() != nRecords.get():
+            search_term_last.set(search_term.get())
+            nRecords_last.set(nRecords.get())
+            refresh(clear_search_term=False)
 
+
+    #--- Combobox for product selection to display
+    pfilter = Tix.ComboBox(tree_filters,
+                        label=u'Product filter',
+                        dropdown=True, editable=True, command=pre_refresh,
+                        variable=search_term)
+    pfilter.pack(side='left')
+
+
+    #--- Combobox for number of records to display
+    rb_vals = (25, 50, 100, 500, 1000)
+    cbox = Tix.ComboBox(tree_filters,
+                        label=u'Number of records to show',
+                        dropdown=True, editable=True, command=pre_refresh,
+                        variable=nRecords,
+                        options='listbox.height 5 entry.width 10')
+    cbox.pack(side='left')
+    [cbox.insert('end', val) for val in rb_vals]
 
 
 
