@@ -74,6 +74,8 @@ def main(_):
         # Set entry widget defaults
         Eopts = dict(width=8, bg=u"moccasin", validate='key', **OPTS)
 
+        _unitsVars = []
+        _multiplier = [] # Convert SKU to units
 
         for row, PR in zip(rows, prodrecs):
             col = 0
@@ -104,7 +106,10 @@ def main(_):
             w[-1].grid(row=row, column=col); col += 1
 
             # Show SKU after quantity number
-            w.append(Tix.Label(text=PR.SKU, padx=10, **OPTS))
+            text = PR.SKU
+            if text == u'槽車':
+                text = PrU
+            w.append(Tix.Label(text=text, padx=10, **OPTS))
             w[-1].grid(row=row, column=col, sticky='nsw'); col += 1
 
             def highlightrow(qtyi, widgets):
@@ -116,9 +121,35 @@ def main(_):
                 widgets[0].config(relief='raised' if len(val) else 'flat',
                                   bg='lawngreen' if len(val) else col_default)
 
+                # Fill in total units reference
+                if _qtySV[qtyi].get().isdigit():
+                    print 'inside'
+                    _int = int(_qtySV[qtyi].get())*_multiplier[qtyi]
+#                    _poBs[qtyi].config(bg=u'PaleTurquoise1')
+                    if _int.is_integer():
+                            _int = int(_int)
+                    _unitsVars[qtyi].set(u"{}".format(_int))
+                else:
+#                    _poBs[row].config(bg=u'moccasin')
+                    _unitsVars[qtyi].set(u"{}".format(0))
+
 
             _qtySV[-1].trace('w', lambda a,b,c,i=len(_qtySV)-1, w=w:
                                       highlightrow(i, w))
+
+            # Total units StringVar
+            _unitsVars.append(Tix.StringVar())
+            _multiplier.append(PR.units)
+            lw = Tix.Label(textvariable=_unitsVars[-1],
+                           anchor='e', bg=u'LightGoldenrod1', **OPTS)
+            lw.grid(row=row, column=col, sticky='e'); col += 1
+            _unitsVars[-1].set("0")
+            _text = u' {}'.format(
+                PR.UM #if _prod.unitpriced else _prod.SKU
+            )
+            lw = Tix.Label(text=_text,
+                           anchor='w', bg=u'LightGoldenrod1', **OPTS)
+            lw.grid(row=row, column=col, sticky='w'); col += 1
 
 
     # Form creation panel. Make different types of POs.
