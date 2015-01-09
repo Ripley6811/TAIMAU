@@ -145,6 +145,7 @@ def main(_):
         _.extwin.focus_set()
 
         _check_no = Tix.StringVar()
+        _check_no.trace('w', lambda *args: _check_no.set(_check_no.get().upper()))
         tl=Tix.Label(_.extwin, text=u'Check #:')
         tl.grid(row=0,column=0, columnspan=2, sticky='nsew')
         te = Tix.Entry(_.extwin, textvariable=_check_no)
