@@ -35,7 +35,6 @@
 - Add destinations option/buttons to manifest.
 - Add vehicle radiobuttons
 - Help directions. List of questions and focuses program on the related page and gives instructions.
-- Show total kg/L etc. when typing number of barrels/bags in PO creation frame.
 
 ***Extra:***
 - Command line method for updating database from outputed Excel of companies and products.

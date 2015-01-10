@@ -123,7 +123,6 @@ def main(_):
 
                 # Fill in total units reference
                 if _qtySV[qtyi].get().isdigit():
-                    print 'inside'
                     _int = int(_qtySV[qtyi].get())*_multiplier[qtyi]
 #                    _poBs[qtyi].config(bg=u'PaleTurquoise1')
                     if _int.is_integer():
