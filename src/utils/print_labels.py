@@ -409,7 +409,7 @@ def printapp(noprint=False):
             break
 
     # RT No. validation
-    if (sheet.name not in ['PR',u'雙葉',u'光大',u'台駿']) and not rt_check(sheet, row, dic[u'RT.No']):
+    if (sheet.name not in [u'PR',u'K4QA',u'雙葉',u'光大',u'台駿']) and not rt_check(sheet, row, dic[u'RT.No']):
         # Exit if check is False
         raw_input("Hit enter to exit.")
         return False
