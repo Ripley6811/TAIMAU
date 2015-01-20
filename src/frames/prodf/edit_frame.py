@@ -53,7 +53,7 @@ def main(_):
         (0, u'ASE_PN', u'(ASE) PN:', u'(ASE) Product Number.'),
         (0, u'ASE_RT', u'(ASE) RT:', u'(ASE) Routing number.'),
 #        (0, u'ASE_END', u'(ASE) Last SKU#:', u'(ASE) Last index number used on delivered barrels.'),
-        (0, u'curr_price', u'Current Price:', u'Enter a starting price.'),
+#        (0, u'curr_price', u'Current Price:', u'Enter a starting price.'),
     ]
     entrySVars = [(Tix.StringVar(), None) for i in range(len(entryfields))]
     radioSVars = [(u'unitpriced', Tix.BooleanVar()),
