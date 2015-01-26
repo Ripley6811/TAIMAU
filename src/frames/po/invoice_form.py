@@ -145,10 +145,10 @@ def main(_, shipment_ids=None, invoice=None):
         bg= u'wheat'
     )
 
-
+    # Aggregate the items by product, specs and price
     totaldict = {}
     for sm in shipments:
-        name = u'{} ({})'.format(sm.order.product.label(), sm.order.product.specs)
+        name = u'{} ({} ${})'.format(sm.order.product.label(), sm.order.product.specs, sm.order.price)
         if totaldict.get(name) == None:
             totaldict[name] = [
                 sm.qty * sm.order.product.units if sm.order.product.unitpriced else sm.qty,
