@@ -239,8 +239,7 @@ def main(_):
             _.dbm.session.commit()
             refresh()
             try:
-                for ref in _.refresh:
-                    ref()
+                _.load_company()
             except AttributeError:
                 pass
 
@@ -272,8 +271,7 @@ def main(_):
                     _.dbm.session.add(item)
             _.dbm.session.commit()
             try:
-                for ref in _.refresh:
-                    ref()
+                _.load_company()
             except AttributeError:
                 pass
 

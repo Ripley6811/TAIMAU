@@ -115,8 +115,7 @@ def main(_):
             if confirm:
                 query.delete()
                 _.dbm.session.commit()
-                for ref in _.refresh:
-                    ref()
+                _.load_company()
                 return True
             return False
 

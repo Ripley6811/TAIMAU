@@ -626,6 +626,8 @@ def create(_):
         for each_method in _.refresh:
             each_method()
 
+    # Make load_company available anywhere
+    _.load_company = load_company
 
     # Load cogroup and mode from previous session on init.
     js = settings.load()
