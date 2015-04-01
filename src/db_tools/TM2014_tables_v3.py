@@ -203,7 +203,7 @@ class ShipmentItem(Base):
     id = Col(Int, primary_key=True)
 
     order_id = Col(Int, ForeignKey('order.id'), nullable=False)
-    shipment_id = Col(Int, ForeignKey('shipment.id'), nullable=False)
+    shipment_id = Col(Int, ForeignKey('shipment.id'))
 
     qty = Col(Int, nullable=False) # Deduct from total SKUs due
 
@@ -211,6 +211,10 @@ class ShipmentItem(Base):
     lot_start = Col(Int)
     lot_end = Col(Int)
     rt_no = Col(Utf(20))
+    
+    duedate = Col(Date)
+    
+    shipped = Col(Bool, default=False)
 
     invoiceitem = rel('InvoiceItem', backref='shipmentitem')
 
@@ -382,7 +386,7 @@ class Product(Base): # Information for each unique product (including packaging)
     english_name = Col(Utf(100), default=u'')
     units = Col(Float, nullable=False)  #Units per SKU
     UM = Col(Utf(10), nullable=False)   #Unit measurement
-    SKU = Col(Utf(10), nullable=False)  #Stock keeping unit (sold unit)
+    SKU = Col(Utf(10), nullable=False)  #Stock keeping unit (countable package)
     SKUlong = Col(Utf(100), default=u'')
     unitpriced = Col(Bool, nullable=False)
     ASE_PN = Col(Utf(20)) # ASE product number

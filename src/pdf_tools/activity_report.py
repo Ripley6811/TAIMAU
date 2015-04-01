@@ -349,6 +349,9 @@ class ActivityReport(object):
 
         # APPEND EACH ROW FROM TABLE DATA.
         for i in range(len(self.df[COL_NAMES[0]])):
+            if u'服務' in self.df[u'品名'][i]:
+                continue
+
             cells.append([self.df[key][i] for key in COL_NAMES])
 
 

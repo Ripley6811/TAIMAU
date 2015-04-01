@@ -561,9 +561,30 @@ session = sessionmaker(bind=engine)()
 # Get list of table names.
 session.execute('Show tables').fetchall()
 
+records = session.query(ShipmentItem).join(Order).join(Product).join(Shipment).order_by(Shipment.shipmentdate.desc()).all()
 
-
-
-
+with open('tester.txt', 'w') as w:
+    for rec in records:
+        print(rec.shipment.shipmentdate)
+        w.write(unicode(rec.shipment.shipmentdate))
+        w.write(',')
+        w.write(' ')
+        w.write(',')
+        w.write(unicode(rec.order.product.inventory_name))
+        w.write(',')
+        w.write(unicode(rec.qty))
+        w.write(' ')
+        w.write(unicode(rec.order.product.SKU))
+        w.write('\n')
+y = []
+count = 1
+last = ''
+for a in x.split('\n'):
+    if a != last:
+        last = a
+        count = 1
+    else:
+        count += 1
+    y.append(a + '{:0>2}'.format(count))
 
 """
