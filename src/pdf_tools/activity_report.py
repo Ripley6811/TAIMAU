@@ -366,7 +366,7 @@ class ActivityReport(object):
             Set to 0 for middle of manifest group, 1 for beginning, 2 for
             end and 3 for a single item manifest.
             """
-            length = len(self.df[COL_NAMES[0]])
+            length = len(cells)
             brackets = [MIDDLE] * length # Set all to the middle value (zero)
             brackets[0] = START # Set first index to bracket start value (1)
 
