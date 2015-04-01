@@ -211,6 +211,11 @@ class ActivityReport(object):
 
         self.df = kwargs.pop('tableValues', None)
         assert isinstance(self.df, dict)
+        for i in reversed(range(len(self.df[u'品名']))):
+            if u'服務' in self.df[u'品名'][i]:
+                for key in self.df:
+                    del self.df[key][i]
+
 
         self.tmBranch = kwargs.pop(u'tmBranch', u'')
 
@@ -349,9 +354,6 @@ class ActivityReport(object):
 
         # APPEND EACH ROW FROM TABLE DATA.
         for i in range(len(self.df[COL_NAMES[0]])):
-            if u'服務' in self.df[u'品名'][i]:
-                continue
-
             cells.append([self.df[key][i] for key in COL_NAMES])
 
 
