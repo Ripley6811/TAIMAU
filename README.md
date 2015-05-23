@@ -1,4 +1,4 @@
-> This program was designed for TAIMAU's operation but could probably be used in many other setups.
+> This program was designed for TAIMAU's operation but could be adapted for many other setups.
 Please contact me if you think a similar database program could work for your small to mid-size business.
 
 TAIMAU Chemical Stock Tracking Program
