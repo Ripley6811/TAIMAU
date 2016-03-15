@@ -23,3 +23,5 @@ Additional features:
 - TSC TTP-243E Plus label printing.
 - View price changes for a product over time and compare with other companies.
 - Auto-updates to newest commits in github repo.
+
+![Alt text](https://dl.dropboxusercontent.com/u/49722688/images/old_taimau.png)
